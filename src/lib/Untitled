@@ -1,0 +1,10 @@
+touch src/app/works/\[workId\]/page.tsx
+touch src/app/works/\[workId\]/scenes/\[sceneId\]/page.tsx
+touch src/components/ui/Card.tsx
+touch src/components/ui/Badge.tsx
+touch src/components/raree/CharacterCard.tsx
+touch src/components/raree/LocationCard.tsx
+touch src/components/raree/SceneSlide.tsx
+touch src/components/raree/SlideNav.tsx
+touch src/lib/types.ts
+touch src/lib/data.ts

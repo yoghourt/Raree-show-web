@@ -1,0 +1,2562 @@
+[
+  {
+    "id": "acorn-hall",
+    "name": "Acorn Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Acorn Hall is the seat of House Smallwood in the riverlands. It is located southeast of Riverrun, northeast of Pinkmaiden, and north of Stoney Sept. High Heart and Blackbottom Bend are nearby.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "aegonfort",
+    "name": "Aegonfort",
+    "type": "castle",
+    "region": "",
+    "description": "The Aegonfort was the first fort built by Aegon the Conqueror in Westeros. It was constructed where the Red Keep now exists in King's Landing.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "amberly",
+    "name": "Amberly",
+    "type": "castle",
+    "region": "",
+    "description": "Amberly is the seat of House Rogers in the stormlands. According to semi-canon sources the castle might be named after large deposits of amber found in the ancient forests of the stormlands. Amberly may be located in the rainwood, as that forest is known for its wealth in amber.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "antlers",
+    "name": "Antlers",
+    "type": "castle",
+    "region": "",
+    "description": "Antlers, also called the Antlers, is the seat of House Buckwell in the crownlands. It is located southwest of Maidenpool, west of Rook's Rest, and northwest of Duskendale and Rosby.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "appleton",
+    "name": "Appleton",
+    "type": "castle",
+    "region": "",
+    "description": "Appleton is the seat of House Appleton in the Reach.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ashemark",
+    "name": "Ashemark",
+    "type": "castle",
+    "region": "",
+    "description": "Ashemark is the castle of House Marbrand in the westerlands. Located in hilly terrain, the castle is situated southeast of the Crag, northwest of the Golden Tooth, and north of Sarsfield.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ashford",
+    "name": "Ashford",
+    "type": "castle",
+    "region": "",
+    "description": "Ashford, also called Ashford Castle, is the seat of House Ashford in the Reach. The castle and its town sit on the northern shore of a fording of the Cockleswent, north of the Dornish Marches.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "atranta",
+    "name": "Atranta",
+    "type": "castle",
+    "region": "",
+    "description": "Atranta is the seat of House Vance of Atranta. It is situated in the riverlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "bandallon",
+    "name": "Bandallon",
+    "type": "castle",
+    "region": "",
+    "description": "Bandallon is the seat of House Blackbar in the Reach. It is located on the shores of the Sunset Sea, west of Brightwater Keep, northwest of Oldtown, and southwest of the Shield Islands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "banefort",
+    "name": "Banefort",
+    "type": "castle",
+    "region": "",
+    "description": "Banefort is the seat of House Banefort in the northwestern westerlands. It is situated along the coast of the Sunset Sea north of the Crag, near the Iron Islands, and is only two days' sail from Pyke.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "barrow-hall",
+    "name": "Barrow Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Barrow Hall is a castle in the town of Barrowton in the north. It is the residence of House Dustin. The keep of House Stout near Barrowton's eastern gates is less than a mile away.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "bitterbridge",
+    "name": "Bitterbridge",
+    "type": "castle",
+    "region": "Colloquial",
+    "description": "Bitterbridge, formerly known as Stonebridge, is the seat of House Caswell in the Reach.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "blackcrown",
+    "name": "Blackcrown",
+    "type": "castle",
+    "region": "",
+    "description": "Blackcrown is the seat of House Bulwer in the southwestern Reach. It is located on the northern shore of Whispering Sound near Oldtown and Three Towers. \nIts cliffs are called singing cliffs for the whistle heard from the twisted towers and wind-carved stones standing above the waves.\nBlackcrown's maester is Normund.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "blackhaven",
+    "name": "Blackhaven",
+    "type": "castle",
+    "region": "",
+    "description": "Blackhaven is the seat of House Dondarrion in the southwestern stormlands. Part of the Dornish Marches, it is located in the northern Red Mountains near the Dornish border, north of the Wyl and south of the Cockleswhent.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "blackmont",
+    "name": "Blackmont",
+    "type": "castle",
+    "region": "",
+    "description": "Blackmont is the seat of House Blackmont in Dorne. It is near the confluence of two rivers which form the Torentine, north of High Hermitage and Starfall in the western Red Mountains.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "blackpool",
+    "name": "Blackpool",
+    "type": "castle",
+    "region": "",
+    "description": "Blackpool is the seat of House Slate in the north, although its location has not been published.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "blacktyde-castle",
+    "name": "Blacktyde (castle)",
+    "type": "castle",
+    "region": "",
+    "description": "Blacktyde is the seat of House Blacktyde on the island of Blacktyde, one of the Iron Islands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "breakwater",
+    "name": "Breakwater",
+    "type": "castle",
+    "region": "",
+    "description": "Breakwater, also called Breakwater Castle, is a castle which defends the town of Sisterton in the Three Sisters, which are ruled by the Vale of Arryn. The castle is the residence of House Borrell, Lords of Sweetsister and Masters of Breakwater Castle.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "brightwater-keep",
+    "name": "Brightwater Keep",
+    "type": "castle",
+    "region": "",
+    "description": "Brightwater Keep, also known as Brightwater, is the seat of House Florent in the Reach. It sits near the source of the Honeywine, north of Honeyholt, east of Bandallon, and southwest of the Mander.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "broad-arch",
+    "name": "Broad Arch",
+    "type": "castle",
+    "region": "",
+    "description": "Broad Arch is the seat of House Staedmon in the Stormlands. Its exact location has not yet been published in A Song of Ice and Fire.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "bronzegate",
+    "name": "Bronzegate",
+    "type": "castle",
+    "region": "",
+    "description": "Bronzegate is the seat of House Buckler in the stormlands. The castle is located on the kingsroad between the Wendwater and Storm's End. Felwood is to the west and Haystack Hall is to the northeast.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "brownhollow",
+    "name": "Brownhollow",
+    "type": "castle",
+    "region": "",
+    "description": "Brownhollow is the seat of House Brune of Brownhollow in Crackclaw Point within the crownlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "castamere",
+    "name": "Castamere",
+    "type": "castle",
+    "region": "",
+    "description": "Castamere is a ruined castle located south of the Crag and west of Ashemark in the northwestern westerlands; also nearby is Tarbeck Hall. The former seat of House Reyne, Castamere contains gold and silver mines.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "casterly-rock",
+    "name": "Casterly Rock",
+    "type": "castle",
+    "region": "",
+    "description": "Casterly Rock, also known as the Casterly Rock or simply the Rock, is a castle and the seat of House Lannister. The capital of the westerlands, it is on the ocean road and overlooks the harbor of Lannisport and the Sunset Sea. Nearby strongholds include Kayce and Feastfires to the west, Sarsfield to the north, and Cornfield and Clegane's Keep to the south.\nThe household of Casterly Rock includes Maester Creylen, Vylarr, Ser Benedict Broom, and Whitesmile Wat.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "castlewood",
+    "name": "Castlewood",
+    "type": "castle",
+    "region": "",
+    "description": "Castlewood is the seat of House Harlton in the riverlands in the video game Game of Thrones. The castle is located along the shores of the Blackwater Rush.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "castle-cerwyn",
+    "name": "Castle Cerwyn",
+    "type": "castle",
+    "region": "",
+    "description": "Castle Cerwyn, or simply Cerwyn, is the seat of House Cerwyn in the north. It is located by the western branch of the White Knife. Because of the closeness of their castles, the Cerwyns often visit the Starks, as they are only half a day's ride from Winterfell.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "cider-hall",
+    "name": "Cider Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Cider Hall is the seat of House Fossoway of Cider Hall in the Reach. It is located near the confluence of the Cockleswhent and the Mander. The castle is named after the alcoholic beverage.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "coldmoat",
+    "name": "Coldmoat",
+    "type": "castle",
+    "region": "",
+    "description": "Coldmoat, also called Coldmoat Castle, is a castle of House Webber and House Osgrey in the north-west of the Reach. It is located a few leagues west of Standfast, with the west way running between the two.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "coldwater-burn",
+    "name": "Coldwater Burn",
+    "type": "castle",
+    "region": "",
+    "description": "Coldwater Burn or Coldwater is the seat of House Coldwater in the Vale of Arryn. It is located near the mouth of a river west of the Fingers. The castle of Snakewood is nearby beyond a mountain range to the south.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "cornfield",
+    "name": "Cornfield",
+    "type": "castle",
+    "region": "",
+    "description": "Cornfield is the seat of House Swyft in the Westerlands. It is located southeast of Casterly Rock, east of Crakehall, and northwest of Red Lake.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "corpse-lake",
+    "name": "Corpse Lake",
+    "type": "castle",
+    "region": "",
+    "description": "Corpse Lake is a lake on the island of Great Wyk. It is the seat of House Goodbrother of Corpse Lake.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "crag",
+    "name": "Crag",
+    "type": "castle",
+    "region": "",
+    "description": "The Crag is the seat of House Westerling in the westerlands. It sits along the coast of the Sunset Sea, south of Banefort, northwest of Ashemark, and northeast of Fair Isle.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "crakehall",
+    "name": "Crakehall",
+    "type": "castle",
+    "region": "",
+    "description": "Crakehall, or Crakehall Castle, is the seat of House Crakehall in the southwestern westerlands. It is located on the Searoad along the Sunset Sea, south of Lannisport and north of Old Oak. Cornfield and Red Lake are east of Crakehall. There is a large forest in the vicinity of the castle.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "crow-spike-keep",
+    "name": "Crow Spike Keep",
+    "type": "castle",
+    "region": "",
+    "description": "Crow Spike Keep is the seat of House Goodbrother of Crow Spike Keep. It is located on the island of Great Wyk.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "crows-nest",
+    "name": "Crow's Nest",
+    "type": "castle",
+    "region": "",
+    "description": "Crow's Nest is the seat of House Morrigen in the stormlands. It is located in mountainous terrain between Griffin's Roost and Stonehelm, along the western edge of Cape Wrath and the rainwood.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "darkdell",
+    "name": "Darkdell",
+    "type": "castle",
+    "region": "",
+    "description": "Darkdell is the seat of House Vyrwel in the Reach.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "darry",
+    "name": "Darry",
+    "type": "castle",
+    "region": "",
+    "description": "Darry or Castle Darry is the seat of House Darry in the riverlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "deep-den",
+    "name": "Deep Den",
+    "type": "castle",
+    "region": "",
+    "description": "The Deep Den is the seat of House Lydden in the eastern Westerlands. It is located in hilly and mountainous terrain east of Lannisport, with Hornvale to the north and Silverhill to the south. The Goldroad passes nearby.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "deepdown",
+    "name": "Deepdown",
+    "type": "castle",
+    "region": "",
+    "description": "Deepdown is the seat of House Crowl on the island of Skagos in the north.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "deepwood-motte",
+    "name": "Deepwood Motte",
+    "type": "castle",
+    "region": "",
+    "description": "Deepwood Motte, also called simply Deepwood, is the seat of House Glover in the north. The wooden motte-and-bailey castle lies in the northern wolfswood, east of Sea Dragon Point.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "downdelving",
+    "name": "Downdelving",
+    "type": "castle",
+    "region": "",
+    "description": "Downdelving is the seat of House Goodbrother of Downdelving, a cadet branch of House Goodbrother. It is located on the island of Great Wyk.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "dragonstone",
+    "name": "Dragonstone",
+    "type": "castle",
+    "region": "",
+    "description": "Dragonstone is a castle on the island of the same name at the entrance to Blackwater Bay, below the Dragonmont. It was the original seat of House Targaryen in Westeros, and had been colonized and fortified as the westernmost outpost of the Valyrian Freehold. Shaped from stone to look like dragons, the castle has a dark reputation.\nAfter Aegon's Conquest of the Seven Kingdoms, Dragonstone in the newly-created crownlands served as the seat of their heir apparent, known as the Prince of Dragonstone",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "dreadfort",
+    "name": "Dreadfort",
+    "type": "castle",
+    "region": "",
+    "description": "The Dreadfort is a castle in the north and the seat of House Bolton in northeastern Westeros. Located on the northern bank of the Weeping Water, the fortress is southeast of the Lonely Hills and north of the Sheepshead Hills. The Dreadfort is north of Hornwood, south of Last Hearth, and southwest of Karhold.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "castle-driftmark",
+    "name": "Castle Driftmark",
+    "type": "castle",
+    "region": "",
+    "description": "Castle Driftmark is the ancestral seat of House Velaryon on the island of Driftmark in the crownlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "driftwood-hall",
+    "name": "Driftwood Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Driftwood Hall is the seat of House Stane on the island of Skagos in the north.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "dun-fort",
+    "name": "Dun Fort",
+    "type": "castle",
+    "region": "",
+    "description": "The Dun Fort is a large castle that overlooks the town of Duskendale. The seat of House Rykker, it has a large square keep and big drum towers.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "dunstonbury",
+    "name": "Dunstonbury",
+    "type": "castle",
+    "region": "",
+    "description": "Dunstonbury is a castle in the Reach. Its current ruling house has not been published.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "dyre-den",
+    "name": "Dyre Den",
+    "type": "castle",
+    "region": "",
+    "description": "The Dyre Den is the seat of House Brune of the Dyre Den in the crownlands. It is located in Crackclaw Point along the southern shore of the Bay of Crabs.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "evenfall-hall",
+    "name": "Evenfall Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Evenfall Hall, or simply Evenfall, is the seat of House Tarth in the stormlands. It is located on the western coast of the island of Tarth along Shipbreaker Bay.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "eyrie",
+    "name": "Eyrie",
+    "type": "castle",
+    "region": "",
+    "description": "The Eyrie is an ancient castle and seat of House Arryn, one of the oldest lines of Andal nobility, within the Vale of Arryn. It is situated in the Mountains of the Moon on a shoulder of the peak known as the Giant's Lance, several thousand feet above the valley below. Although small compared to the seats of other Great Houses in Westeros, the Eyrie is considered impregnable to attack. During wintertime, the Arryns seek refuge against the cold in the Gates of the Moon at the base of the mountain.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "faircastle",
+    "name": "Faircastle",
+    "type": "castle",
+    "region": "",
+    "description": "Faircastle is the seat of House Farman in the westerlands. It is located on Fair Isle, just off the western coast of Westeros.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "fawnton",
+    "name": "Fawnton",
+    "type": "castle",
+    "region": "",
+    "description": "Fawnton is the seat of House Cafferen in the stormlands. The precise location of Fawnton is unknown.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "feastfires",
+    "name": "Feastfires",
+    "type": "castle",
+    "region": "",
+    "description": "Feastfires is the seat of House Prester in the westerlands. It is located at the southwestern tip of a peninsula in the Sunset Sea. The peninsula is west of Lannisport and south of Fair Isle. Feastfires is southwest of nearby Kayce.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "felwood",
+    "name": "Felwood",
+    "type": "castle",
+    "region": "",
+    "description": "Felwood  is the seat of House Fell in the Stormlands. It is located northwest of Storm's End at the southern edge of the kingswood, south of the Wendwater.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "flints-finger",
+    "name": "Flint's Finger",
+    "type": "castle",
+    "region": "",
+    "description": "Flint's Finger is the seat of House Flint of Flint's Finger in the north. It is located on the southern shore of Blazewater Bay, north of the Flint Cliffs and east of Cape Kraken.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "gallowsgrey",
+    "name": "Gallowsgrey",
+    "type": "castle",
+    "region": "",
+    "description": "Gallowsgrey is the seat of House Trant in the stormlands. Its location has not yet been published.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "gates-of-the-moon",
+    "name": "Gates of the Moon",
+    "type": "castle",
+    "region": "",
+    "description": "The Gates of the Moon, also known as the Gates, is a castle at the base of the Giant's Lance in the Vale of Arryn. It is held by Lord Nestor Royce, High Steward of the Vale and Keeper of the Gates of the Moon, on behalf of House Arryn.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ghaston-grey",
+    "name": "Ghaston Grey",
+    "type": "castle",
+    "region": "",
+    "description": "Ghaston Grey is a Dornish prison located on a bleak island in the Sea of Dorne. It been used by House Martell as a prison for the vilest of criminals and traitors, who are sent there to waste away.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ghost-hill",
+    "name": "Ghost Hill",
+    "type": "castle",
+    "region": "",
+    "description": "Ghost Hill is the seat of House Toland in Dorne. It lies on the southern shore of the Sea of Dorne, near the Broken Arm.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "godsgrace",
+    "name": "Godsgrace",
+    "type": "castle",
+    "region": "",
+    "description": "Godsgrace is the seat of House Allyrion in Dorne. It is found on the northern shore of the Greenblood, near the confluence of the Vaith and the Scourge.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "golden-tooth",
+    "name": "Golden Tooth",
+    "type": "castle",
+    "region": "",
+    "description": "The Golden Tooth, also called the Tooth, is the seat of House Lefford in the westerlands. It is located along the river road and is east of Ashemark and Sarsfield, west of Riverrun and Pinkmaiden, and north of Hornvale.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "goldengrove",
+    "name": "Goldengrove",
+    "type": "castle",
+    "region": "",
+    "description": "Goldengrove, or Castle Goldengrove, is the seat of House Rowan. It is east of Red Lake in the northern part of the Reach. Goldengrove is on a river which flows from the hills near Silverhill south to Highgarden.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "goldgrass",
+    "name": "Goldgrass",
+    "type": "castle",
+    "region": "",
+    "description": "Goldgrass is the seat of House Stout in the north.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "grandview",
+    "name": "Grandview",
+    "type": "castle",
+    "region": "",
+    "description": "Grandview is the seat of House Grandison in the stormlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "grassfield-keep",
+    "name": "Grassfield Keep",
+    "type": "castle",
+    "region": "",
+    "description": "Grassfield Keep is the castle of House Meadows in or near the town of Grassy Vale in the Reach.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "greenfield",
+    "name": "Greenfield",
+    "type": "castle",
+    "region": "Colloquial",
+    "description": "Greenfield, originally known as the Bower, is the seat of House Greenfield in the westerlands. Its exact location has not been stated in the books.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "greenstone",
+    "name": "Greenstone",
+    "type": "castle",
+    "region": "",
+    "description": "Greenstone is the seat of House Estermont on the island of Estermont in the stormlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "grey-garden",
+    "name": "Grey Garden",
+    "type": "castle",
+    "region": "",
+    "description": "Grey Garden is the seat of House Harlaw of Grey Garden on the island of Harlaw. Ser Harras Harlaw is known as the Knight of Grey Garden.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "grey-glen",
+    "name": "Grey Glen",
+    "type": "castle",
+    "region": "",
+    "description": "The Grey Glen is the seat of House Tollett in the Vale of Arryn.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "greywater-watch",
+    "name": "Greywater Watch",
+    "type": "castle",
+    "region": "",
+    "description": "Greywater Watch, also known as Greywater, is the seat of House Reed in the north.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "griffins-roost",
+    "name": "Griffin's Roost",
+    "type": "castle",
+    "region": "",
+    "description": "Griffin's Roost, or simply the Roost, is the seat of House Connington in the stormlands. The castle is located between Storm's End and Crow's Nest in northwestern Cape Wrath. It is ruled by Ser Ronnet Connington, the Knight of Griffin's Roost.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "grimston",
+    "name": "Grimston",
+    "type": "castle",
+    "region": "",
+    "description": "Grimston is a castle on the island of Greyshield in the Reach and is the seat of House Grimm.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "gull-tower",
+    "name": "Gull Tower",
+    "type": "castle",
+    "region": "",
+    "description": "Gull Tower is the seat of House Shett in the Vale of Arryn. Its ruler is Ser Damon Shett, the Knight of Gull Tower.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hammerhal",
+    "name": "Hammerhal",
+    "type": "castle",
+    "region": "",
+    "description": "Hammerhal is the seat of House Cordwayner in the Reach.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hammerhorn",
+    "name": "Hammerhorn",
+    "type": "castle",
+    "region": "",
+    "description": "Hammerhorn, also called the Hammerhorn, is the seat of the main line of House Goodbrother in the Iron Islands. The castle lies in the Hardstone Hills in the southwest of Great Wyk. Its maester is Murenmure.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "harlaw-hall",
+    "name": "Harlaw Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Harlaw Hall is the ancient seat of House Harlaw on the island of Harlaw. Currently the seat of House Harlaw of Harlaw Hall, its master is Sigfryd Harlaw.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "harrenhal",
+    "name": "Harrenhal",
+    "type": "castle",
+    "region": "",
+    "description": "Harrenhal, the largest castle in the Seven Kingdoms, is the seat of House Whent in the riverlands, on the north shore of the Gods Eye. Since the burning of Harrenhal by dragonfire in Aegon's Conquest, however, the castle has become a dark and ruinous place.\nHarrenhal's holdings are some of the richest in Westeros, claiming vast tracts of green fertile land which reach as far as the hills of House Wode near the crownlands. Harrentown is found near the castle.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "harridan-hill",
+    "name": "Harridan Hill",
+    "type": "castle",
+    "region": "",
+    "description": "Harridan Hill is the seat of House Harlaw of Harridan Hill on the island of Harlaw. Its master is Boremund Harlaw.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "harvest-hall",
+    "name": "Harvest Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Harvest Hall is the seat of House Selmy in the Dornish Marches, in the stormlands. According to a semi-canon source, it is located near the eastern border of the Reach, northeast of Nightsong, northwest of Blackhaven and south of the Cockleswhent.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hayford",
+    "name": "Hayford",
+    "type": "castle",
+    "region": "",
+    "description": "Hayford is the seat of House Hayford in the crownlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "haystack-hall",
+    "name": "Haystack Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Haystack Hall is the seat of House Errol in the stormlands. It is located east of the kingsroad, northeast of Bronzegate, and south of the kingswood.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hearts-home",
+    "name": "Heart's Home",
+    "type": "castle",
+    "region": "",
+    "description": "Heart's Home is a castle in the Vale of Arryn and is the seat of House Corbray, a vassal house holding fealty to House Arryn of the Eyrie. It is located on the northern shore where a glacial river flows into a narrow bay of the narrow sea. Upriver to the west is Strongsong, while directly north is a forest. Snakewood is located to the northeast along the bay, while the Eyrie is south across a mountain range.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hellgate-hall",
+    "name": "Hellgate Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Hellgate Hall was the seat of House Dryland, who ruled as Kings of the Brimstone in Dorne prior to Nymeria's War. It is unknown what happened to the castle after the defeat of King Lucifer Dryland, as he was the last of his line.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hellholt",
+    "name": "Hellholt",
+    "type": "castle",
+    "region": "",
+    "description": "Hellholt, also called the Hellholt, is the seat of House Uller in southern Dorne. The castle is located near the source of the river Brimstone, east of Sandstone and west of Vaith.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "high-hermitage",
+    "name": "High Hermitage",
+    "type": "castle",
+    "region": "",
+    "description": "High Hermitage is the seat of House Dayne of High Hermitage. It is located in the Red Mountains of Dorne, northeast of Starfall.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "high-tide",
+    "name": "High Tide",
+    "type": "castle",
+    "region": "",
+    "description": "High Tide is one of the castles of House Velaryon on the island of Driftmark in the crownlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "highgarden",
+    "name": "Highgarden",
+    "type": "castle",
+    "region": "",
+    "description": "Highgarden is a castle which serves as the seat of House Tyrell, the regional capital of the Reach, and the heart of chivalry in the Seven Kingdoms. It lies on the Mander where the ocean road meets the roseroad, making it an important crossroads.\nMace Tyrell is the Lord of Highgarden. The castle's household includes Lord Seneschal Garth Tyrell, Maester Lomys, the master-at-arms Ser Vortimer Crane, and the fool Butterbumps. Igon Vyrwel is the captain of the castle guards.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "highpoint",
+    "name": "Highpoint",
+    "type": "castle",
+    "region": "",
+    "description": "",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hightower",
+    "name": "Hightower",
+    "type": "castle",
+    "region": "",
+    "description": "The Hightower or High Tower is the seat of House Hightower, one of the most powerful families of the Reach. The castle and lighthouse is located in the port of Oldtown atop Battle Isle, where the Honeywine widens into Whispering Sound.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hoare-castle",
+    "name": "Hoare Castle",
+    "type": "castle",
+    "region": "",
+    "description": "Hoare Castle was a castle on Great Wyk and one of the seats of House Hoare when they ruled as Kings of the Iron Islands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hollard-castle",
+    "name": "Hollard castle",
+    "type": "castle",
+    "region": "",
+    "description": "The seat of Hollard castle was located northeast of Duskendale in the crownlands near Blackwater Bay. The name of House Hollard's castle, which now lies in ruin, is unknown.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "holyhall",
+    "name": "Holyhall",
+    "type": "castle",
+    "region": "",
+    "description": "Holyhall is the seat of House Graceford in the Reach. The location of Holyhall has not been revealed yet.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "honeyholt",
+    "name": "Honeyholt",
+    "type": "castle",
+    "region": "",
+    "description": "Honeyholt is the seat of House Beesbury in the Reach. It is situated along the eastern bank of the Honeywine river between Brightwater Keep and Oldtown.\nIn 44 AC, Ser Morgan Hightower was slain by a group of Warrior's Sons  led by Ser Joffrey Doggett on the road to Honeyholt.\nAfter the election of Septon Alfyn to the seat of High Septon, King Jaehaerys I Targaryen visited Bandallon, Three Towers, Uplands, and Honeyholt while awaiting the arrival of the injured Alfyn to Oldtown.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "horn-hill",
+    "name": "Horn Hill",
+    "type": "castle",
+    "region": "",
+    "description": "Horn Hill is the seat of House Tarly in the Reach. Located on an eponymous hill, the castle lies south of Highgarden and a hundred leagues northeast of Oldtown among the thickly-wooded foothills of the Red Mountains. The Tarlys are marcher lords of the Dornish Marches.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hornvale",
+    "name": "Hornvale",
+    "type": "castle",
+    "region": "",
+    "description": "Hornvale is the seat of House Brax in the eastern westerlands. It is situated in hilly and mountainous terrain near the headwaters of the Red Fork, south of the Golden Tooth and north of Deep Den and the Goldroad.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hornwood",
+    "name": "Hornwood",
+    "type": "castle",
+    "region": "",
+    "description": "Hornwood is a castle in the north and the seat of House Hornwood. The castle is located in the Hornwood forest near the northwestern edge of the Sheepshead Hills, which are within the dominion of House Manderly, and the Hornwood lands also neighbor those of House Bolton to the north. Medrick serves as maester at the castle to Lord Halys Hornwood.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "iron-holt",
+    "name": "Iron Holt",
+    "type": "castle",
+    "region": "",
+    "description": "Iron Holt is the seat of House Wynch in the Iron Islands. The castle is located on the northernmost shore of the island of Pyke.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ironoaks",
+    "name": "Ironoaks",
+    "type": "castle",
+    "region": "",
+    "description": "Ironoaks, also known as Ironoaks Castle, is the seat of House Waynwood in the Vale of Arryn. It is located east of the Eyrie and west of Old Anchor and is situated by a lake. A river runs east from the lake to the narrow sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ironrath",
+    "name": "Ironrath",
+    "type": "castle",
+    "region": "",
+    "description": "",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ivy-hall",
+    "name": "Ivy Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Ivy Hall is the seat of House Kidwell in the Reach.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "karhold",
+    "name": "Karhold",
+    "type": "castle",
+    "region": "",
+    "description": "Karhold is the seat of House Karstark in the north. It is located along a forested river in the eastern half of the north, south of the Bay of Seals. Further to the east are the Grey Cliffs.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "kayce",
+    "name": "Kayce",
+    "type": "castle",
+    "region": "",
+    "description": "Kayce is the seat of House Kenning of Kayce in the westerlands. The castle and walled town are located along the Sunset Sea on a peninsula south of Fair Isle and west of Casterly Rock. Feastfires is located nearby to the southwest.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "kingsgrave",
+    "name": "Kingsgrave",
+    "type": "castle",
+    "region": "",
+    "description": "Kingsgrave is the seat of House Manwoody in Dorne. The castle is located in the Red Mountains approximately halfway through the Prince's Pass, north of Skyreach and south of the tower of joy.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "kingshouse",
+    "name": "Kingshouse",
+    "type": "castle",
+    "region": "",
+    "description": "Kingshouse is the seat of House Magnar on the island Skagos in the north.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "last-hearth",
+    "name": "Last Hearth",
+    "type": "castle",
+    "region": "",
+    "description": "Last Hearth, sometimes called the Last Hearth, is the seat of House Umber in the north. It lies close to the Gift in a forest east of the kingsroad. The castle is north of the Last River, northeast of Long Lake, and west of the Bay of Seals. With the exception of the castles of the Night's Watch, Last Hearth is the northernmost major castle of the Seven Kingdoms.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "lemonwood",
+    "name": "Lemonwood",
+    "type": "castle",
+    "region": "",
+    "description": "Lemonwood is the seat of House Dalt in Dorne. It lies just south of the mouth of the Greenblood, near Planky Town.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "lonely-light",
+    "name": "Lonely Light",
+    "type": "castle",
+    "region": "",
+    "description": "The Lonely Light is the westernmost island of the Iron Islands. A beacon blazes at all times on the roof of the island's namesake keep, which is the seat of House Farwynd of the Lonely Light.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "longbow-hall",
+    "name": "Longbow Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Longbow Hall is the seat of House Hunter in the Vale of Arryn. It is located south of the Fingers, east of Heart's Home, and north of Old Anchor. It appears to be located in the foothills between a mountain range and the east of the valley. Willamen is the maester at Longbow Hall.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "longtable",
+    "name": "Longtable",
+    "type": "castle",
+    "region": "",
+    "description": "Longtable is the seat of House Merryweather in the Reach. It sits along the Mander near its confluence with the Blueburn. It is located some thirty leagues to the southwest of Bitterbridge.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "lord-hewetts-castle",
+    "name": "Lord Hewett's castle",
+    "type": "castle",
+    "region": "",
+    "description": "Lord Hewett's castle is the seat of House Hewett at Lord Hewett's Town on Oakenshield.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "lordsport",
+    "name": "Lordsport",
+    "type": "castle",
+    "region": "",
+    "description": "Lordsport is the seat of House Botley on Pyke. Located on the central northern shore of the isle, it is the largest town in the Iron Islands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "lord-lychesters-keep",
+    "name": "Lord Lychester's keep",
+    "type": "castle",
+    "region": "",
+    "description": "Lord Lychester's keep is the seat of House Lychester in the riverlands. It is three days travel from the hidden village of the Lady of the Leaves, and four days travel from Sallydance.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "maegors-holdfast",
+    "name": "Maegor's Holdfast",
+    "type": "castle",
+    "region": "",
+    "description": "Maegor's Holdfast is a massive square fortress inside the heart of the Red Keep in King's Landing. Named after King Maegor I Targaryen, it is a castle-within-a-castle and is the strongest place in the Red Keep.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "maidenpool",
+    "name": "Maidenpool",
+    "type": "castle",
+    "region": "",
+    "description": "Maidenpool is a town in the eastern riverlands situated along the southern shore of the Bay of Crabs. It is the seat of House Mooton. The castle at Maidenpool sits on a hill, and the town is walled. East of Maidenpool are hills and soldier pines.\nThere are two roads leading to King's Landing from Maidenpool, one a faster road which goes through Duskendale and the other which travels along the coast.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "mistwood",
+    "name": "Mistwood",
+    "type": "castle",
+    "region": "",
+    "description": "Mistwood or Mistfall is the seat of House Mertyns in the stormlands. It is located in the southern rainwood in Cape Wrath.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "moat-cailin",
+    "name": "Moat Cailin",
+    "type": "castle",
+    "region": "",
+    "description": "Moat Cailin, sometimes called the Moat, is an ancient stronghold of the First Men on the northern edge of the great swamp known as the Neck, in the south of the north. It is less than twenty miles from the headwaters of the Fever River. Moat Cailin is one of the north's most important strongholds, though much of the castle now stands in ruins. It commands the causeway, the safe route for armies to travel through the swamps of the Neck.\nMoat Cailin is an effective natural choke point which has pr",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "mormont-keep",
+    "name": "Mormont Keep",
+    "type": "castle",
+    "region": "",
+    "description": "Mormont Keep is the seat of House Mormont on Bear Island in the north. It is a wood-walled castle with a smoky keep. The Mormonts' hall is built of huge logs and is surrounded by an earthen palisade. On the gate there is a carving of a woman in a bearskin with a babe suckling at her breast in one arm and a battleaxe in the other.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "morne",
+    "name": "Morne",
+    "type": "castle",
+    "region": "",
+    "description": "Morne was the seat of petty kings who ruled from the eastern shore of Tarth in what is now the stormlands. Having examined the castle's ruins, Maester Hubert writes in Kin of the Stag that Morne was of Andal origin, not First Men. Ser Galladon of Morne is a legendary knight of the island.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "new-barrel",
+    "name": "New Barrel",
+    "type": "castle",
+    "region": "",
+    "description": "New Barrel is the seat of House Fossoway of New Barrel. The castle is located in the Reach. Its name suggests it may be involved in the production of cider, like Cider Hall is for the elder branch of the family.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "new-castle",
+    "name": "New Castle",
+    "type": "castle",
+    "region": "",
+    "description": "The New Castle, also called the New Keep, is the seat of House Manderly within the city of White Harbor in the north.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "newkeep",
+    "name": "Newkeep",
+    "type": "castle",
+    "region": "",
+    "description": "Newkeep is the seat of House Hersy in the Vale of Arryn. Its exact location has not been published in A Song of Ice and Fire.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "nightsong",
+    "name": "Nightsong",
+    "type": "castle",
+    "region": "",
+    "description": "Nightsong is the seat of House Caron in the southwestern stormlands. The formidable castle is located in the Dornish Marches, north of the Prince's Pass and the Red Mountains.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ninestars",
+    "name": "Ninestars",
+    "type": "castle",
+    "region": "",
+    "description": "Ninestars is the seat of House Templeton in the Vale of Arryn.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "old-anchor",
+    "name": "Old Anchor",
+    "type": "castle",
+    "region": "",
+    "description": "Old Anchor is the seat of House Melcolm in the Vale of Arryn. It is located east of Ironoaks where a river flows into the narrow sea. Longbow Hall is to the north and Runestone is to the south across a bay of the narrow sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "old-oak",
+    "name": "Old Oak",
+    "type": "castle",
+    "region": "",
+    "description": "Old Oak is the seat of House Oakheart. It is located in the west of the Reach near the Sunset Sea, along the Ocean Road which links Highgarden and Lannisport. Old Oak's maester is Omer.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "oldcastle",
+    "name": "Oldcastle",
+    "type": "castle",
+    "region": "",
+    "description": "Oldcastle is the seat of House Locke in the north. It lies on the northern shore of the Bite, southeast of White Harbor and north of the Three Sisters.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "oldstones",
+    "name": "Oldstones",
+    "type": "castle",
+    "region": "",
+    "description": "Oldstones is the name given by smallfolk to a ruined castle in the northern riverlands. Once the seat of House Mudd, its original name has long been lost.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "parchments",
+    "name": "Parchments",
+    "type": "castle",
+    "region": "",
+    "description": "Parchments is the seat of House Penrose in the stormlands. Its location has not been revealed yet.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "pebbleton",
+    "name": "Pebbleton",
+    "type": "castle",
+    "region": "",
+    "description": "Pebbleton is a village on the eastern coast of Great Wyk in the Iron Islands. It contains a square towerhouse with a turret at each corner, the seat of House Merlyn. The hovels that surround the tower are home to several thousand people, most of them employed in the fisheries.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "pinkmaiden-castle",
+    "name": "Pinkmaiden Castle",
+    "type": "castle",
+    "region": "",
+    "description": "Pinkmaiden Castle, also known simply as Pinkmaiden, is the seat of House Piper in the southwestern riverlands. The castle is located on the Red Fork south of Riverrun, southeast of Acorn Hall, northwest of Stoney Sept, and northeast of Hornvale.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "poddingfield",
+    "name": "Poddingfield",
+    "type": "castle",
+    "region": "",
+    "description": "Poddingfield is the seat of House Peasebury in the Stormlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "pyke",
+    "name": "Pyke",
+    "type": "castle",
+    "region": "",
+    "description": "Pyke is a castle located on the island of the same name, which is one of the seven major Iron Islands. It is the seat of House Greyjoy, whose lord is known as the Lord Reaper of Pyke. The Greyjoys have been Lords of the Iron Islands since Aegon's Conquest. The Greyjoys claim the island is named after the castle.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "rain-house",
+    "name": "Rain House",
+    "type": "castle",
+    "region": "",
+    "description": "Rain House, also called the Rain House, is the seat of House Wylde in the stormlands. It sits in the eastern rainwood along the southern shore of Shipbreaker Bay near the northeastern tip of Cape Wrath.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ramsgate",
+    "name": "Ramsgate",
+    "type": "castle",
+    "region": "",
+    "description": "Ramsgate is a castle in the north located at the mouth of the Broken Branch, possibly along the northeastern Bite. The castle is west of Widow's Watch and east of White Harbor. According to a semi-canon source, Ramsgate owes allegiance to House Manderly.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ravenry",
+    "name": "Ravenry",
+    "type": "castle",
+    "region": "",
+    "description": "The Ravenry is a castle of the Citadel in Oldtown.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "raventree-hall",
+    "name": "Raventree Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Raventree Hall, often called simply Raventree, is the seat of House Blackwood in Blackwood Vale in the riverlands. The castle is located north of Riverrun, southwest of Oldstones, and west of Fairmarket. Ironman's Bay is to the northwest.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "red-keep",
+    "name": "Red Keep",
+    "type": "castle",
+    "region": "",
+    "description": "The Red Keep is a castle on Aegon's Hill in King's Landing, the capital of the Seven Kingdoms. The Red Keep contains the Iron Throne and is the home of King Robert I Baratheon, Lord of the Seven Kingdoms.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "red-lake",
+    "name": "Red Lake",
+    "type": "castle",
+    "region": "Colloquial",
+    "description": "Red Lake is the seat of House Crane in the Reach. The castle is located on the northeastern shore of a lake of the same name in the northwest of the Reach, near the region's border with the westerlands. Red Lake is northwest of Goldengrove, northeast of Old Oak, and southeast of Cornfield.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "redfort",
+    "name": "Redfort",
+    "type": "castle",
+    "region": "",
+    "description": "Redfort, also called the Redfort, is the ancient seat of House Redfort in the Vale of Arryn. It is located in the south of the valley. It is southeast of the Eyrie, south of Ironoaks, and north of Wickenden.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ring",
+    "name": "Ring",
+    "type": "castle",
+    "region": "",
+    "description": "The Ring  is the seat of House Roxton in the Reach.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "risley-glade",
+    "name": "Risley Glade",
+    "type": "castle",
+    "region": "",
+    "description": "Risley Glade is the seat of House Risley. It is located in the Reach.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "riverrun",
+    "name": "Riverrun",
+    "type": "castle",
+    "region": "",
+    "description": "Riverrun is the ancestral castle of House Tully, the Lords Paramount of the Trident. It is situated in the western riverlands, at the confluence of the Tumblestone and Red Fork rivers. Riverrun is north of Pinkmaiden and northwest of Acorn Hall. The castle sits along the river road, an easy ride which links Lannisport and the crossroads.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "riverspring",
+    "name": "Riverspring",
+    "type": "castle",
+    "region": "",
+    "description": "Riverspring is the seat of House Sarwyck in the westerlands in the video game Game of Thrones. The town is situated near the source of the Blackwater Rush and its castle contains a godswood.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "rooks-rest",
+    "name": "Rook's Rest",
+    "type": "castle",
+    "region": "",
+    "description": "Rook's Rest is the seat of House Staunton in the crownlands. It is located on the northern shore of Blackwater Bay, west of Crackclaw Point. The castle is northwest of Driftmark, northeast of Duskendale, and southeast of Maidenpool.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "rosby",
+    "name": "Rosby",
+    "type": "castle",
+    "region": "",
+    "description": "Rosby is the seat of House Rosby, northwest of Blackwater Bay in the crownlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "runestone",
+    "name": "Runestone",
+    "type": "castle",
+    "region": "",
+    "description": "Runestone is the seat of House Royce in the Vale of Arryn. The castle lies on a peninsula north of the Bay of Crabs, east of Redfort and south of Old Anchor. While Runestone is on the northern shore of the peninsula, the nearby city of Gulltown is on the southern shore.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "salt-shore",
+    "name": "Salt Shore",
+    "type": "castle",
+    "region": "",
+    "description": "Salt Shore is the seat of House Gargalen in Dorne. It lies on the southern coast along the Summer Sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "sandstone",
+    "name": "Sandstone",
+    "type": "castle",
+    "region": "",
+    "description": "Sandstone is the seat of House Qorgyle. It lies west of the Hellholt and the Brimstone in the western desert of Dorne.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "sarsfield",
+    "name": "Sarsfield",
+    "type": "castle",
+    "region": "",
+    "description": "Sarsfield is the seat of House Sarsfield in the westerlands. It is situated along the River Road, northeast of Casterly Rock and southwest of the Golden Tooth.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "seagard",
+    "name": "Seagard",
+    "type": "castle",
+    "region": "",
+    "description": "Seagard is a town in the northern riverlands, and its castle is the seat of House Mallister. Located on the western coast along Ironman's Bay, Seagard is sheltered by the Cape of Eagles and is nestled near the headwaters of the Blue Fork. It is southwest of the Twins and northwest of Oldstones.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "sealskin-point",
+    "name": "Sealskin Point",
+    "type": "castle",
+    "region": "",
+    "description": "Sealskin Point is the seat of House Farwynd of Sealskin Point on Great Wyk.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "sharp-point",
+    "name": "Sharp Point",
+    "type": "castle",
+    "region": "",
+    "description": "Sharp Point is the seat of House Bar Emmon in the crownlands. The castle is located along the Gullet at the northern end of Massey's Hook, north of Stonedance.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "shatterstone",
+    "name": "Shatterstone",
+    "type": "castle",
+    "region": "",
+    "description": "Shatterstone is the seat of House Goodbrother of Shatterstone on Old Wyk in  the Iron Islands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "silverhill",
+    "name": "Silverhill",
+    "type": "castle",
+    "region": "",
+    "description": "Silverhill is the seat of House Serrett in the Westerlands. It is located in hilly and mountainous terrain south of Deep Den and northeast of Cornfield. A nearby river flows south past Goldengrove to the Mander.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "skyreach",
+    "name": "Skyreach",
+    "type": "castle",
+    "region": "",
+    "description": "Skyreach is the seat of House Fowler in Dorne. It is located at the southern end of the Prince's Pass, south of Kingsgrave and near a river that flows east to Yronwood.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "snakewood",
+    "name": "Snakewood",
+    "type": "castle",
+    "region": "",
+    "description": "Snakewood is the seat of House Lynderly in the Vale of Arryn. It sits on the southernmost of the Fingers, along the mountainous northern shore of a bay of the narrow sea. Nearby castles are Coldwater to the north and Heart's Home to the southwest.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "solar",
+    "name": "Solar",
+    "type": "castle",
+    "region": "",
+    "description": "A solar refers to a loft, upper room, or upper part of a medieval house, often used as the lord's private chamber.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "spottswood",
+    "name": "Spottswood",
+    "type": "castle",
+    "region": "",
+    "description": "Spottswood is the seat of House Santagar in Dorne. It appears to be in eastern Dorne, near the Planky Town, Lemonwood, Stinkwater, and the shadow city of Sunspear.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "standfast",
+    "name": "Standfast",
+    "type": "castle",
+    "region": "",
+    "description": "Standfast is the stronghold of House Osgrey in the Reach. It is called a castle by courtesy, but more closely resembles a towerhouse. Three villages fall within its dominion. Its exact location has not yet been published, but it is located a few leagues east of Coldmoat in the north-west of the Reach; the Osgreys were once Marshalls of the Northmarch. Standfast is sworn to House Rowan of Goldengrove.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "starfall",
+    "name": "Starfall",
+    "type": "castle",
+    "region": "",
+    "description": "Starfall is the ancestral castle of House Dayne in Dorne.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "starpike",
+    "name": "Starpike",
+    "type": "castle",
+    "region": "",
+    "description": "Starpike is the seat of House Peake in the Reach. The castle may be located in the Dornish Marches.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "stinkwater",
+    "name": "Stinkwater",
+    "type": "castle",
+    "region": "",
+    "description": "Stinkwater is a noble seat in Dorne. It appears to be in eastern Dorne, near the Planky Town, Lemonwood, Spottswood, and the shadow city of Sunspear.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "stokeworth",
+    "name": "Stokeworth",
+    "type": "castle",
+    "region": "",
+    "description": "Stokeworth, also known as Castle Stokeworth,  is the seat of House Stokeworth in the crownlands. It lies north of King's Landing, and south of Duskendale. The maester at Stokeworth is Frenken.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "stone-hedge",
+    "name": "Stone Hedge",
+    "type": "castle",
+    "region": "",
+    "description": "Stone Hedge, sometimes called the Stone Hedge, is the seat of House Bracken in the riverlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "stonedance",
+    "name": "Stonedance",
+    "type": "castle",
+    "region": "",
+    "description": "Stonedance is the seat of House Massey in the crownlands. It is located on the eastern shore of Massey's Hook along the narrow sea, south of Sharp Point.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "stonehelm",
+    "name": "Stonehelm",
+    "type": "castle",
+    "region": "",
+    "description": "Stonehelm is a castle in the stormlands and is the ancient seat of House Swann. The castle is situated in the Red Watch region of the eastern Dornish Marches, on Cape Wrath along the coast of the Sea of Dorne.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "storms-end",
+    "name": "Storm's End",
+    "type": "castle",
+    "region": "",
+    "description": "Storm's End is the seat of House Baratheon, the Lords Paramount of the Stormlands. The castle is located at Durran's Point on the northern coast of Shipbreaker Bay, south of Bronzegate and northeast of Griffin's Roost. The kingsroad runs north from Storm's End through the stormlands to King's Landing, the capital of the Seven Kingdoms.\nOne of the strongest castles in the realm, Storm's End was once the ancestral seat of the Storm Kings of House Durrandon extending back many thousands of years. T",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "strongsong",
+    "name": "Strongsong",
+    "type": "castle",
+    "region": "",
+    "description": "Strongsong is the seat of House Belmore in the Vale of Arryn. It is situated near a series of lakes within the Mountains of the Moon; a nearby river flows east through a valley to Heart's Home. The Eyrie is to the southeast.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "summerhall",
+    "name": "Summerhall",
+    "type": "castle",
+    "region": "",
+    "description": "Summerhall is a ruined castle in the stormlands. Formerly a lightly fortified castle used by House Targaryen as a summer castle and royal residence, it was destroyed in a great fire in 259 AC. While the heir apparent to the Iron Throne was known as the Prince of Dragonstone, a younger son could be titled the Prince of Summerhall.\nLocated in or near the foothills of the Red Mountains, the ruins of Summerhall are close to the stormlands' border with the Reach, east of the Cockleswhent and southeas",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "sunhouse",
+    "name": "Sunhouse",
+    "type": "castle",
+    "region": "",
+    "description": "Sunhouse, also called Sunflower Hall is the seat of House Cuy in the Reach. The castle is located on the southern coast of the Reach, east of the Redwyne Straits and southeast of Oldtown. The town of Cuy is located outside of Sunhouse's walls.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "sunspear",
+    "name": "Sunspear",
+    "type": "castle",
+    "region": "",
+    "description": "Sunspear, also known as the Old Palace, is the seat of House Nymeros Martell and the capital of Dorne. The castle is located on the Broken Arm, north of the Greenblood on the far southeastern coast of Westeros and is surrounded on three sides by the sea, and by the shadow city on the fourth side. The palace of the Water Gardens lies three leagues away on the coastal road.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "sweetport-sound",
+    "name": "Sweetport Sound",
+    "type": "castle",
+    "region": "",
+    "description": "Sweetport Sound is the seat of House Sunglass in the crownlands. Sweetport Sound is sworn to Dragonstone, although its location along Blackwater Bay or the narrow sea has not been revealed. Ser Triston of Tally Hill is sworn to Lord Guncer Sunglass, so Tally Hill may be located near Sweetport Sound.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "tarbeck-hall",
+    "name": "Tarbeck Hall",
+    "type": "castle",
+    "region": "",
+    "description": "Tarbeck Hall is a ruined castle in the westerlands, located near Castamere and the Crag. It was the seat of House Tarbeck.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ten-towers",
+    "name": "Ten Towers",
+    "type": "castle",
+    "region": "",
+    "description": "Ten Towers or the Ten Towers is the seat of House Harlaw on the eastern coast of the isle of Harlaw in the Iron Islands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "three-towers",
+    "name": "Three Towers",
+    "type": "castle",
+    "region": "",
+    "description": "Three Towers is the seat of House Costayne in the Reach. It sits on a cliff on the southern shore of Whispering Sound, almost where the sound meets the Redwyne Straits.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "tor",
+    "name": "Tor",
+    "type": "castle",
+    "region": "",
+    "description": "The Tor is the seat of House Jordayne in Dorne. It is located on the southern shore of the Sea of Dorne, north of the Scourge.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "torrhens-square",
+    "name": "Torrhen's Square",
+    "type": "castle",
+    "region": "",
+    "description": "Torrhen's Square is a castle in the north and the seat of House Tallhart. It is south of the wolfswood, southwest of Winterfell, and north of Barrowton, on the northern shore of a large lake. A river from the lake leads south to the Saltspear.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "tower-of-glimmering",
+    "name": "Tower of Glimmering",
+    "type": "castle",
+    "region": "",
+    "description": "The Tower of Glimmering is a tower on the island of Harlaw in the Iron Islands. It sits on a crag on the western coast of the island. The seat of House Harlaw of the Tower of Glimmering, its master is Hotho Harlaw.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "tumbleton",
+    "name": "Tumbleton",
+    "type": "castle",
+    "region": "",
+    "description": "Tumbleton is a market town in the Reach and is the seat of House Footly. It is located sixty leagues southwest of King's Landing, near the Reach's northeastern border with the crownlands. Tumbleton is found at the headwaters of the Mander.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "twins",
+    "name": "Twins",
+    "type": "castle",
+    "region": "",
+    "description": "The Twins, sometimes known as the Crossing, is the seat of House Frey in the northern riverlands, located south of the bogs of the Neck and west of the kingsroad. A fortified crossing of the Green Fork of the Trident, the Twins consists of identical castles on each side of the river and a tower in the middle of the bridge which connects them. It is one of the most formidable strongholds of the Seven Kingdoms.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "uplands",
+    "name": "Uplands",
+    "type": "castle",
+    "region": "",
+    "description": "Uplands is the seat of House Mullendore in the Reach. It is located east of Oldtown and west of the Red Mountains, along a river which flows west to the Honeywine.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "vaith",
+    "name": "Vaith",
+    "type": "castle",
+    "region": "",
+    "description": "Vaith is the seat of House Vaith in Dorne.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "volmark",
+    "name": "Volmark",
+    "type": "castle",
+    "region": "",
+    "description": "Volmark is the seat of House Volmark on Harlaw in the Iron Islands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "vultures-roost",
+    "name": "Vulture's Roost",
+    "type": "castle",
+    "region": "",
+    "description": "Vulture's Roost is a ruined castle in northern Dorne. It lies near the source of the Wyl river deep in the Red  Mountains.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "wayfarers-rest",
+    "name": "Wayfarer's Rest",
+    "type": "castle",
+    "region": "",
+    "description": "Wayfarer's Rest is the seat of House Vance of Wayfarer's Rest in the riverlands, probably located in the western part of the region near the Red Fork and the border with the westerlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "weeping-town",
+    "name": "Weeping Town",
+    "type": "castle",
+    "region": "",
+    "description": "The Weeping Town is a market town in the stormlands. Lying on the southern shore of Cape Wrath, along the Sea of Dorne, it has a thriving port which handles much of the stormlands' trade. It contains a seat, possibly known as the Weeping Tower. It is ruled by House Whitehead.\nThe town has stout wooden walls, peaked roofs, and crooked alleys. It is large enough to support three inns: the Broken Shield, the Loon, and the Drunken Dornishman.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "whispers",
+    "name": "Whispers",
+    "type": "castle",
+    "region": "",
+    "description": "The Whispers is a ruined castle of House Crabb on Crackclaw Point in the northeastern crownlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "whitegrove",
+    "name": "Whitegrove",
+    "type": "castle",
+    "region": "",
+    "description": "Whitegrove is a castle in the Reach. Its current ruling house has not been published.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "whitewalls",
+    "name": "Whitewalls",
+    "type": "castle",
+    "region": "",
+    "description": "Whitewalls, nicknamed the Milkhouse, was the second castle of House Butterwell. Its location on maps has not yet been published, but it was located in the riverlands. The castle was built near the Gods Eye, with the Butterwell lands on the eastern shore of the lake. Whitewalls was closer to Maidenpool than to King's Landing.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "wickenden",
+    "name": "Wickenden",
+    "type": "castle",
+    "region": "",
+    "description": "Wickenden is the seat of House Waxley in the Vale of Arryn. The town is on the northern shore of the Bay of Crabs, northwest of Crackclaw Point. It is famous for making scented beeswax candles.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "widows-watch",
+    "name": "Widow's Watch",
+    "type": "castle",
+    "region": "",
+    "description": "Widow's Watch is the seat of House Flint of Widow's Watch in the north. It is located at the end of a peninsula between the Shivering Sea and the Bite, east of Ramsgate and the Broken Branch.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "willow-wood",
+    "name": "Willow Wood",
+    "type": "castle",
+    "region": "",
+    "description": "Willow Wood is the seat of House Ryger in the riverlands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "winterfell",
+    "name": "Winterfell",
+    "type": "castle",
+    "region": "",
+    "description": "Winterfell is the ancestral castle and seat of power of House Stark and is considered to be the capital of the north. It is in the center of the northernmost province of the Seven Kingdoms, on the kingsroad that runs from Storm's End to the Wall. The castle is situated at the eastern edge of the wolfswood, north of the western branch of the White Knife and Castle Cerwyn. Winterfell is south of the northern mountains and southwest of Long Lake, one hundred leagues (three hundred miles) southeast ",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "wolfs-den",
+    "name": "Wolf's Den",
+    "type": "castle",
+    "region": "",
+    "description": "The Wolf's Den, also called the Den, is an ancient castle along the White Knife in White Harbor that now serves as a prison. It is held by its chief gaoler, Ser Bartimus.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "wyl-castle",
+    "name": "Wyl (castle)",
+    "type": "castle",
+    "region": "",
+    "description": "Wyl is the seat of House Wyl in Dorne. It is located east of the Boneway at the mouth of the River Wyl at the Sea of Dorne.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "wyndhall",
+    "name": "Wyndhall",
+    "type": "castle",
+    "region": "",
+    "description": "Wyndhall is the seat of House Estren. It is situated in the Westerlands, but its exact location has not been published.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "yronwood",
+    "name": "Yronwood",
+    "type": "castle",
+    "region": "",
+    "description": "Yronwood is the seat of House Yronwood in northern Dorne.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "asabhad",
+    "name": "Asabhad",
+    "type": "city",
+    "region": "",
+    "description": "Asabhad is a city at the western boundary of Yi Ti in Essos along the shores of the Jade Sea, east of the Bone Mountains. It is located at a forested river mouth. Situated on a trade route connecting Qarth and Yin, Asabhad is where many caravans begin their journey to the Mountains of the Morn.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "asshai",
+    "name": "Asshai",
+    "type": "city",
+    "region": "",
+    "description": "Asshai is a mysterious port city in the far southeast of the known part of Essos, where the Ash river meets the Jade Sea at its eastern exit, the Saffron Straits. Asshai is on the southernmost edge of a mountainous peninsula known as the Shadow Lands, thus the city is often called Asshai by the Shadow or Asshai-by-the-Shadow. To go to Asshai can be described as to \"pass beneath the shadow\", and the area of the Shadow Lands and Asshai are sometimes referred to simply as the Shadow.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "astapor",
+    "name": "Astapor",
+    "type": "city",
+    "region": "",
+    "description": "Astapor, dubbed the Red City, is the southernmost of the Slaver Cities on Slaver's Bay. The city is renowned for their training of the Unsullied, eunuch slave soldiers. Astapor is a rival of Yunkai and Meereen, but the cities are not enemies.\nThe Astapori emblem is a variation on the harpy of Old Ghis: a woman's torso, a bat's wings instead of arms, an eagle's legs, and a scorpion's tail. In its talons hangs a chain with open manacles at either end.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "bayasabhad",
+    "name": "Bayasabhad",
+    "type": "city",
+    "region": "",
+    "description": "Bayasabhad, also known as the City of Serpents, is a fortified city in Essos, located on the Sand Road in the eastern Bone Mountains, near the Great Sand Sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "cities-of-the-bloodless-men",
+    "name": "Cities of the Bloodless Men",
+    "type": "city",
+    "region": "",
+    "description": "Cities of the Bloodless Men are said to exist in the Further East of Essos. Their inhabitants are said to be a race of bloodless men.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "carcosa",
+    "name": "Carcosa",
+    "type": "city",
+    "region": "",
+    "description": "Carcosa is a legendary city in far eastern Essos. It is located on the southeastern shore of the Hidden Sea within the Mountains of the Morn; the City of the Winged Men is situated on the northwestern shore. The sorceror lord claiming to be the 69th yellow emperor of Yi Ti lives in exile at Carcosa.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ebonhead",
+    "name": "Ebonhead",
+    "type": "city",
+    "region": "",
+    "description": "Ebonhead is a city at the mouth of Sweet Lotus Vale on Jhala in the Summer Isles. To the east of Ebonhead is the island of Xon and Parrot Bay.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "elyria",
+    "name": "Elyria",
+    "type": "city",
+    "region": "",
+    "description": "Elyria is an island city of central Essos. It is located on a small island east of the Valyrian peninsula in Slaver's Bay. To the east lies Tolos and to the west the Lands of the Long Summer. Elyria is less infamous than Mantarys.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "faros",
+    "name": "Faros",
+    "type": "city",
+    "region": "",
+    "description": "Faros is a city at the mouth of a river on the northern stretch of Great Moraq's western coast. The inhabitants of the city worship the Stone Cow.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "gulltown",
+    "name": "Gulltown",
+    "type": "city",
+    "region": "",
+    "description": "Gulltown is the major port city of the Vale of Arryn. It is located in a fine natural harbor at the northern tip of the Bay of Crabs, southeast of the Eyrie and south of nearby Runestone. It is the largest settlement in the Vale, but is much smaller than King's Landing, Lannisport, and Oldtown.\nGulltown is ruled by House Grafton and also contains a cadet branch of the Vale's rulers, House Arryn of Gulltown. According to semi-canon sources, there are branches of House Shett in or near the city. T",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "hesh",
+    "name": "Hesh",
+    "type": "city",
+    "region": "",
+    "description": "Hesh  is a city located in the Lhazar region of Essos. It is northwest of Lhazosh and west of Kosrak. A trade route from Hesh extends through the Khyzai Pass to Meereen.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ib-nor",
+    "name": "Ib Nor",
+    "type": "city",
+    "region": "",
+    "description": "Ib Nor is an Ibbenese city on the north coast of Ib.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "ib-sar",
+    "name": "Ib Sar",
+    "type": "city",
+    "region": "",
+    "description": "Ib Sar is the only Ibbenese town on Far Ib. It was originally a place of exile and punishment where the Ibbenese of old sent their most notorious criminals, often after mutilating them so they might never return to Ib itself. Even though this practice ended with the fall of the God-Kings, Ib Sar retains an unsavory reputation.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "jinqi",
+    "name": "Jinqi",
+    "type": "city",
+    "region": "",
+    "description": "Jinqi is a city in Yi Ti in southern Essos. It is located near a delta along the Jade Sea, north of Leng. The nearby river flows from the Bleeding Sea to the north.\nThe dynasty of the maroon emperors kept their martial court at this city, to better guard the eastern frontiers of the empire against reavers from the Shadow Lands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "kdath",
+    "name": "K'Dath",
+    "type": "city",
+    "region": "",
+    "description": "K'Dath is a semi-legendary city supposedly located in a plain located in the Further East of Essos.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "kayakayanaya",
+    "name": "Kayakayanaya",
+    "type": "city",
+    "region": "",
+    "description": "Kayakayanaya is a city in Essos, located on the Steel Road on the eastern side of the Krazaaj Zasqa, part of the Bone Mountains.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "kings-landing",
+    "name": "King's Landing",
+    "type": "city",
+    "region": "",
+    "description": "King's Landing is the capital of the Seven Kingdoms, located in the crownlands on the east coast of Westeros. It is situated along the kingsroad at the mouth of the Blackwater Rush and overlooks Blackwater Bay. King's Landing is the site of the Iron Throne and the Red Keep, which is the seat of the king, Robert I from House Baratheon of King's Landing.\nThe main city is surrounded by a wall, manned by the City Watch of King's Landing, also known as the gold cloaks. King's Landing is the most popu",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "kosrak",
+    "name": "Kosrak",
+    "type": "city",
+    "region": "",
+    "description": "Kosrak is a city located in the Lhazar region of Essos. It lies on a tributary of the Skahazadhan river, to the east of Hesh and to the northeast of Lhazosh. A trade route from Kosrak extends southeast through the red waste to the ruined city of Vaes Tolorro, while another route heads northeast to Adakhakileki.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "lannisport",
+    "name": "Lannisport",
+    "type": "city",
+    "region": "",
+    "description": "Lannisport is a walled city in the westerlands located less than a mile south of Casterly Rock, the seat of House Lannister.  Lannisport is located along the coast of the Sunset Sea where the river road, the gold road, and the ocean road meet. It is one of the major ports of the Seven Kingdoms and is the largest settlement in the westerlands. Lannisport is smaller than King's Landing or Oldtown, but larger than Gulltown or White Harbor.\nAccording to a semi-canon source Lannisport may be ruled by",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "leng-ma",
+    "name": "Leng Ma",
+    "type": "city",
+    "region": "",
+    "description": "Leng Ma is a city on the island Leng in the eastern Jade Sea. It is located on the western shore of the forested island, near the mouth of a river.\nLeng Ma and Leng Yi are reminiscent of YiTish cities like Yin and Jinqi.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "leng-yi",
+    "name": "Leng Yi",
+    "type": "city",
+    "region": "",
+    "description": "Leng Yi is a city on the island Leng in the eastern Jade Sea. It is located on the northern shore of the forested island, southwest of Jinqi in Yi Ti.\nLeng Ma and Leng Yi are reminiscent of YiTish cities like Yin and Jinqi.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "lhazosh",
+    "name": "Lhazosh",
+    "type": "city",
+    "region": "",
+    "description": "Lhazosh is a city in the Lhazar region of Essos. It is located southeast of Hesh and southwest of Kosrak. A trade route from Lhazosh extends southeast through the red waste to the ruined cities of Vaes Orvik and Vaes Shirosi.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "lotus-point",
+    "name": "Lotus Point",
+    "type": "city",
+    "region": "",
+    "description": "Lotus Point is a city in the Summer Islands. It is located in southwestern Walano, north of the island Koj.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "lyber",
+    "name": "Lyber",
+    "type": "city",
+    "region": "",
+    "description": "Lyber is a lost ancient city that, according to tales, was located in the grasslands of Central Essos, now the Dothraki sea, and the site of a bloody and endless war between the acolytes of a spider goddess and those of a serpent god.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "mantarys",
+    "name": "Mantarys",
+    "type": "city",
+    "region": "",
+    "description": "Mantarys is a city to the north of the Lands of the Long Summer on the north tip of the Sea of Sighs, where a river flows south from the Painted Mountains. It is connected by Valyrian roads to the ruined cities of Bhorash and Oros. The demon road passes through Mantarys. It has a sinister repute and is allegedly a city of monsters.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "meereen",
+    "name": "Meereen",
+    "type": "city",
+    "region": "",
+    "description": "Meereen is the northernmost and the largest of the three great Slaver Cities of Slaver's Bay. It is ruled by the Great Masters, the heads of Meereen's slaving families. Meereen is a rival of Astapor and Yunkai, but the cities are not enemies.\nLike the other Slaver Cities, Meereen's emblem is the harpy.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "morosh",
+    "name": "Morosh",
+    "type": "city",
+    "region": "",
+    "description": "Morosh is a city in northern Essos along the shore of the Shivering Sea. A fishing and mining colony of Lorath, Morosh is situated at the northern end of the Sarne river delta. It is northeast of its trading partner Saath and northwest of the ruined Vaes Graddakh. Braavos allows fisherfolk from Morosh to fish the Shivering Sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "myr",
+    "name": "Myr",
+    "type": "city",
+    "region": "",
+    "description": "Myr is one of the Free Cities of western Essos. It is on the east shore of the Sea of Myrth.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "nefer",
+    "name": "Nefer",
+    "type": "city",
+    "region": "",
+    "description": "Nefer, referred to by travelers as the Secret City, is the capital of N'ghai, and the kingdom's last remaining city. Nefer enjoys a sinister reputation as a haunt of necromancers and torturers.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "new-ghis",
+    "name": "New Ghis",
+    "type": "city",
+    "region": "",
+    "description": "New Ghis is an island city in the Gulf of Grief, which borders on the Summer Sea. Its island lies south of Ghaen. Ghiscar and the ruins of Old Ghis are located to the north, past the Ghiscari Strait. A city dependent on slavery, New Ghis is a much smaller port than Volantis.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "oldtown",
+    "name": "Oldtown",
+    "type": "city",
+    "region": "",
+    "description": "Oldtown is a city located on Whispering Sound on the southwestern coast of the Reach. It was constructed around the Hightower, the seat of House Hightower on Battle Isle. The Citadel, home to maesters and their Conclave, is located in Oldtown, and the city also contains the Starry Sept, formerly the seat of the High Septon of the Faith of the Seven.\nBuilt by the First Men before the coming of the Andals, Oldtown is the largest and richest city in the Seven Kingdoms, although the capital, King's ",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "pentos",
+    "name": "Pentos",
+    "type": "city",
+    "region": "",
+    "description": "Pentos is one of the Free Cities of western Essos. It is a port located on the eastern coast of the Bay of Pentos.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "port-moraq",
+    "name": "Port Moraq",
+    "type": "city",
+    "region": "",
+    "description": "Port Moraq is a port city on the southern coast of Great Moraq, near the Cinnamon Straits. The land north of the city is a dense rain forest. South of Port Moraq is the Isle of Elephants. Traders often stop at the port when returning from the Jade Sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "port-of-ibben",
+    "name": "Port of Ibben",
+    "type": "city",
+    "region": "",
+    "description": "The Port of Ibben is the main city on Ib and is the largest city of Ibben. It is located on the southern coast of Ib.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "qarth",
+    "name": "Qarth",
+    "type": "city",
+    "region": "",
+    "description": "Qarth is an ancient port city located on the southern coast of Essos. It has been referred to as the Queen of Cities, a title also claimed by Yunkai in Slaver's Bay.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "saath",
+    "name": "Saath",
+    "type": "city",
+    "region": "",
+    "description": "Saath is a city in northern Essos at the western end of the Sarne delta along the Shivering Sea. It is west of Vaes Graddakh and southwest of Morosh. Saath is connected by a Valyrian road to Vaes Khadokh farther to the south.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "shamyriana",
+    "name": "Shamyriana",
+    "type": "city",
+    "region": "",
+    "description": "Shamyriana or Samyriana is a fortified city in Essos, located on the Stone Road in the eastern Bone Mountains, near the Great Sand Sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "si-qo",
+    "name": "Si Qo",
+    "type": "city",
+    "region": "",
+    "description": "Si Qo, known as Si Qo the Glorious, was a city of the Golden Empire of Yi Ti, located in the heart of Yi Ti's jungle. Though now long fallen and overgrown, Si Qo was the capital of the Empire during the rule of the scarlet emperors, who raised it to be their capital.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "tiqui",
+    "name": "Tiqui",
+    "type": "city",
+    "region": "",
+    "description": "Tiqui is a city in Yi Ti, located in the western hills of the region.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "tolos",
+    "name": "Tolos",
+    "type": "city",
+    "region": "",
+    "description": "Tolos is a port city in central Essos.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "trader-town",
+    "name": "Trader Town",
+    "type": "city",
+    "region": "",
+    "description": "Trader Town is a rude, sprawling garrison city of northern Yi Ti in eastern Essos. The city lies east of the Great Sand Sea, and west of the Shrinking Sea. The vast plains of the Jogos Nhai are north of Trader Town. From Kayakayanaya, the Steel Road skirts the topmost northern edge of the Great Sand Sea, and turns south to Trader Town. The city is connected to Tiqui and Bayasabhad by the Sand Road.\nTrader Town is the seat of General Pol Qo, Hammer of the Jogos Nhai, the self-proclaimed first ora",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "turrani",
+    "name": "Turrani",
+    "type": "city",
+    "region": "",
+    "description": "Turrani is a city on the island Leng in the eastern Jade Sea. It is located on the southern shore of the forested island, near the mouth of a river and north of the Manticore Isles. Unlike Leng Yi and Leng Ma in the north, which were founded by men of Yi Ti, Turrani was founded by the original inhabitants of the island, the Lengii. It is a wealthy city rich in spices and gems.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "vaes-dothrak",
+    "name": "Vaes Dothrak",
+    "type": "city",
+    "region": "",
+    "description": "Vaes Dothrak is the only city of the Dothraki people. It is located in the northeast of the vast Dothraki sea, beneath the Mother of Mountains and near a lake, the Womb of the World. Vaes Dothrak has no walls.\nThe city is ruled and inhabited by slaves and the dosh khaleen, the wives of all the khals who have come before. It is forbidden to wear a blade or shed a free man's blood within the confines of the city. The name Vaes Dothrak means City of Riders in the Dothraki language.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "vahar",
+    "name": "Vahar",
+    "type": "city",
+    "region": "",
+    "description": "Vahar is a city on an island of the same name in the eastern Summer Sea. Vahar, located between Great Moraq to the east and Lesser Moraq to the west, has become wealthy from the spice trade.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "white-harbor",
+    "name": "White Harbor",
+    "type": "city",
+    "region": "",
+    "description": "White Harbor is a harbor city in the north which contains the New Castle, the seat of House Manderly. Located southeast of Winterfell, it is the largest settlement north of the Neck, but the smallest among the five major cities of Westeros. White Harbor is the north's primary trade port. Its location on the mouth of the White Knife provides opportunities for trade further north.\nDue to its location, White Harbor has more contact with southern Westeros and has a mixed population, and there are mo",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "city-of-the-winged-men",
+    "name": "City of the Winged Men",
+    "type": "city",
+    "region": "",
+    "description": "The City of the Winged Men is a legendary city in far eastern Essos.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "yin",
+    "name": "Yin",
+    "type": "city",
+    "region": "",
+    "description": "Yin is the great port city of Yi Ti on the Jade Sea. It is connected by a trade route to Asabhad to the northwest. A river from the forests of Yi Ti leads south to Yin.\nThe dynasties of the grey, indigo, and pearl-white emperors ruled the Golden Empire of Yi Ti from their seats at Yin, and, in the present, the azure emperors have done the same.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "yunkai",
+    "name": "Yunkai",
+    "type": "city",
+    "region": "",
+    "description": "Yunkai, also called the Yellow City, is one of the Slaver Cities on the eastern coast of Slaver's Bay in central Essos. Ruled by the Wise Masters, Yunkai's main export is bed slaves. It is said to be a disreputable place. Yunkai is also referred to as the queen of cities, a title also claimed by Qarth. Yunkai is a rival of Astapor and Meereen, but the cities are not enemies.\nThe Yunkish emblem is a variation on the harpy of Old Ghis: a woman's torso, wings of a bat instead of arms, legs of an ea",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "zabhad",
+    "name": "Zabhad",
+    "type": "city",
+    "region": "",
+    "description": "Zabhad is a city on the northern shore of the Isle of Elephants in the Jade Sea. It is the chief port of the island and is part of the trader's circle in the sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "cannibal-sands",
+    "name": "Cannibal Sands",
+    "type": "region",
+    "region": "",
+    "description": "The Cannibal Sands are a pair of small deserts bordering the Grey Waste in the Further East of Essos.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "dothraki-sea",
+    "name": "Dothraki sea",
+    "type": "region",
+    "region": "",
+    "description": "The Dothraki sea, also known as Great Grass Sea, the Haunted Lands, and the Great Desolation, is a vast inland region of the continent of Essos, located east of the Free Cities, north of Slaver's Bay, and west of the Bone Mountains. Its landscape of steppes and plains is home to the nomadic Dothraki equestrian people, who constantly battle each other and raid surrounding lands.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "further-east",
+    "name": "Further East",
+    "type": "region",
+    "region": "",
+    "description": "The Further East is the region of Essos located east of the Bone Mountains and the Great Sand Sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "grey-waste",
+    "name": "Grey Waste",
+    "type": "region",
+    "region": "",
+    "description": "The Grey Waste is a vast desert in the Further East of Essos.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "land-of-the-shrykes",
+    "name": "Land of the Shrykes",
+    "type": "region",
+    "region": "",
+    "description": "The Land of the Shrykes is a plain in the Further East of Essos. It is bordered by the Bleeding Sea to the west, the Five Forts and the Mountains of the Morn to the south, Bonetown and the Dry Deep to the east, and K'Dath to the north.\nThe land is said to be a dangerous place populated by shrieking monsters.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "mossovy",
+    "name": "Mossovy",
+    "type": "region",
+    "region": "",
+    "description": "Mossovy, also known as Far Mossovy, is a broad, forested region of northeastern Essos along the shore of the Shivering Sea. It is at the edge of the known world, east of N'Ghai and north of the Cannibal Sands and the Grey Waste. The Thousand Islands are found north of the grim, grey forest.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "plains-of-the-jogos-nhai",
+    "name": "Plains of the Jogos Nhai",
+    "type": "region",
+    "region": "",
+    "description": "The plains of the Jogos Nhai are in Essos, east of the Great Sand Sea and the Howling Hills, north of Yi Ti and the Shrinking Sea, and west of N'Ghai and the Bleeding Sea. To the north is Leviathan Sound and the Shivering Sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "red-waste",
+    "name": "Red waste",
+    "type": "region",
+    "region": "",
+    "description": "The red waste or Red Waste, also called the red lands, is a region of Essos west of the Bone Mountains. The desert is a barren and unforgiving landscape of stunted trees, devilgrass, and ancient ruins.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "white-waste",
+    "name": "White Waste",
+    "type": "region",
+    "region": "",
+    "description": "The White Waste is a wilderness of ice and snow, located north of the Shivering Sea.",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  },
+  {
+    "id": "yi-ti",
+    "name": "Yi Ti",
+    "type": "region",
+    "region": "",
+    "description": "Yi Ti is a nation and region in Essos, east of Qarth and the Bone Mountains and bordered by the Jade Sea to the south. Nearby islands in the Jade Sea are Leng and the Isle of Whips. North of Yi Ti are the Great Sand Sea, the Shrinking Sea, and the Bleeding Sea; a great river runs south from the Bleeding Sea through Yi Ti to the Jade Sea. East of Yi Ti are the Mountains of the Morn, the Shadow Lands, and the city of Asshai. In the Common Tongue, things relating to Yi Ti are known as \"YiTish\".\nThe",
+    "related_characters": [],
+    "scenes": [],
+    "image_url": ""
+  }
+]
