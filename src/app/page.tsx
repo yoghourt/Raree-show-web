@@ -9,7 +9,7 @@ export default function HomePage() {
       <div className="max-w-4xl mx-auto px-6 py-20">
 
         <div className="mb-16">
-          <h1 className="text-4xl font-light tracking-wide mb-3">
+          <h1 className="text-4xl font-light tracking-wide mb-3 text-[#2c1810]">
             Raree Show
           </h1>
           <p className="text-[#6b4c35] text-lg">
@@ -22,7 +22,7 @@ export default function HomePage() {
             <Link
               key={work.id}
               href={`/works/${work.id}`}
-              className="group block border border-[#c8b89a] bg-[#ede8dc] rounded-lg p-6 hover:border-[#8b1a1a]/60 transition-colors"
+              className="group block border border-[#c8b89a] bg-[#ede8dc] rounded-lg p-6 hover:border-[#8b6a50] transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -42,7 +42,7 @@ export default function HomePage() {
                 {work.books.map((book) => (
                   <span
                     key={book.id}
-                    className="text-xs text-[#2c1810] bg-[#c8b89a] rounded px-2 py-1"
+                    className="text-xs text-[#6b4c35] bg-[#c8b89a] rounded px-2 py-1"
                   >
                     {book.title}
                   </span>

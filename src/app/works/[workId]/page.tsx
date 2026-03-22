@@ -22,7 +22,7 @@ export default async function WorkPage({ params }: Props) {
 
         <Link
           href="/"
-          className="text-[#6b4c35] text-sm hover:text-[#8b1a1a] transition-colors mb-8 inline-block"
+          className="text-[#6b4c35] text-sm hover:text-[#2c1810] transition-colors mb-8 inline-block"
         >
           ← All works
         </Link>
@@ -72,7 +72,7 @@ export default async function WorkPage({ params }: Props) {
             {characters.slice(0, 24).map((character) => (
               <div
                 key={character.id}
-                className="border border-[#c8b89a] bg-[#ede8dc] rounded p-3 hover:border-[#8b1a1a]/60 transition-colors cursor-pointer"
+                className="border border-[#c8b89a] bg-[#ede8dc] rounded p-3 hover:border-[#8b6a50] transition-colors cursor-pointer"
               >
                 <div className="text-sm font-medium truncate">
                   {character.name}
@@ -85,10 +85,10 @@ export default async function WorkPage({ params }: Props) {
                 <div className="mt-1.5">
                   <span className={`text-xs px-1.5 py-0.5 rounded ${
                     character.status === "dead"
-                      ? "bg-[#c79d9d] text-[#6b1414]"
+                      ? "bg-[#8b1a1a] text-[#f5f0e8]"
                       : character.status === "alive"
-                      ? "bg-[#b7c7ac] text-[#294d2f]"
-                      : "bg-[#d9ccb6] text-[#6b4c35]"
+                      ? "bg-[#3a5a3a] text-[#f5f0e8]"
+                      : "bg-[#c8b89a] text-[#2c1810]"
                   }`}>
                     {character.status}
                   </span>
@@ -112,7 +112,7 @@ export default async function WorkPage({ params }: Props) {
             {locations.slice(0, 18).map((location) => (
               <div
                 key={location.id}
-                className="border border-[#c8b89a] bg-[#ede8dc] rounded p-3 hover:border-[#8b1a1a]/60 transition-colors"
+                className="border border-[#c8b89a] bg-[#ede8dc] rounded p-3 hover:border-[#8b6a50] transition-colors"
               >
                 <div className="text-sm font-medium truncate">
                   {location.name}
