@@ -1,25 +1,21 @@
-import fs from "fs"
-import path from "path"
 import type { Character, Location, Scene, Work } from "./types"
 
-const DATA_DIR = path.join(process.cwd(), "data")
+import portraitUrls from "../../data/portrait-urls.json"
+import charactersJson from "../../data/characters.json"
+import locationsJson from "../../data/locations.json"
+import scenesJson from "../../data/scenes.json"
 
-function readJSON<T>(filename: string): T {
-  const file = fs.readFileSync(path.join(DATA_DIR, filename), "utf-8")
-  return JSON.parse(file) as T
-}
+export const WESTEROS_MAP_URL =
+  "https://res.cloudinary.com/dnuxz94n5/image/upload/f_auto,q_auto/v1/raree-show/maps/westeros"
 
 // --- characters ---
 
 export function getAllCharacters(): Character[] {
-  const characters = readJSON<Character[]>("characters.json")
+  const characters = charactersJson as Character[]
   return characters.map((char) => ({
     ...char,
-    image_url: fs.existsSync(
-      path.join(process.cwd(), "public", "characters", `${char.id}.jpg`)
-    )
-      ? `/characters/${char.id}.jpg`
-      : "",
+    image_url:
+      portraitUrls[char.id as keyof typeof portraitUrls] ?? "",
   }))
 }
 
@@ -30,7 +26,7 @@ export function getCharacterById(id: string): Character | undefined {
 // --- locations ---
 
 export function getAllLocations(): Location[] {
-  return readJSON<Location[]>("locations.json")
+  return locationsJson as Location[]
 }
 
 export function getLocationById(id: string): Location | undefined {
@@ -40,7 +36,7 @@ export function getLocationById(id: string): Location | undefined {
 // --- scenes ---
 
 export function getAllScenes(): Scene[] {
-  return readJSON<Scene[]>("scenes.json")
+  return scenesJson as Scene[]
 }
 
 export function getSceneById(id: string): Scene | undefined {

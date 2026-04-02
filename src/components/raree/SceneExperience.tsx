@@ -1,10 +1,10 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Character, Location, Scene } from "@/lib/types"
+import { WESTEROS_MAP_URL } from "@/lib/data"
 import CharacterCard from "@/components/raree/CharacterCard"
 import LocationCard from "@/components/raree/LocationCard"
 
@@ -48,6 +48,11 @@ export default function SceneExperience({
   )
   const [timelineCycle, setTimelineCycle] = useState(0)
   const [imageErrorByCharacterId, setImageErrorByCharacterId] = useState<Record<string, boolean>>({})
+  const [mapError, setMapError] = useState(false)
+
+  useEffect(() => {
+    console.log("WESTEROS_MAP_URL", WESTEROS_MAP_URL)
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -57,7 +62,11 @@ export default function SceneExperience({
   }, [])
 
   useEffect(() => {
-    setImageErrorByCharacterId({})
+    // Defer state reset to avoid "cascading render" warnings.
+    setTimeout(() => {
+      setImageErrorByCharacterId({})
+      setMapError(false)
+    }, 0)
   }, [visualScene.id])
 
   const sceneIndex = allScenes.findIndex((scene) => scene.id === visualScene.id)
@@ -122,17 +131,17 @@ export default function SceneExperience({
 
   return (
     <main className="relative h-screen overflow-hidden bg-[#f5f0e8] text-[#2c1810]">
-      <Image
-        src="/maps/westeros.jpg"
+      <img
+        src={mapError ? "/maps/westeros.jpg" : WESTEROS_MAP_URL}
         alt="Map of Westeros and Essos"
-        fill
-        priority
-        sizes="100vw"
         className="absolute inset-0 object-cover"
         style={{
           objectPosition: `${mapX}% ${mapY}%`,
           transition: "object-position 1.2s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
+        onError={() => setMapError(true)}
+        loading="eager"
+        decoding="async"
       />
       <div className="absolute inset-0 bg-[rgba(245,240,232,0.15)]" />
 
