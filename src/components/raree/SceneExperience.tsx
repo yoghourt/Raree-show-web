@@ -24,6 +24,13 @@ function formatIdToName(raw: string): string {
     .join(" ")
 }
 
+function getInitials(name: string): string {
+  const parts = name.split(" ").filter(Boolean)
+  return (
+    (parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? parts[0]?.[0] ?? "")
+  ).toUpperCase() || "?"
+}
+
 export default function SceneExperience({
   currentScene,
   allScenes,
@@ -40,6 +47,7 @@ export default function SceneExperience({
     currentScene.timeline ?? "Unknown timeline"
   )
   const [timelineCycle, setTimelineCycle] = useState(0)
+  const [imageErrorByCharacterId, setImageErrorByCharacterId] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     return () => {
@@ -47,6 +55,10 @@ export default function SceneExperience({
       if (endTimerRef.current) window.clearTimeout(endTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    setImageErrorByCharacterId({})
+  }, [visualScene.id])
 
   const sceneIndex = allScenes.findIndex((scene) => scene.id === visualScene.id)
   const prevScene = sceneIndex > 0 ? allScenes[sceneIndex - 1] : null
@@ -65,18 +77,24 @@ export default function SceneExperience({
   const mapX = visualScene.map_focus?.x ?? 50
   const mapY = visualScene.map_focus?.y ?? 50
 
-  const pills = useMemo(() => {
+  const presentCharacters = useMemo(() => {
     return visualScene.characters_present.map((id) => {
       const matched = characters.find((character) => character.id === id)
       if (matched) {
-        const parts = matched.name.split(" ").filter(Boolean)
-        const initials = (
-          (parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? parts[0]?.[0] ?? "")
-        ).toUpperCase()
-        return { id, name: matched.name, initials: initials || "?" }
+        return {
+          id,
+          name: matched.name,
+          initials: getInitials(matched.name),
+          image_url: matched.image_url?.trim() ?? "",
+        }
       }
       const fallbackName = formatIdToName(id)
-      return { id, name: fallbackName || id, initials: (fallbackName || id).charAt(0).toUpperCase() || "?" }
+      return {
+        id,
+        name: fallbackName || id,
+        initials: (fallbackName || id).charAt(0).toUpperCase() || "?",
+        image_url: "",
+      }
     })
   }, [visualScene.characters_present, characters])
 
@@ -123,69 +141,95 @@ export default function SceneExperience({
         <span className="scene-marker-dot" />
       </div>
 
-      <div className="relative z-20 h-full w-full p-6">
-        <div className="absolute top-6 left-6 w-[min(760px,calc(100%-4rem))]">
-          <p
-            key={`timeline-${timelineCycle}`}
-            className="text-xs uppercase tracking-[0.25em] text-[#8b1a1a] font-light"
-            style={{
-              transformOrigin: "center top",
-              textShadow: "0 1px 8px rgba(0,0,0,0.8), 0 0 24px rgba(0,0,0,0.6)",
-              opacity: phase === "idle" ? 1 : undefined,
-              transform: phase === "idle" ? "rotate3d(1,0,0,0deg)" : undefined,
-              animation:
-                phase === "exiting"
-                  ? "timelineExit 200ms ease-in forwards"
-                  : phase === "entering"
-                  ? "timelineEnter 400ms ease-out forwards"
-                  : "none",
-            }}
-          >
-            {displayedTimeline}
-          </p>
-          <h1
-            className="mt-2 text-3xl font-medium leading-tight text-[#f5f0e8]"
-            style={{
-              textShadow: "0 1px 8px rgba(0,0,0,0.8), 0 0 24px rgba(0,0,0,0.6)",
-            }}
-          >
-            {visualScene.title}
-          </h1>
+      <header
+        className="fixed top-0 left-0 right-0 z-30 h-[80px] border-b border-[#c8b89a]"
+        style={{
+          background: "rgba(245, 240, 232, 0.82)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+        }}
+      >
+        <Link
+          href={`/works/${workId}`}
+          className="absolute top-3 right-4 z-10 text-xs text-[#6b4c35] hover:text-[#2c1810] transition-colors"
+        >
+          ← Back to work
+        </Link>
 
-          <p
-            className="mt-6 text-xs uppercase tracking-widest text-[#f5f0e8] font-light"
-            style={{
-              textShadow: "0 1px 8px rgba(0,0,0,0.8), 0 0 24px rgba(0,0,0,0.6)",
-            }}
-          >
-            Characters Present
-          </p>
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
-            {pills.map((pill, index) => (
-              <div
-                key={`${visualScene.id}-${pill.id}`}
-                className="shrink-0 flex items-center gap-2 border border-[#c8b89a] bg-[rgba(245,240,232,0.85)] rounded-full px-3 py-1.5"
-                style={{
-                  opacity: phase === "idle" ? 1 : undefined,
-                  transform: phase === "idle" ? "translateY(0)" : undefined,
-                  animation:
-                    phase === "exiting"
-                      ? "pillExit 200ms ease-in forwards"
-                      : phase === "entering"
-                      ? `pillEnter 400ms ease-out ${index * 50}ms forwards`
-                      : "none",
-                }}
-              >
-                <span className="h-7 w-7 rounded-full bg-[#8b1a1a]/10 border border-[#8b1a1a]/40 text-[#8b1a1a] text-xs grid place-items-center">
-                  {pill.initials}
-                </span>
-                <span className="text-sm text-[#2c1810]">{pill.name}</span>
-              </div>
-            ))}
+        <div className="flex h-full min-h-0 items-center gap-4 pl-6 pr-28">
+          <div className="flex w-[260px] shrink-0 flex-col justify-center gap-1 text-left">
+            <p
+              key={`timeline-${timelineCycle}`}
+              className="text-xs uppercase tracking-[0.25em] text-[#8b1a1a] font-light line-clamp-1"
+              style={{
+                opacity: phase === "idle" ? 1 : undefined,
+                animation:
+                  phase === "exiting"
+                    ? "timelineExit 200ms ease-in forwards"
+                    : phase === "entering"
+                    ? "timelineEnter 400ms ease-out forwards"
+                    : "none",
+              }}
+            >
+              {displayedTimeline}
+            </p>
+            <h1 className="text-sm font-medium leading-tight text-[#2c1810] truncate">
+              {visualScene.title}
+            </h1>
+          </div>
+
+          <div
+            className="shrink-0 w-px h-[40px]"
+            style={{ backgroundColor: "rgba(139, 26, 26, 0.2)" }}
+            aria-hidden
+          />
+
+          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto overflow-y-hidden py-1 [scrollbar-width:thin]">
+              {presentCharacters.map((item, index) => {
+                const hasImage = Boolean(item.image_url) && !imageErrorByCharacterId[item.id]
+                return (
+                  <div
+                    key={`${visualScene.id}-${item.id}`}
+                    className="flex w-20 shrink-0 flex-col items-center gap-1"
+                    style={{
+                      animation:
+                        phase === "exiting"
+                          ? "topBarCardExit 200ms ease-in forwards"
+                          : phase === "entering"
+                          ? `topBarCardEnter 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${index * 80}ms both`
+                          : "none",
+                    }}
+                  >
+                    {hasImage ? (
+                      <img
+                        src={item.image_url}
+                        alt=""
+                        width={44}
+                        height={44}
+                        className="h-[44px] w-[44px] shrink-0 rounded-full object-cover"
+                        onError={() => {
+                          setImageErrorByCharacterId((prev) => ({ ...prev, [item.id]: true }))
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full border border-[#8b1a1a]/40 bg-[#8b1a1a]/10 text-[11px] font-medium text-[#8b1a1a]">
+                        {item.initials}
+                      </div>
+                    )}
+                    <span className="w-full truncate text-center text-[10px] leading-tight text-[#2c1810]">
+                      {item.name}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
+      </header>
 
-        <section className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(900px,calc(100%-4rem))] border border-[#c8b89a] bg-[rgba(245,240,232,0.92)] backdrop-blur-sm rounded-xl p-6 text-[#2c1810]">
+      <div className="relative z-20 flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-6 pb-24 pt-4">
+        <section className="w-[min(900px,calc(100%-2rem))] border border-[#c8b89a] bg-[rgba(245,240,232,0.92)] backdrop-blur-sm rounded-xl p-6 text-[#2c1810]">
           <p className="text-xs uppercase tracking-widest text-[#8b1a1a] font-light">
             Book {visualScene.book} · Chapter {visualScene.chapter}
           </p>
@@ -221,13 +265,6 @@ export default function SceneExperience({
             )}
           </div>
         </section>
-
-        <Link
-          href={`/works/${workId}`}
-          className="absolute top-6 right-6 text-xs text-[#f5f0e8] hover:text-[#8b1a1a] transition-colors"
-        >
-          ← Back to work
-        </Link>
 
         {prevScene && (
           <button
@@ -308,24 +345,24 @@ export default function SceneExperience({
             opacity: 1;
           }
         }
-        @keyframes pillExit {
+        @keyframes topBarCardEnter {
           from {
-            transform: translateY(0);
-            opacity: 1;
+            transform: translateX(100vw);
+            opacity: 0;
           }
           to {
-            transform: translateY(-8px);
-            opacity: 0;
+            transform: translateX(0);
+            opacity: 1;
           }
         }
-        @keyframes pillEnter {
+        @keyframes topBarCardExit {
           from {
-            transform: translateY(12px);
-            opacity: 0;
+            transform: translateX(0);
+            opacity: 1;
           }
           to {
-            transform: translateY(0);
-            opacity: 1;
+            transform: translateX(-100vw);
+            opacity: 0;
           }
         }
       `}</style>

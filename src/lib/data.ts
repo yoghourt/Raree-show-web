@@ -12,7 +12,15 @@ function readJSON<T>(filename: string): T {
 // --- characters ---
 
 export function getAllCharacters(): Character[] {
-  return readJSON<Character[]>("characters.json")
+  const characters = readJSON<Character[]>("characters.json")
+  return characters.map((char) => ({
+    ...char,
+    image_url: fs.existsSync(
+      path.join(process.cwd(), "public", "characters", `${char.id}.jpg`)
+    )
+      ? `/characters/${char.id}.jpg`
+      : "",
+  }))
 }
 
 export function getCharacterById(id: string): Character | undefined {
