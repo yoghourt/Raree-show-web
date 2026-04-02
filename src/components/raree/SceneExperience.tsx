@@ -153,9 +153,9 @@ export default function SceneExperience({
       <header
         className="fixed top-0 left-0 right-0 z-30 h-[80px] border-b border-[#c8b89a]"
         style={{
-          background: "rgba(245, 240, 232, 0.82)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
+          background: "rgba(245, 240, 232, 0.75)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
         }}
       >
         <Link
@@ -188,9 +188,15 @@ export default function SceneExperience({
           </div>
 
           <div
-            className="shrink-0 w-px h-[40px]"
-            style={{ backgroundColor: "rgba(139, 26, 26, 0.2)" }}
             aria-hidden
+            style={{
+              width: 1,
+              height: 40,
+              background: "rgba(139, 26, 26, 0.2)",
+              flexShrink: 0,
+              alignSelf: "center",
+              margin: "0 16px",
+            }}
           />
 
           <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
