@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server"
-import fetch from "node-fetch"
-import { HttpsProxyAgent } from "https-proxy-agent"
+import fetch, { type RequestInit as NodeFetchRequestInit } from "node-fetch"
 
 function extractGeminiText(data: unknown): string {
   if (!data || typeof data !== "object") return ""
@@ -54,21 +53,27 @@ Question: ${question}
 
 Answer in maximum 2 sentences. Be concise and direct.`
 
-  const proxyUrl = process.env.HTTPS_PROXY || "http://127.0.0.1:7890"
-  const agent = new HttpsProxyAgent(proxyUrl)
+  // Only use a proxy when HTTPS_PROXY is set (e.g. local dev). Vercel has no proxy.
+  const proxyUrl = process.env.HTTPS_PROXY
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${encodeURIComponent(apiKey)}`
 
+  const fetchOptions: NodeFetchRequestInit = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+    }),
+  }
+
+  if (proxyUrl) {
+    const { HttpsProxyAgent } = await import("https-proxy-agent")
+    fetchOptions.agent = new HttpsProxyAgent(proxyUrl)
+  }
+
   let response: Awaited<ReturnType<typeof fetch>>
   try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-      agent,
-    })
+    response = await fetch(url, fetchOptions)
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Fetch failed"
     return new Response(msg, { status: 502 })
