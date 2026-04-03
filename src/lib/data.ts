@@ -5,8 +5,7 @@ import charactersJson from "../../data/characters.json"
 import locationsJson from "../../data/locations.json"
 import scenesJson from "../../data/scenes.json"
 
-export const WESTEROS_MAP_URL =
-  "https://res.cloudinary.com/dnuxz94n5/image/upload/f_auto,q_auto/v1/raree-show/maps/westeros"
+export const WESTEROS_MAP_URL = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/v1/raree-show/maps/westeros`
 
 // --- characters ---
 
