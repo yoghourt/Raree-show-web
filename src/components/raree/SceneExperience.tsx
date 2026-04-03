@@ -7,6 +7,7 @@ import type { Character, Location, Scene } from "@/lib/types"
 import { WESTEROS_MAP_URL } from "@/lib/data"
 import CharacterCard from "@/components/raree/CharacterCard"
 import LocationCard from "@/components/raree/LocationCard"
+import SceneAssistant from "@/components/raree/SceneAssistant"
 
 interface SceneExperienceProps {
   currentScene: Scene
@@ -49,10 +50,6 @@ export default function SceneExperience({
   const [timelineCycle, setTimelineCycle] = useState(0)
   const [imageErrorByCharacterId, setImageErrorByCharacterId] = useState<Record<string, boolean>>({})
   const [mapError, setMapError] = useState(false)
-
-  useEffect(() => {
-    console.log("WESTEROS_MAP_URL", WESTEROS_MAP_URL)
-  }, [])
 
   useEffect(() => {
     return () => {
@@ -106,6 +103,21 @@ export default function SceneExperience({
       }
     })
   }, [visualScene.characters_present, characters])
+
+  const sceneAssistantContext = useMemo(
+    () => ({
+      title: visualScene.title,
+      book: visualScene.book,
+      chapter: visualScene.chapter,
+      location:
+        currentLocation?.name ||
+        formatIdToName(visualScene.location) ||
+        "Unknown",
+      characters: presentCharacters.map((p) => p.name),
+      summary: visualScene.summary,
+    }),
+    [visualScene, currentLocation, presentCharacters]
+  )
 
   function navigateWithAnimation(target: Scene | null, href: string) {
     if (phase !== "idle") return
@@ -308,6 +320,9 @@ export default function SceneExperience({
           {nextScene ? "Next scene →" : "← Back to work"}
         </button>
       </div>
+
+      <SceneAssistant sceneContext={sceneAssistantContext} />
+
       <style jsx>{`
         .scene-marker-ping {
           position: absolute;
