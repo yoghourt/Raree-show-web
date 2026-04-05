@@ -30,6 +30,9 @@
 - **AI Scene Assistant** — Floating chat widget powered by Gemini API with streaming output. Ask anything about the current scene.
   Gemini API 驱动的悬浮 AI 问答组件，流式输出，随时提问当前场景。
 
+- **Admin CMS** — Separate admin panel for managing works, scenes, characters, and locations with Supabase as the shared data layer.
+  独立 Admin 后台管理作品、场景、角色、地点，数据实时同步到主站。
+
 ---
 
 ## Tech Stack
@@ -40,6 +43,7 @@
 | Language | TypeScript |
 | Styling | Tailwind CSS |
 | AI | Google Gemini API (streaming) |
+| Database | Supabase (PostgreSQL) |
 | Image hosting | Cloudinary |
 | Deployment | Vercel |
 
@@ -52,34 +56,39 @@ Browser
    │
    ▼
 Vercel · Next.js 14 App Router
-   ├── Server Components      (SSR, data fetch, SEO)
+   ├── Server Components      (SSR, data fetch)
    ├── Client Components      (animations, interactions)
    └── API Routes
           ├──▶ Gemini API       (scene Q&A, streaming)
-          ├──▶ Cloudinary       (portrait images, CDN)
-          └──▶ JSON files       (characters, locations, scenes)
+          └──▶ Cloudinary       (portrait images, CDN)
 
-Raree Show Admin              (Content CMS, Supabase — in progress)
+Supabase (PostgreSQL)
+   ├── works                  (作品)
+   ├── scenes                 (场景，关联 work_id)
+   ├── characters             (角色，关联 work_id)
+   └── locations              (地点 + 地图坐标，关联 work_id)
+
+Raree Show Admin              (Content CMS · raree-show-admin.vercel.app)
+   └── Supabase Auth          (登录保护，单管理员)
 ```
 
 ---
 
 ## Data
 
-| Dataset | Count | Source |
-|---|---|---|
-| Characters | 136 | MediaWiki scraper (custom Node.js) |
-| Locations | 256 | MediaWiki scraper (custom Node.js) |
-| Scenes | 8 | Hand-curated, growing with reading progress |
-| Portrait images | 74 | Scraped + hosted on Cloudinary |
+| Dataset | Count | Storage | Source |
+|---|---|---|---|
+| Works | 2 | Supabase | Admin CMS |
+| Scenes | growing | Supabase | Admin CMS |
+| Characters | 136 | JSON → Supabase (in progress) | MediaWiki scraper |
+| Locations | 256 | JSON → Supabase (in progress) | MediaWiki scraper |
+| Portrait images | 74 | Cloudinary | Scraped + uploaded via Admin |
 
-> 场景数据随原著阅读进度持续补充，目前覆盖前两卷核心场景。
+> 场景数据通过 Admin CMS 持续录入，随原著阅读进度增长。
 
 ---
 
 ## ADR — Architectural Decision Records
-
-<!-- 关键技术决策记录，面试时可直接引用 -->
 
 ### ADR-001 · Next.js App Router over Pages Router
 
@@ -87,23 +96,29 @@ Raree Show Admin              (Content CMS, Supabase — in progress)
 
 **Reasoning**: Server Components enable data fetching without client-side waterfalls. API Routes allow hiding the Gemini API key server-side. Seamless Vercel deployment with zero configuration.
 
-### ADR-002 · JSON files over database (Phase 1)
+### ADR-002 · Supabase as the data layer
 
-**Decision**: Store characters, locations, and scenes as static JSON files.
+**Decision**: Use Supabase (PostgreSQL) for works, scenes, characters, and locations.
 
-**Reasoning**: Fastest path to a working prototype. No infrastructure overhead during content validation. Planned migration to Supabase in Phase 2 via the Admin CMS.
+**Reasoning**: Vercel is stateless — JSON file writes are impossible in production. Supabase provides a persistent PostgreSQL backend with a generous free tier. The Admin CMS writes to Supabase; the main app reads from it. This closes the content pipeline loop.
 
 ### ADR-003 · Cloudinary for image hosting
 
 **Decision**: Host all portrait images on Cloudinary instead of committing them to the repository.
 
-**Reasoning**: GitHub has a per-push size limit. 74 portrait images would bloat the repository and slow CI. Cloudinary provides a free 25 GB tier with global CDN.
+**Reasoning**: GitHub has a per-push size limit. 74 portrait images would bloat the repository and slow CI. Cloudinary provides a free 25 GB tier with global CDN. Admin CMS supports direct upload via unsigned preset.
 
 ### ADR-004 · Proxy only in local development
 
 **Decision**: `HTTPS_PROXY` is set locally only, not on Vercel.
 
 **Reasoning**: Vercel servers are deployed outside mainland China and connect to Google APIs directly. The proxy is only needed in the local development environment.
+
+### ADR-005 · map_focus coordinates belong to locations, not scenes
+
+**Decision**: Store `map_focus_x` and `map_focus_y` on the `locations` table, not `scenes`.
+
+**Reasoning**: Map coordinates describe where a location sits on the Westeros map — a fixed geographic property. Multiple scenes can reference the same location, and the map focus should be consistent regardless of which scene is active.
 
 ---
 
@@ -119,7 +134,11 @@ npm install
 
 # 3. Set up environment variables
 cp .env.example .env.local
-# Fill in: GEMINI_API_KEY, NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+# Fill in:
+# GEMINI_API_KEY
+# NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+# NEXT_PUBLIC_SUPABASE_URL
+# NEXT_PUBLIC_SUPABASE_ANON_KEY
 # If in mainland China, also set: HTTPS_PROXY
 
 # 4. Run dev server
@@ -148,12 +167,8 @@ src/
 │   └── SceneAssistant.tsx             # AI chat floating widget
 └── lib/
     ├── types.ts                        # TypeScript type definitions
+    ├── supabase.ts                     # Supabase client
     └── data.ts                         # Data access layer
-data/
-├── characters.json                     # 136 characters
-├── locations.json                      # 256 locations
-├── scenes.json                         # 8 scenes
-└── portrait-urls.json                  # Cloudinary URL mapping
 ```
 
 ---
@@ -162,10 +177,10 @@ data/
 
 - [x] Scene slideshow with map panning
 - [x] AI scene assistant (Gemini API, streaming)
-- [x] Admin CMS scaffold (raree-show-admin)
-- [ ] Admin CMS connected to Supabase
+- [x] Admin CMS (raree-show-admin)
+- [x] Supabase data layer (works + scenes)
+- [ ] Migrate characters and locations to Supabase
 - [ ] Expand scene coverage (ongoing with reading)
-- [ ] Content SDK documentation
 
 ---
 
