@@ -1,9 +1,9 @@
 import type { Character, Location, Scene, Work } from "./types"
+import { supabase } from "./supabase"
 
 import portraitUrls from "../../data/portrait-urls.json"
 import charactersJson from "../../data/characters.json"
 import locationsJson from "../../data/locations.json"
-import scenesJson from "../../data/scenes.json"
 
 export const WESTEROS_MAP_URL = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/v1/raree-show/maps/westeros`
 
@@ -32,43 +32,127 @@ export function getLocationById(id: string): Location | undefined {
   return getAllLocations().find((l) => l.id === id)
 }
 
-// --- scenes ---
+// --- scenes (Supabase) ---
 
-export function getAllScenes(): Scene[] {
-  return scenesJson as Scene[]
+type SceneRow = {
+  tsid: string
+  title: string
+  book: number
+  chapter: number
+  pov_character: string
+  location_id: string | null
+  character_ids: string[] | null
+  summary: string
+  tags: string[] | null
+  order_index: number
+  work_id: string | null
+  timeline?: string | null
+  map_focus?: Scene["map_focus"] | null
 }
 
-export function getSceneById(id: string): Scene | undefined {
-  return getAllScenes().find((s) => s.id === id)
+function sceneFromRow(row: SceneRow): Scene {
+  return {
+    id: row.tsid,
+    tsid: row.tsid,
+    title: row.title,
+    book: row.book,
+    chapter: row.chapter,
+    pov_character: row.pov_character,
+    location: row.location_id ?? "",
+    characters_present: row.character_ids ?? [],
+    summary: row.summary,
+    tags: row.tags ?? [],
+    order: row.order_index,
+    timeline: row.timeline ?? undefined,
+    map_focus: row.map_focus ?? undefined,
+    work_id: row.work_id ?? undefined,
+  }
 }
 
-export function getScenesByBook(book: number): Scene[] {
-  return getAllScenes()
-    .filter((s) => s.book === book)
-    .sort((a, b) => a.order - b.order)
+export async function getAllScenes(): Promise<Scene[]> {
+  const { data, error } = await supabase
+    .from("scenes")
+    .select("*")
+    .order("order_index", { ascending: true })
+
+  if (error) throw error
+
+  return (data as SceneRow[]).map(sceneFromRow)
 }
 
-// --- works ---
-// 暂时 hardcode，Phase 2 接 Supabase 后替换
+export async function getSceneById(id: string): Promise<Scene | undefined> {
+  const { data, error } = await supabase
+    .from("scenes")
+    .select("*")
+    .eq("tsid", id)
+    .maybeSingle()
 
-export function getAllWorks(): Work[] {
-  return [
-    {
-      id: "asoiaf",
-      title: "A Song of Ice and Fire",
-      description:
-        "An epic fantasy series by George R. R. Martin, set in the fictional continents of Westeros and Essos.",
-      books: [
-        { id: 1, title: "A Game of Thrones", published: 1996, chapters: 73 },
-        { id: 2, title: "A Clash of Kings", published: 1998, chapters: 70 },
-        { id: 3, title: "A Storm of Swords", published: 2000, chapters: 82 },
-        { id: 4, title: "A Feast for Crows", published: 2005, chapters: 46 },
-        { id: 5, title: "A Dance with Dragons", published: 2011, chapters: 73 },
-      ],
-    },
-  ]
+  if (error || !data) return undefined
+
+  return sceneFromRow(data as SceneRow)
 }
 
-export function getWorkById(id: string): Work | undefined {
-  return getAllWorks().find((w) => w.id === id)
+export async function getScenesByWork(workTsid: string): Promise<Scene[]> {
+  const { data: work, error: workError } = await supabase
+    .from("works")
+    .select("id")
+    .eq("tsid", workTsid)
+    .maybeSingle()
+
+  if (workError || !work) return []
+
+  const { data, error } = await supabase
+    .from("scenes")
+    .select("*")
+    .eq("work_id", work.id)
+    .order("order_index", { ascending: true })
+
+  if (error) return []
+
+  return (data as SceneRow[]).map(sceneFromRow)
+}
+
+// --- works (Supabase) ---
+
+type WorkRow = {
+  id: string
+  tsid: string
+  title: string
+  description: string
+  cover_image?: string | null
+  created_at?: string | null
+}
+
+function workFromRow(row: WorkRow): Work {
+  return {
+    id: row.tsid,
+    tsid: row.tsid,
+    title: row.title,
+    description: row.description,
+    cover_image: row.cover_image ?? undefined,
+    books: [],
+  }
+}
+
+export async function getAllWorks(): Promise<Work[]> {
+  const { data, error } = await supabase
+    .from("works")
+    .select("*")
+    .order("created_at", { ascending: true })
+
+  if (error) throw error
+
+  return (data as WorkRow[]).map(workFromRow)
+}
+
+export async function getWorkById(id: string): Promise<Work | undefined> {
+  const { data, error } = await supabase
+    .from("works")
+    .select("*")
+    .eq("tsid", id)
+    .maybeSingle()
+
+  if (error || !data) return undefined
+
+  return workFromRow(data as WorkRow)
 }

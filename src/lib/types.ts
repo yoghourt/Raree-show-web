@@ -24,6 +24,7 @@ export interface Location {
 
 export interface Scene {
   id: string
+  tsid: string
   title: string
   book: number
   chapter: number
@@ -38,6 +39,7 @@ export interface Scene {
     x: number
     y: number
   }
+  work_id?: string
 }
 
 export interface Book {
@@ -49,7 +51,9 @@ export interface Book {
 
 export interface Work {
   id: string
+  tsid: string
   title: string
   description: string
+  cover_image?: string
   books: Book[]
 }
