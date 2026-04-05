@@ -2,8 +2,7 @@ import { notFound } from "next/navigation"
 import {
   getAllCharacters,
   getAllLocations,
-  getAllScenes,
-  getSceneById,
+  getScenesByWork,
   getWorkById,
 } from "@/lib/data"
 import SceneExperience from "../../../../../components/raree/SceneExperience"
@@ -17,13 +16,13 @@ interface Props {
 
 export default async function ScenePage({ params }: Props) {
   const { workId, sceneId } = await params
-  const work = getWorkById(workId)
+  const work = await getWorkById(workId)
   if (!work) notFound()
 
-  const scenes = getAllScenes().sort((a, b) => a.order - b.order)
+  const scenes = await getScenesByWork(workId)
   if (scenes.length === 0) notFound()
 
-  const currentScene = getSceneById(sceneId)
+  const currentScene = scenes.find((s) => s.id === sceneId)
   if (!currentScene) notFound()
 
   return (

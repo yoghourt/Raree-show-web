@@ -1,5 +1,10 @@
 import Link from "next/link"
-import { getWorkById, getAllCharacters, getAllLocations, getAllScenes } from "@/lib/data"
+import {
+  getWorkById,
+  getAllCharacters,
+  getAllLocations,
+  getScenesByWork,
+} from "@/lib/data"
 import { notFound } from "next/navigation"
 
 interface Props {
@@ -8,10 +13,10 @@ interface Props {
 
 export default async function WorkPage({ params }: Props) {
   const { workId } = await params
-  const work = getWorkById(workId)
+  const work = await getWorkById(workId)
   if (!work) notFound()
 
-  const scenes = getAllScenes().sort((a, b) => a.order - b.order)
+  const scenes = await getScenesByWork(workId)
   const firstScene = scenes[0]
   const characters = getAllCharacters()
   const locations = getAllLocations()
@@ -38,30 +43,31 @@ export default async function WorkPage({ params }: Props) {
           </Link>
         )}
 
-        {/* Books */}
-        <section className="mb-12">
-          <h2 className="text-xs uppercase tracking-widest text-[#8b1a1a] mb-4">
-            Books
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {work.books.map((book) => (
-              <div
-                key={book.id}
-                className="border border-[#c8b89a] bg-[#ede8dc] rounded-lg p-4"
-              >
-                <div className="text-[#8b1a1a] text-xs mb-1">
-                  Book {book.id}
+        {work.books.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-xs uppercase tracking-widest text-[#8b1a1a] mb-4">
+              Books
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {work.books.map((book) => (
+                <div
+                  key={book.id}
+                  className="border border-[#c8b89a] bg-[#ede8dc] rounded-lg p-4"
+                >
+                  <div className="text-[#8b1a1a] text-xs mb-1">
+                    Book {book.id}
+                  </div>
+                  <div className="text-sm font-medium leading-snug">
+                    {book.title}
+                  </div>
+                  <div className="text-[#6b4c35] text-xs mt-1">
+                    {book.published} · {book.chapters} chapters
+                  </div>
                 </div>
-                <div className="text-sm font-medium leading-snug">
-                  {book.title}
-                </div>
-                <div className="text-[#6b4c35] text-xs mt-1">
-                  {book.published} · {book.chapters} chapters
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Characters */}
         <section className="mb-12">
