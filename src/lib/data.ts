@@ -1,35 +1,102 @@
 import type { Character, Location, Scene, Work } from "./types"
 import { supabase } from "./supabase"
 
-import portraitUrls from "../../data/portrait-urls.json"
-import charactersJson from "../../data/characters.json"
-import locationsJson from "../../data/locations.json"
-
 export const WESTEROS_MAP_URL = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/v1/raree-show/maps/westeros`
 
-// --- characters ---
+// --- characters (Supabase) ---
 
-export function getAllCharacters(): Character[] {
-  const characters = charactersJson as Character[]
-  return characters.map((char) => ({
-    ...char,
-    image_url:
-      portraitUrls[char.id as keyof typeof portraitUrls] ?? "",
-  }))
+type CharacterRow = {
+  tsid: string
+  name: string
+  house: string | null
+  description: string
+  portrait_url: string | null
+  work_id: string | null
 }
 
-export function getCharacterById(id: string): Character | undefined {
-  return getAllCharacters().find((c) => c.id === id)
+function characterFromRow(row: CharacterRow): Character {
+  return {
+    id: row.tsid,
+    name: row.name,
+    aliases: [],
+    house: row.house ?? "",
+    titles: [],
+    status: "unknown",
+    origin: "",
+    description: row.description,
+    appeared_in: [],
+    image_url: row.portrait_url ?? "",
+  }
 }
 
-// --- locations ---
+export async function getAllCharacters(): Promise<Character[]> {
+  const { data, error } = await supabase
+    .from("characters")
+    .select("*")
+    .order("name", { ascending: true })
 
-export function getAllLocations(): Location[] {
-  return locationsJson as Location[]
+  if (error) throw error
+
+  return (data as CharacterRow[]).map(characterFromRow)
 }
 
-export function getLocationById(id: string): Location | undefined {
-  return getAllLocations().find((l) => l.id === id)
+export async function getCharacterById(id: string): Promise<Character | undefined> {
+  const { data, error } = await supabase
+    .from("characters")
+    .select("*")
+    .eq("tsid", id)
+    .maybeSingle()
+
+  if (error || !data) return undefined
+
+  return characterFromRow(data as CharacterRow)
+}
+
+// --- locations (Supabase) ---
+
+type LocationRow = {
+  tsid: string
+  name: string
+  region: string | null
+  description: string
+  map_focus_x: number | null
+  map_focus_y: number | null
+  work_id: string | null
+}
+
+function locationFromRow(row: LocationRow): Location {
+  return {
+    id: row.tsid,
+    name: row.name,
+    type: "other",
+    region: row.region ?? "",
+    description: row.description,
+    related_characters: [],
+    scenes: [],
+  }
+}
+
+export async function getAllLocations(): Promise<Location[]> {
+  const { data, error } = await supabase
+    .from("locations")
+    .select("*")
+    .order("name", { ascending: true })
+
+  if (error) throw error
+
+  return (data as LocationRow[]).map(locationFromRow)
+}
+
+export async function getLocationById(id: string): Promise<Location | undefined> {
+  const { data, error } = await supabase
+    .from("locations")
+    .select("*")
+    .eq("tsid", id)
+    .maybeSingle()
+
+  if (error || !data) return undefined
+
+  return locationFromRow(data as LocationRow)
 }
 
 // --- scenes (Supabase) ---

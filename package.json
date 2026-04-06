@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "import-data": "ts-node scripts/import-data.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
@@ -28,6 +29,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsid-ts": "^0.0.9",
     "typescript": "^5"
   }
 }
