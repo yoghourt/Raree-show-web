@@ -1,7 +1,6 @@
 "use client"
-
 import Link from "next/link"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Character, Location, Scene } from "@/lib/types"
 import { WESTEROS_MAP_URL } from "@/lib/data"
@@ -9,12 +8,15 @@ import CharacterCard from "@/components/raree/CharacterCard"
 import LocationCard from "@/components/raree/LocationCard"
 import SceneAssistant from "@/components/raree/SceneAssistant"
 
+const MAP_TRANSITION_MS = 1200
+
 interface SceneExperienceProps {
   currentScene: Scene
   allScenes: Scene[]
   characters: Character[]
   locations: Location[]
   workId: string
+  coverImage?: string
 }
 
 function formatIdToName(raw: string): string {
@@ -38,6 +40,7 @@ export default function SceneExperience({
   characters,
   locations,
   workId,
+  coverImage,
 }: SceneExperienceProps) {
   const router = useRouter()
   const swapTimerRef = useRef<number | null>(null)
@@ -50,6 +53,10 @@ export default function SceneExperience({
   const [timelineCycle, setTimelineCycle] = useState(0)
   const [imageErrorByCharacterId, setImageErrorByCharacterId] = useState<Record<string, boolean>>({})
   const [mapError, setMapError] = useState(false)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const mapImgRef = useRef<HTMLImageElement>(null)
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
+  const [markerPos, setMarkerPos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     return () => {
@@ -80,8 +87,44 @@ export default function SceneExperience({
     [locations, visualScene.location]
   )
 
-  const mapX = visualScene.map_focus?.x ?? 50
-  const mapY = visualScene.map_focus?.y ?? 50
+  const mapX = currentLocation?.map_focus_x ?? 0.5
+  const mapY = currentLocation?.map_focus_y ?? 0.5
+
+  useEffect(() => {
+    const el = mapContainerRef.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      setContainerSize({ width, height })
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const updateMarkerPosition = useCallback(() => {
+    const img = mapImgRef.current
+    if (!img) return
+    const rect = img.getBoundingClientRect()
+    setMarkerPos({
+      x: rect.left + mapX * rect.width,
+      y: rect.top + mapY * rect.height,
+    })
+  }, [mapX, mapY])
+
+  useEffect(() => {
+    updateMarkerPosition()
+    const t = window.setTimeout(updateMarkerPosition, MAP_TRANSITION_MS)
+    return () => window.clearTimeout(t)
+  }, [updateMarkerPosition, containerSize])
+
+  useEffect(() => {
+    window.addEventListener("resize", updateMarkerPosition)
+    window.addEventListener("scroll", updateMarkerPosition, true)
+    return () => {
+      window.removeEventListener("resize", updateMarkerPosition)
+      window.removeEventListener("scroll", updateMarkerPosition, true)
+    }
+  }, [updateMarkerPosition])
 
   const presentCharacters = useMemo(() => {
     return visualScene.characters_present.map((id) => {
@@ -145,27 +188,62 @@ export default function SceneExperience({
 
     endTimerRef.current = window.setTimeout(() => {
       setPhase("idle")
-      router.push(href)
+      window.history.replaceState(null, '', href)
     }, 600)
   }
 
   return (
-    <main className="relative h-screen overflow-hidden bg-[#f5f0e8] text-[#2c1810]">
-      <img
-        src={mapError ? "/maps/westeros.jpg" : WESTEROS_MAP_URL}
-        alt="Map of Westeros and Essos"
-        className="absolute inset-0 object-cover"
-        style={{
-          objectPosition: `${mapX}% ${mapY}%`,
-          transition: "object-position 1.2s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-        onError={() => setMapError(true)}
-        loading="eager"
-        decoding="async"
+    <main
+      className="relative h-screen overflow-hidden text-[#2c1810]"
+      style={{
+        background: coverImage
+          ? `url(${coverImage}) center/cover no-repeat`
+          : "#f5f0e8",
+      }}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{ background: "rgba(0,0,0,0.5)" }}
+        aria-hidden
       />
-      <div className="absolute inset-0 bg-[rgba(245,240,232,0.15)]" />
+      <div
+        ref={mapContainerRef}
+        className="absolute inset-0 z-[1] overflow-hidden"
+      >
+        <img
+          ref={mapImgRef}
+          src={mapError ? "/maps/westeros.jpg" : WESTEROS_MAP_URL}
+          alt="Map of Westeros and Essos"
+          className="absolute object-cover"
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: containerSize.width * 2,
+            height: containerSize.height * 2,
+            objectFit: "cover",
+            transform: `translate(calc(-50% + ${(0.5 - mapX) * containerSize.width}px), calc(-50% + ${(0.5 - mapY) * containerSize.height}px))`,
+            transition: `transform ${MAP_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+            visibility: containerSize.width > 0 ? "visible" : "hidden",
+          }}
+          onError={() => setMapError(true)}
+          onLoad={updateMarkerPosition}
+          onTransitionEnd={(e) => {
+            if (e.propertyName === "transform") updateMarkerPosition()
+          }}
+          loading="eager"
+          decoding="async"
+        />
+      </div>
 
-      <div className="absolute z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+      <div
+        className="pointer-events-none fixed z-20"
+        style={{
+          left: markerPos.x,
+          top: markerPos.y,
+          transform: "translate(-50%, -50%)",
+        }}
+      >
         <span className="scene-marker-ping" />
         <span className="scene-marker-dot" />
       </div>
@@ -179,10 +257,10 @@ export default function SceneExperience({
         }}
       >
         <Link
-          href={`/works/${workId}/scenes`}
+          href="/"
           className="absolute top-3 right-4 z-10 text-xs text-[#6b4c35] hover:text-[#2c1810] transition-colors"
         >
-          ← Back to work
+          ← Back to home
         </Link>
 
         <div className="flex h-full min-h-0 items-center gap-4 pl-6 pr-28">
@@ -319,13 +397,13 @@ export default function SceneExperience({
           onClick={() =>
             navigateWithAnimation(
               nextScene,
-              nextScene ? `/works/${workId}/scenes/${nextScene.id}` : `/works/${workId}/scenes`
+              nextScene ? `/works/${workId}/scenes/${nextScene.id}` : "/"
             )
           }
           disabled={phase !== "idle"}
           className="absolute right-6 bottom-6 border border-[#8b1a1a] bg-[#8b1a1a] text-[#f5f0e8] px-4 py-2 rounded-md text-sm hover:bg-[#6b1414] hover:border-[#6b1414] transition-colors"
         >
-          {nextScene ? "Next scene →" : "← Back to work"}
+          {nextScene ? "Next scene →" : "← Back to home"}
         </button>
       </div>
 
