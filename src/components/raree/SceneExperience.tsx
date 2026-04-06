@@ -171,7 +171,7 @@ export default function SceneExperience({
         }}
       >
         <Link
-          href={`/works/${workId}`}
+          href={`/works/${workId}/scenes`}
           className="absolute top-3 right-4 z-10 text-xs text-[#6b4c35] hover:text-[#2c1810] transition-colors"
         >
           ← Back to work
@@ -311,7 +311,7 @@ export default function SceneExperience({
           onClick={() =>
             navigateWithAnimation(
               nextScene,
-              nextScene ? `/works/${workId}/scenes/${nextScene.id}` : `/works/${workId}`
+              nextScene ? `/works/${workId}/scenes/${nextScene.id}` : `/works/${workId}/scenes`
             )
           }
           disabled={phase !== "idle"}
