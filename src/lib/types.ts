@@ -26,8 +26,8 @@ export interface Scene {
   id: string
   tsid: string
   title: string
-  book: number
-  chapter: number
+  chapter_number: number
+  chapter_title: string | null
   pov_character: string
   location: string
   characters_present: string[]
