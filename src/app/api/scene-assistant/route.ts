@@ -33,18 +33,23 @@ export async function POST(req: NextRequest) {
 
   const ctx = sceneContext as {
     title: string
-    book: number
-    chapter: number
+    chapter_number: number
+    chapter_title: string | null
     location: string
     characters: string[]
     summary: string
   }
 
+  const chapterLine =
+    ctx.chapter_title != null && ctx.chapter_title !== ""
+      ? `Chapter ${ctx.chapter_number} · ${ctx.chapter_title}`
+      : `Chapter ${ctx.chapter_number}`
+
   const prompt = `You are a knowledgeable guide for "A Song of Ice and Fire".
 
 Current scene:
 - Title: ${ctx.title}
-- Book ${ctx.book}, Chapter ${ctx.chapter}
+- ${chapterLine}
 - Location: ${ctx.location}
 - Characters: ${ctx.characters.join(", ")}
 - Summary: ${ctx.summary}

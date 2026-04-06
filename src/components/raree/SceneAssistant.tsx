@@ -5,8 +5,8 @@ import ReactMarkdown from "react-markdown"
 
 export interface SceneAssistantContext {
   title: string
-  book: number
-  chapter: number
+  chapter_number: number
+  chapter_title: string | null
   location: string
   characters: string[]
   summary: string

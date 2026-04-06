@@ -104,11 +104,19 @@ export default function SceneExperience({
     })
   }, [visualScene.characters_present, characters])
 
+  const chapterHeading = useMemo(() => {
+    const n = visualScene.chapter_number
+    const base = `Chapter ${n}`
+    return visualScene.chapter_title
+      ? `${base} · ${visualScene.chapter_title}`
+      : base
+  }, [visualScene.chapter_number, visualScene.chapter_title])
+
   const sceneAssistantContext = useMemo(
     () => ({
       title: visualScene.title,
-      book: visualScene.book,
-      chapter: visualScene.chapter,
+      chapter_number: visualScene.chapter_number,
+      chapter_title: visualScene.chapter_title,
       location:
         currentLocation?.name ||
         formatIdToName(visualScene.location) ||
@@ -258,7 +266,7 @@ export default function SceneExperience({
       <div className="relative z-20 flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-6 pb-24 pt-4">
         <section className="w-[min(900px,calc(100%-2rem))] border border-[#c8b89a] bg-[rgba(245,240,232,0.92)] backdrop-blur-sm rounded-xl p-6 text-[#2c1810]">
           <p className="text-xs uppercase tracking-widest text-[#8b1a1a] font-light">
-            Book {visualScene.book} · Chapter {visualScene.chapter}
+            {chapterHeading}
           </p>
           <p className="mt-3 text-[#2c1810] leading-relaxed">{visualScene.summary}</p>
           <div className="mt-4 flex flex-wrap gap-2">

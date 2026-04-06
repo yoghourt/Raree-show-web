@@ -104,8 +104,8 @@ export async function getLocationById(id: string): Promise<Location | undefined>
 type SceneRow = {
   tsid: string
   title: string
-  book: number
-  chapter: number
+  chapter_number: number
+  chapter_title: string | null
   pov_character: string
   location_id: string | null
   character_ids: string[] | null
@@ -122,8 +122,8 @@ function sceneFromRow(row: SceneRow): Scene {
     id: row.tsid,
     tsid: row.tsid,
     title: row.title,
-    book: row.book,
-    chapter: row.chapter,
+    chapter_number: row.chapter_number,
+    chapter_title: row.chapter_title ?? null,
     pov_character: row.pov_character,
     location: row.location_id ?? "",
     characters_present: row.character_ids ?? [],
