@@ -73,6 +73,8 @@ function locationFromRow(row: LocationRow): Location {
     description: row.description,
     related_characters: [],
     scenes: [],
+    map_focus_x: row.map_focus_x ?? null,
+    map_focus_y: row.map_focus_y ?? null,
   }
 }
 
@@ -114,7 +116,8 @@ type SceneRow = {
   order_index: number
   work_id: string | null
   timeline?: string | null
-  map_focus?: Scene["map_focus"] | null
+  map_focus_x: number | null
+  map_focus_y: number | null
 }
 
 function sceneFromRow(row: SceneRow): Scene {
@@ -131,7 +134,10 @@ function sceneFromRow(row: SceneRow): Scene {
     tags: row.tags ?? [],
     order: row.order_index,
     timeline: row.timeline ?? undefined,
-    map_focus: row.map_focus ?? undefined,
+    map_focus:
+      row.map_focus_x != null && row.map_focus_y != null
+        ? { x: row.map_focus_x, y: row.map_focus_y }
+        : undefined,
     work_id: row.work_id ?? undefined,
   }
 }

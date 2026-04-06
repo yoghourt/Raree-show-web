@@ -20,6 +20,8 @@ export interface Location {
   related_characters: string[]
   scenes: string[]
   image_url?: string
+  map_focus_x?: number | null
+  map_focus_y?: number | null
 }
 
 export interface Scene {
