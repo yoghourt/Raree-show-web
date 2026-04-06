@@ -25,12 +25,17 @@ export default async function ScenePage({ params }: Props) {
   const currentScene = scenes.find((s) => s.id === sceneId)
   if (!currentScene) notFound()
 
+  const [characters, locations] = await Promise.all([
+    getAllCharacters(),
+    getAllLocations(),
+  ])
+
   return (
     <SceneExperience
       currentScene={currentScene}
       allScenes={scenes}
-      characters={getAllCharacters()}
-      locations={getAllLocations()}
+      characters={characters}
+      locations={locations}
       workId={work.id}
     />
   )
