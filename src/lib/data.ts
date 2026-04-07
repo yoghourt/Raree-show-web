@@ -203,7 +203,6 @@ function workFromRow(row: WorkRow): Work {
     title: row.title,
     description: row.description,
     cover_image: row.cover_image ?? undefined,
-    books: [],
   }
 }
 
