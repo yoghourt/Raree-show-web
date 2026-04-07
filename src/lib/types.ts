@@ -44,18 +44,10 @@ export interface Scene {
   work_id?: string
 }
 
-export interface Book {
-  id: number
-  title: string
-  published: number
-  chapters: number
-}
-
 export interface Work {
   id: string
   tsid: string
   title: string
   description: string
   cover_image?: string
-  books: Book[]
 }
