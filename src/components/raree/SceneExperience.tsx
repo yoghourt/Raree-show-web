@@ -1,12 +1,16 @@
 "use client"
-import Link from "next/link"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { Character, Location, Scene } from "@/lib/types"
 import { WESTEROS_MAP_URL } from "@/lib/data"
-import CharacterCard from "@/components/raree/CharacterCard"
-import LocationCard from "@/components/raree/LocationCard"
+import CaptionDisplay from "@/components/raree/CaptionDisplay"
+import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
+import SceneRopes from "@/components/raree/SceneRopes"
+import MiniMap from "@/components/raree/MiniMap"
 import SceneAssistant from "@/components/raree/SceneAssistant"
+import SceneTimeCard from "@/components/raree/SceneTimeCard"
+import CharacterCardRack from "@/components/raree/CharacterCardRack"
+import SceneNavButtons from "@/components/raree/SceneNavButtons"
+import HomeButton from "@/components/raree/HomeButton"
 
 const MAP_TRANSITION_MS = 1200
 
@@ -16,7 +20,7 @@ interface SceneExperienceProps {
   characters: Character[]
   locations: Location[]
   workId: string
-  coverImage?: string
+  workTitle: string
 }
 
 function formatIdToName(raw: string): string {
@@ -40,35 +44,66 @@ export default function SceneExperience({
   characters,
   locations,
   workId,
-  coverImage,
+  workTitle,
 }: SceneExperienceProps) {
-  const router = useRouter()
-  const swapTimerRef = useRef<number | null>(null)
-  const endTimerRef = useRef<number | null>(null)
-  const [phase, setPhase] = useState<"idle" | "exiting" | "entering">("idle")
   const [visualScene, setVisualScene] = useState(currentScene)
-  const [displayedTimeline, setDisplayedTimeline] = useState(
-    currentScene.timeline ?? "Unknown timeline"
-  )
-  const [timelineCycle, setTimelineCycle] = useState(0)
-  const [imageErrorByCharacterId, setImageErrorByCharacterId] = useState<Record<string, boolean>>({})
+  // TODO: when Work gains a dedicated timeline field, prefer it over title here.
+  const displayedTimeline = workTitle.toUpperCase()
   const [mapError, setMapError] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapImgRef = useRef<HTMLImageElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
-  const [markerPos, setMarkerPos] = useState({ x: 0, y: 0 })
+  const [imageIndex, setImageIndex] = useState(0)
+  const imageReelRef = useRef<ImageReelHandle>(null)
+
+  const storyImages = useMemo(() => {
+    const raw = (visualScene.story_images ?? []) as unknown[]
+    return raw
+      .map((item) => {
+        if (typeof item === "string") {
+          return item.trim() ? { url: item.trim(), caption: "" } : null
+        }
+        if (item && typeof item === "object" && "url" in item) {
+          const rec = item as { url?: unknown; caption?: unknown }
+          if (typeof rec.url === "string" && rec.url.trim()) {
+            return {
+              url: rec.url,
+              caption: typeof rec.caption === "string" ? rec.caption : "",
+            }
+          }
+        }
+        return null
+      })
+      .filter((item): item is { url: string; caption: string } => Boolean(item))
+  }, [visualScene])
+
+  // TODO: when story_images migrates to jsonb {url, caption}[],
+  // per-image captions will take priority over scene.summary
+  const captionText =
+    (storyImages[imageIndex] &&
+      typeof storyImages[imageIndex] === "object" &&
+      storyImages[imageIndex].caption) ||
+    visualScene.summary ||
+    visualScene.chapter_title ||
+    ""
 
   useEffect(() => {
-    return () => {
-      if (swapTimerRef.current) window.clearTimeout(swapTimerRef.current)
-      if (endTimerRef.current) window.clearTimeout(endTimerRef.current)
-    }
-  }, [])
+    const t = window.setTimeout(() => setImageIndex(0), 0)
+    return () => window.clearTimeout(t)
+  }, [visualScene.id])
+
+  useEffect(() => {
+    setVisualScene(currentScene)
+  }, [currentScene])
+
+  useEffect(() => {
+    // Debug aid for validating scene-level image data source.
+    console.log("[SceneExperience] scene/story_images", visualScene.id, visualScene.story_images)
+  }, [visualScene.id, visualScene.story_images])
 
   useEffect(() => {
     // Defer state reset to avoid "cascading render" warnings.
     setTimeout(() => {
-      setImageErrorByCharacterId({})
       setMapError(false)
     }, 0)
   }, [visualScene.id])
@@ -77,18 +112,13 @@ export default function SceneExperience({
   const prevScene = sceneIndex > 0 ? allScenes[sceneIndex - 1] : null
   const nextScene = sceneIndex >= 0 && sceneIndex < allScenes.length - 1 ? allScenes[sceneIndex + 1] : null
 
-  const currentPov = useMemo(
-    () => characters.find((character) => character.id === visualScene.pov_character),
-    [characters, visualScene.pov_character]
-  )
-
   const currentLocation = useMemo(
     () => locations.find((location) => location.id === visualScene.location),
     [locations, visualScene.location]
   )
 
-  const mapX = currentLocation?.map_focus_x ?? 0.5
-  const mapY = currentLocation?.map_focus_y ?? 0.5
+  const mapX = Math.min(1, Math.max(0, currentLocation?.map_focus_x ?? 0.5))
+  const mapY = Math.min(1, Math.max(0, currentLocation?.map_focus_y ?? 0.5))
 
   useEffect(() => {
     const el = mapContainerRef.current
@@ -100,31 +130,6 @@ export default function SceneExperience({
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
-
-  const updateMarkerPosition = useCallback(() => {
-    const img = mapImgRef.current
-    if (!img) return
-    const rect = img.getBoundingClientRect()
-    setMarkerPos({
-      x: rect.left + mapX * rect.width,
-      y: rect.top + mapY * rect.height,
-    })
-  }, [mapX, mapY])
-
-  useEffect(() => {
-    updateMarkerPosition()
-    const t = window.setTimeout(updateMarkerPosition, MAP_TRANSITION_MS)
-    return () => window.clearTimeout(t)
-  }, [updateMarkerPosition, containerSize])
-
-  useEffect(() => {
-    window.addEventListener("resize", updateMarkerPosition)
-    window.addEventListener("scroll", updateMarkerPosition, true)
-    return () => {
-      window.removeEventListener("resize", updateMarkerPosition)
-      window.removeEventListener("scroll", updateMarkerPosition, true)
-    }
-  }, [updateMarkerPosition])
 
   const presentCharacters = useMemo(() => {
     return visualScene.characters_present.map((id) => {
@@ -147,14 +152,6 @@ export default function SceneExperience({
     })
   }, [visualScene.characters_present, characters])
 
-  const chapterHeading = useMemo(() => {
-    const n = visualScene.chapter_number
-    const base = `Chapter ${n}`
-    return visualScene.chapter_title
-      ? `${base} · ${visualScene.chapter_title}`
-      : base
-  }, [visualScene.chapter_number, visualScene.chapter_title])
-
   const sceneAssistantContext = useMemo(
     () => ({
       title: visualScene.title,
@@ -170,45 +167,34 @@ export default function SceneExperience({
     [visualScene, currentLocation, presentCharacters]
   )
 
-  function navigateWithAnimation(target: Scene | null, href: string) {
-    if (phase !== "idle") return
+  useEffect(() => {
+    const onPopState = () => {
+      const parts = window.location.pathname.split("/")
+      const sceneId = parts[parts.length - 1]
+      const matched = allScenes.find((s) => s.id === sceneId)
+      if (matched) setVisualScene(matched)
+    }
+    window.addEventListener("popstate", onPopState)
+    return () => window.removeEventListener("popstate", onPopState)
+  }, [allScenes])
 
-    setPhase("exiting")
-    if (swapTimerRef.current) window.clearTimeout(swapTimerRef.current)
-    if (endTimerRef.current) window.clearTimeout(endTimerRef.current)
-
-    swapTimerRef.current = window.setTimeout(() => {
-      if (target) {
-        setVisualScene(target)
-        setDisplayedTimeline(target.timeline ?? "Unknown timeline")
-        setTimelineCycle((value) => value + 1)
-      }
-      setPhase("entering")
-    }, 200)
-
-    endTimerRef.current = window.setTimeout(() => {
-      setPhase("idle")
-      window.history.replaceState(null, '', href)
-    }, 600)
+  function navigateScene(target: Scene | null) {
+    if (!target) return
+    setVisualScene(target)
+    window.history.replaceState({}, "", `/works/${workId}/scenes/${target.id}`)
   }
 
   return (
     <main
       className="relative h-screen overflow-hidden text-[#2c1810]"
       style={{
-        background: coverImage
-          ? `url(${coverImage}) center/cover no-repeat`
-          : "#f5f0e8",
+        background: "#141210",
       }}
     >
       <div
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{ background: "rgba(0,0,0,0.5)" }}
-        aria-hidden
-      />
-      <div
         ref={mapContainerRef}
         className="absolute inset-0 z-[1] overflow-hidden"
+        style={{ backgroundColor: "var(--rs-wood-dark)" }}
       >
         <img
           ref={mapImgRef}
@@ -217,270 +203,138 @@ export default function SceneExperience({
           className="absolute object-cover"
           style={{
             position: "absolute",
-            left: "50%",
-            top: "50%",
-            width: containerSize.width * 2,
-            height: containerSize.height * 2,
+            left: 0,
+            top: 0,
+            width: "280%",
+            height: "220%",
             objectFit: "cover",
-            transform: `translate(calc(-50% + ${(0.5 - mapX) * containerSize.width}px), calc(-50% + ${(0.5 - mapY) * containerSize.height}px))`,
-            transition: `transform ${MAP_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+            transform: `translate(${-mapX * 64}%, ${-mapY * 54}%)`,
+            transition: `transform ${MAP_TRANSITION_MS}ms cubic-bezier(0.65, 0, 0.35, 1)`,
             visibility: containerSize.width > 0 ? "visible" : "hidden",
           }}
           onError={() => setMapError(true)}
-          onLoad={updateMarkerPosition}
-          onTransitionEnd={(e) => {
-            if (e.propertyName === "transform") updateMarkerPosition()
-          }}
           loading="eager"
           decoding="async"
         />
       </div>
 
       <div
-        className="pointer-events-none fixed z-20"
+        aria-hidden
         style={{
-          left: markerPos.x,
-          top: markerPos.y,
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.28)",
+          pointerEvents: "none",
+          zIndex: 5,
+        }}
+      />
+      <div
+        className="rs-scene-viewer"
+        style={{
+          position: "fixed",
+          left: "50%",
+          top: "48%",
           transform: "translate(-50%, -50%)",
+          pointerEvents: "none",
+          zIndex: 10,
         }}
       >
-        <span className="scene-marker-ping" />
-        <span className="scene-marker-dot" />
-      </div>
-
-      <header
-        className="fixed top-0 left-0 right-0 z-30 h-[80px] border-b border-[#c8b89a]"
-        style={{
-          background: "rgba(245, 240, 232, 0.75)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}
-      >
-        <Link
-          href="/"
-          className="absolute top-3 right-4 z-10 text-xs text-[#6b4c35] hover:text-[#2c1810] transition-colors"
-        >
-          ← Back to home
-        </Link>
-
-        <div className="flex h-full min-h-0 items-center gap-4 pl-6 pr-28">
-          <div className="flex w-[260px] shrink-0 flex-col justify-center gap-1 text-left">
-            <p
-              key={`timeline-${timelineCycle}`}
-              className="text-xs uppercase tracking-[0.25em] text-[#8b1a1a] font-light line-clamp-1"
-              style={{
-                opacity: phase === "idle" ? 1 : undefined,
-                animation:
-                  phase === "exiting"
-                    ? "timelineExit 200ms ease-in forwards"
-                    : phase === "entering"
-                    ? "timelineEnter 400ms ease-out forwards"
-                    : "none",
-              }}
-            >
-              {displayedTimeline}
-            </p>
-            <h1 className="text-sm font-medium leading-tight text-[#2c1810] truncate">
-              {visualScene.title}
-            </h1>
-          </div>
-
-          <div
-            aria-hidden
-            style={{
-              width: 1,
-              height: 40,
-              background: "rgba(139, 26, 26, 0.2)",
-              flexShrink: 0,
-              alignSelf: "center",
-              margin: "0 16px",
-            }}
-          />
-
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
-            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto overflow-y-hidden py-1 [scrollbar-width:thin]">
-              {presentCharacters.map((item, index) => {
-                const hasImage = Boolean(item.image_url) && !imageErrorByCharacterId[item.id]
-                return (
-                  <div
-                    key={`${visualScene.id}-${item.id}`}
-                    className="flex w-20 shrink-0 flex-col items-center gap-1"
-                    style={{
-                      animation:
-                        phase === "exiting"
-                          ? "topBarCardExit 200ms ease-in forwards"
-                          : phase === "entering"
-                          ? `topBarCardEnter 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${index * 80}ms both`
-                          : "none",
-                    }}
-                  >
-                    {hasImage ? (
-                      <img
-                        src={item.image_url}
-                        alt=""
-                        width={44}
-                        height={44}
-                        className="h-[44px] w-[44px] shrink-0 rounded-full object-cover"
-                        onError={() => {
-                          setImageErrorByCharacterId((prev) => ({ ...prev, [item.id]: true }))
-                        }}
-                      />
-                    ) : (
-                      <div className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full border border-[#8b1a1a]/40 bg-[#8b1a1a]/10 text-[11px] font-medium text-[#8b1a1a]">
-                        {item.initials}
-                      </div>
-                    )}
-                    <span className="w-full truncate text-center text-[10px] leading-tight text-[#2c1810]">
-                      {item.name}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="relative z-20 flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-6 pb-24 pt-4">
-        <section className="w-[min(900px,calc(100%-2rem))] border border-[#c8b89a] bg-[rgba(245,240,232,0.92)] backdrop-blur-sm rounded-xl p-6 text-[#2c1810]">
-          <p className="text-xs uppercase tracking-widest text-[#8b1a1a] font-light">
-            {chapterHeading}
-          </p>
-          <p className="mt-3 text-[#2c1810] leading-relaxed">{visualScene.summary}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {visualScene.tags.map((tag) => (
-              <span
-                key={`${visualScene.id}-${tag}`}
-                className="text-xs px-2 py-1 rounded-full bg-[#c8b89a] text-[#6b4c35]"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-
-          <div className="mt-6 grid md:grid-cols-2 gap-4">
-            {currentPov ? (
-              <CharacterCard character={currentPov} />
-            ) : (
-              <div className="border border-[#c8b89a] rounded-lg p-4 text-sm text-[#6b4c35]">
-                POV character data unavailable
-              </div>
-            )}
-            {currentLocation ? (
-              <LocationCard location={currentLocation} />
-            ) : (
-              <div className="border border-[#c8b89a] rounded-lg p-4 bg-[#ede8dc]">
-                <p className="text-sm font-medium text-[#2c1810]">
-                  {formatIdToName(visualScene.location) || "Unknown Location"}
-                </p>
-                <p className="text-xs text-[#6b4c35] mt-1">Location details coming soon</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {prevScene && (
-          <button
-            type="button"
-            onClick={() =>
-              navigateWithAnimation(prevScene, `/works/${workId}/scenes/${prevScene.id}`)
+        <div className="scene-device-shell">
+          <ImageReel
+            key={visualScene.id}
+            ref={imageReelRef}
+            scene={visualScene}
+            images={storyImages}
+            imageIndex={imageIndex}
+            onNext={() =>
+              setImageIndex((i) => (storyImages.length > 0 ? (i + 1) % storyImages.length : 0))
             }
-            disabled={phase !== "idle"}
-            className="absolute left-6 bottom-6 border border-[#8b1a1a] bg-[#8b1a1a] text-[#f5f0e8] px-3 py-1.5 rounded-md text-sm hover:bg-[#6b1414] hover:border-[#6b1414] transition-colors"
-          >
-            ← prev
-          </button>
-        )}
-
-        <button
-          type="button"
-          onClick={() =>
-            navigateWithAnimation(
-              nextScene,
-              nextScene ? `/works/${workId}/scenes/${nextScene.id}` : "/"
-            )
-          }
-          disabled={phase !== "idle"}
-          className="absolute right-6 bottom-6 border border-[#8b1a1a] bg-[#8b1a1a] text-[#f5f0e8] px-4 py-2 rounded-md text-sm hover:bg-[#6b1414] hover:border-[#6b1414] transition-colors"
-        >
-          {nextScene ? "Next scene →" : "← Back to home"}
-        </button>
+            onPrev={() =>
+              setImageIndex((i) => {
+                const n = storyImages.length
+                return n > 0 ? (i - 1 + n) % n : 0
+              })
+            }
+          />
+          <CaptionDisplay
+            key={`${visualScene.id}-${imageIndex}`}
+            scene={visualScene}
+            caption={captionText}
+            imageIndex={imageIndex}
+            sceneIndex={sceneIndex >= 0 ? sceneIndex + 1 : 1}
+            totalScenes={allScenes.length}
+          />
+          <div className="scene-device-base" aria-hidden />
+        </div>
       </div>
+
+      <SceneRopes
+        onPrev={() => imageReelRef.current?.goPrev()}
+        onNext={() => imageReelRef.current?.goNext()}
+        disabled={storyImages.length <= 1}
+      />
+
+      <SceneTimeCard
+        workTitle={displayedTimeline}
+        scene={{
+          id: visualScene.id,
+          scene_time: visualScene.scene_time,
+          chapter_title: visualScene.chapter_title,
+          order_index: visualScene.order_index,
+          orderIndex: visualScene.orderIndex,
+        }}
+      />
+      <SceneNavButtons
+        onPrev={() => navigateScene(prevScene)}
+        onNext={() => navigateScene(nextScene)}
+        prevDisabled={!prevScene}
+        nextDisabled={!nextScene}
+      />
+      <CharacterCardRack
+        sceneId={visualScene.id}
+        characters={presentCharacters.map((item) => ({
+          id: item.id,
+          name: item.name,
+          house: characters.find((c) => c.id === item.id)?.house,
+          image_url: item.image_url,
+        }))}
+      />
+
+      <MiniMap
+        mapUrl={mapError ? "/maps/westeros.jpg" : WESTEROS_MAP_URL}
+        mapX={mapX}
+        mapY={mapY}
+        locationName={currentLocation?.name}
+      />
+      <HomeButton />
 
       <SceneAssistant sceneContext={sceneAssistantContext} />
 
       <style jsx>{`
-        .scene-marker-ping {
+        .scene-device-shell {
+          position: relative;
+          display: flex;
+          flex-direction: row;
+          align-items: stretch;
+          gap: 0;
+          padding-bottom: 18px;
+          animation: rs-breathe-glow 5s ease-in-out infinite;
+        }
+
+        .scene-device-base {
           position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          width: 20px;
-          height: 20px;
-          border-radius: 9999px;
-          background: rgba(139, 26, 26, 0.4);
-          animation: markerPing 1.5s ease-out infinite;
+          left: -4%;
+          bottom: 0;
+          width: 108%;
+          height: 18px;
+          margin: 0;
+          background: linear-gradient(180deg, #3d2410, #2a1a0e);
+          border-radius: 2px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+          pointer-events: none;
+          z-index: 4;
         }
-        .scene-marker-dot {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          width: 8px;
-          height: 8px;
-          border-radius: 9999px;
-          background: #8b1a1a;
-        }
-        @keyframes markerPing {
-          0% {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 1;
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(2.5);
-            opacity: 0;
-          }
-        }
-        @keyframes timelineExit {
-          from {
-            transform: rotate3d(1, 0, 0, 0deg);
-            opacity: 1;
-          }
-          to {
-            transform: rotate3d(1, 0, 0, 90deg);
-            opacity: 0;
-          }
-        }
-        @keyframes timelineEnter {
-          from {
-            transform: rotate3d(1, 0, 0, -90deg);
-            opacity: 0;
-          }
-          to {
-            transform: rotate3d(1, 0, 0, 0deg);
-            opacity: 1;
-          }
-        }
-        @keyframes topBarCardEnter {
-          from {
-            transform: translateX(100vw);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        @keyframes topBarCardExit {
-          from {
-            transform: translateX(0);
-            opacity: 1;
-          }
-          to {
-            transform: translateX(-100vw);
-            opacity: 0;
-          }
-        }
+
       `}</style>
     </main>
   )

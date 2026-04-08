@@ -106,6 +106,7 @@ export async function getLocationById(id: string): Promise<Location | undefined>
 type SceneRow = {
   tsid: string
   title: string
+  scene_time?: string | null
   chapter_number: number
   chapter_title: string | null
   pov_character: string
@@ -118,6 +119,33 @@ type SceneRow = {
   timeline?: string | null
   map_focus_x: number | null
   map_focus_y: number | null
+  story_images?: unknown
+}
+
+function storyImagesFromRow(raw: unknown): Array<{ url: string; caption: string }> | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined
+  const out: Array<{ url: string; caption: string }> = []
+  for (const item of raw) {
+    if (typeof item === "string") {
+      const url = item.trim()
+      if (url) out.push({ url, caption: "" })
+      continue
+    }
+    if (
+      item !== null &&
+      typeof item === "object" &&
+      "url" in item
+    ) {
+      const rec = item as { url: unknown; caption?: unknown }
+      if (typeof rec.url === "string") {
+        out.push({
+          url: rec.url,
+          caption: typeof rec.caption === "string" ? rec.caption : "",
+        })
+      }
+    }
+  }
+  return out.length > 0 ? out : undefined
 }
 
 function sceneFromRow(row: SceneRow): Scene {
@@ -125,6 +153,7 @@ function sceneFromRow(row: SceneRow): Scene {
     id: row.tsid,
     tsid: row.tsid,
     title: row.title,
+    scene_time: row.scene_time ?? null,
     chapter_number: row.chapter_number,
     chapter_title: row.chapter_title ?? null,
     pov_character: row.pov_character,
@@ -133,12 +162,15 @@ function sceneFromRow(row: SceneRow): Scene {
     summary: row.summary,
     tags: row.tags ?? [],
     order: row.order_index,
+    order_index: row.order_index,
+    orderIndex: row.order_index,
     timeline: row.timeline ?? undefined,
     map_focus:
       row.map_focus_x != null && row.map_focus_y != null
         ? { x: row.map_focus_x, y: row.map_focus_y }
         : undefined,
     work_id: row.work_id ?? undefined,
+    story_images: storyImagesFromRow(row.story_images),
   }
 }
 
@@ -161,6 +193,7 @@ export async function getSceneById(id: string): Promise<Scene | undefined> {
     .maybeSingle()
 
   if (error || !data) return undefined
+  console.log("[data.ts] raw scene from supabase:", JSON.stringify(data, null, 2))
 
   return sceneFromRow(data as SceneRow)
 }
@@ -181,6 +214,7 @@ export async function getScenesByWork(workTsid: string): Promise<Scene[]> {
     .order("order_index", { ascending: true })
 
   if (error) return []
+  console.log("[data.ts] raw scene from supabase:", JSON.stringify(data, null, 2))
 
   return (data as SceneRow[]).map(sceneFromRow)
 }
