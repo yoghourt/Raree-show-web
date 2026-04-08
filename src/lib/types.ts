@@ -28,6 +28,7 @@ export interface Scene {
   id: string
   tsid: string
   title: string
+  scene_time?: string | null
   chapter_number: number
   chapter_title: string | null
   pov_character: string
@@ -36,12 +37,15 @@ export interface Scene {
   summary: string
   tags: string[]
   order: number
+  order_index?: number
+  orderIndex?: number
   timeline?: string
   map_focus?: {
     x: number
     y: number
   }
   work_id?: string
+  story_images?: Array<{ url: string; caption: string }>
 }
 
 export interface Work {

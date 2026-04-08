@@ -37,7 +37,7 @@ export default async function ScenePage({ params }: Props) {
       characters={characters}
       locations={locations}
       workId={work.id}
-      coverImage={work.cover_image}
+      workTitle={work.title}
     />
   )
 }

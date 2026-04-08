@@ -112,8 +112,12 @@ export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
     <>
       {open && (
         <div
-          className="fixed bottom-[80px] left-1/2 z-[60] flex max-h-[500px] w-[380px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-[#c8b89a] shadow-lg"
+          className="fixed z-[20] flex max-h-[min(500px,calc(100vh-140px))] w-[380px] max-w-[calc(100vw-64px)] flex-col overflow-hidden rounded-xl border border-[#c8b89a] shadow-lg"
           style={{
+            right: 32,
+            bottom: 96,
+            left: "auto",
+            transform: "none",
             background: "rgba(245, 240, 232, 0.95)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
@@ -205,8 +209,14 @@ export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-5 left-1/2 z-[60] flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full text-lg font-semibold text-[#f5f0e8] shadow-md transition hover:brightness-110"
-        style={{ background: "#8b1a1a" }}
+        className="fixed z-[20] flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-[#f5f0e8] shadow-md transition hover:brightness-110"
+        style={{
+          right: 32,
+          bottom: 32,
+          left: "auto",
+          transform: "none",
+          background: "#8b1a1a",
+        }}
         aria-label="Open scene assistant"
       >
         ✦
