@@ -24,6 +24,11 @@ export interface Location {
   map_focus_y?: number | null
 }
 
+export type StoryImage = {
+  url: string
+  caption: string
+}
+
 export interface Scene {
   id: string
   tsid: string
@@ -45,7 +50,7 @@ export interface Scene {
     y: number
   }
   work_id?: string
-  story_images?: Array<{ url: string; caption: string }>
+  story_images_v2: StoryImage[] | null
 }
 
 export interface Work {

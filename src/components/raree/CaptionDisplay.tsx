@@ -1,15 +1,17 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import type { Scene } from "@/lib/types"
+
+function resolveCaption(scene: Scene, imageIndex: number): string {
+  const perImage = scene.story_images_v2?.[imageIndex]?.caption
+  if (perImage && perImage.trim().length > 0) return perImage
+  return scene.summary ?? ""
+}
 
 export interface CaptionDisplayProps {
-  scene: {
-    id: string
-    chapter_number?: number | null
-    chapter_title?: string | null
-  }
-  caption: string
-  imageIndex: number
+  scene: Scene
+  currentImageIndex: number
   sceneIndex: number
   totalScenes: number
 }
@@ -67,16 +69,25 @@ function CompassRoseIcon() {
 
 export default function CaptionDisplay({
   scene,
-  caption,
-  imageIndex,
+  currentImageIndex,
   sceneIndex,
   totalScenes,
 }: CaptionDisplayProps) {
   const [visibleLength, setVisibleLength] = useState(0)
+  const resolvedCaption = resolveCaption(scene, currentImageIndex)
+  const v2Slide = scene.story_images_v2?.[currentImageIndex]
+  const captionSource: "v2" | "fallback" =
+    v2Slide != null && String(v2Slide.caption ?? "").trim().length > 0 ? "v2" : "fallback"
+
+  console.log({
+    imageIndex: currentImageIndex,
+    resolvedCaption,
+    source: captionSource,
+  })
 
   useEffect(() => {
     const resetId = window.setTimeout(() => setVisibleLength(0), 0)
-    if (caption.length === 0) {
+    if (resolvedCaption.length === 0) {
       return () => window.clearTimeout(resetId)
     }
 
@@ -84,7 +95,7 @@ export default function CaptionDisplay({
     const id = window.setInterval(() => {
       i += 1
       setVisibleLength(i)
-      if (i >= caption.length) {
+      if (i >= resolvedCaption.length) {
         window.clearInterval(id)
       }
     }, 30)
@@ -93,21 +104,13 @@ export default function CaptionDisplay({
       window.clearTimeout(resetId)
       window.clearInterval(id)
     }
-  }, [caption, imageIndex])
+  }, [resolvedCaption, currentImageIndex])
 
-  const displayed = caption.slice(0, visibleLength)
-  const typingComplete = caption.length === 0 || visibleLength >= caption.length
-  const imageRoman = toRomanNumeral(imageIndex + 1)
+  const displayed = resolvedCaption.slice(0, visibleLength)
+  const typingComplete =
+    resolvedCaption.length === 0 || visibleLength >= resolvedCaption.length
+  const imageRoman = toRomanNumeral(currentImageIndex + 1)
   const chapterRoman = toRomanNumeral(scene.chapter_number ?? 1)
-
-  useEffect(() => {
-    console.log(
-      "[CaptionDisplay] scene.chapter_number =",
-      scene?.chapter_number,
-      "scene.id =",
-      scene?.id
-    )
-  }, [scene?.chapter_number, scene?.id])
 
   return (
     <div className="caption-display-root">

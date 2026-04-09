@@ -1,4 +1,4 @@
-import type { Character, Location, Scene, Work } from "./types"
+import type { Character, Location, Scene, StoryImage, Work } from "./types"
 import { supabase } from "./supabase"
 
 export const WESTEROS_MAP_URL = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/v1/raree-show/maps/westeros`
@@ -119,33 +119,24 @@ type SceneRow = {
   timeline?: string | null
   map_focus_x: number | null
   map_focus_y: number | null
-  story_images?: unknown
+  story_images_v2?: unknown
 }
 
-function storyImagesFromRow(raw: unknown): Array<{ url: string; caption: string }> | undefined {
-  if (!Array.isArray(raw) || raw.length === 0) return undefined
-  const out: Array<{ url: string; caption: string }> = []
+function storyImagesV2FromRow(raw: unknown): StoryImage[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null
+  const out: StoryImage[] = []
   for (const item of raw) {
-    if (typeof item === "string") {
-      const url = item.trim()
-      if (url) out.push({ url, caption: "" })
-      continue
-    }
-    if (
-      item !== null &&
-      typeof item === "object" &&
-      "url" in item
-    ) {
+    if (item !== null && typeof item === "object" && "url" in item) {
       const rec = item as { url: unknown; caption?: unknown }
-      if (typeof rec.url === "string") {
+      if (typeof rec.url === "string" && rec.url.trim()) {
         out.push({
-          url: rec.url,
+          url: rec.url.trim(),
           caption: typeof rec.caption === "string" ? rec.caption : "",
         })
       }
     }
   }
-  return out.length > 0 ? out : undefined
+  return out.length > 0 ? out : null
 }
 
 function sceneFromRow(row: SceneRow): Scene {
@@ -170,7 +161,7 @@ function sceneFromRow(row: SceneRow): Scene {
         ? { x: row.map_focus_x, y: row.map_focus_y }
         : undefined,
     work_id: row.work_id ?? undefined,
-    story_images: storyImagesFromRow(row.story_images),
+    story_images_v2: storyImagesV2FromRow(row.story_images_v2),
   }
 }
 
@@ -193,7 +184,6 @@ export async function getSceneById(id: string): Promise<Scene | undefined> {
     .maybeSingle()
 
   if (error || !data) return undefined
-  console.log("[data.ts] raw scene from supabase:", JSON.stringify(data, null, 2))
 
   return sceneFromRow(data as SceneRow)
 }
@@ -214,7 +204,6 @@ export async function getScenesByWork(workTsid: string): Promise<Scene[]> {
     .order("order_index", { ascending: true })
 
   if (error) return []
-  console.log("[data.ts] raw scene from supabase:", JSON.stringify(data, null, 2))
 
   return (data as SceneRow[]).map(sceneFromRow)
 }

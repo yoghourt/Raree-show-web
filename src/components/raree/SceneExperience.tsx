@@ -57,35 +57,15 @@ export default function SceneExperience({
   const imageReelRef = useRef<ImageReelHandle>(null)
 
   const storyImages = useMemo(() => {
-    const raw = (visualScene.story_images ?? []) as unknown[]
-    return raw
-      .map((item) => {
-        if (typeof item === "string") {
-          return item.trim() ? { url: item.trim(), caption: "" } : null
-        }
-        if (item && typeof item === "object" && "url" in item) {
-          const rec = item as { url?: unknown; caption?: unknown }
-          if (typeof rec.url === "string" && rec.url.trim()) {
-            return {
-              url: rec.url,
-              caption: typeof rec.caption === "string" ? rec.caption : "",
-            }
-          }
-        }
-        return null
-      })
-      .filter((item): item is { url: string; caption: string } => Boolean(item))
-  }, [visualScene])
-
-  // TODO: when story_images migrates to jsonb {url, caption}[],
-  // per-image captions will take priority over scene.summary
-  const captionText =
-    (storyImages[imageIndex] &&
-      typeof storyImages[imageIndex] === "object" &&
-      storyImages[imageIndex].caption) ||
-    visualScene.summary ||
-    visualScene.chapter_title ||
-    ""
+    const v2 = visualScene.story_images_v2
+    if (!v2?.length) return []
+    return v2
+      .map((item) => ({
+        url: typeof item.url === "string" ? item.url.trim() : "",
+        caption: typeof item.caption === "string" ? item.caption : "",
+      }))
+      .filter((s) => s.url.length > 0)
+  }, [visualScene.story_images_v2])
 
   useEffect(() => {
     const t = window.setTimeout(() => setImageIndex(0), 0)
@@ -95,11 +75,6 @@ export default function SceneExperience({
   useEffect(() => {
     setVisualScene(currentScene)
   }, [currentScene])
-
-  useEffect(() => {
-    // Debug aid for validating scene-level image data source.
-    console.log("[SceneExperience] scene/story_images", visualScene.id, visualScene.story_images)
-  }, [visualScene.id, visualScene.story_images])
 
   useEffect(() => {
     // Defer state reset to avoid "cascading render" warnings.
@@ -241,9 +216,7 @@ export default function SceneExperience({
       >
         <div className="scene-device-shell">
           <ImageReel
-            key={visualScene.id}
             ref={imageReelRef}
-            scene={visualScene}
             images={storyImages}
             imageIndex={imageIndex}
             onNext={() =>
@@ -259,8 +232,7 @@ export default function SceneExperience({
           <CaptionDisplay
             key={`${visualScene.id}-${imageIndex}`}
             scene={visualScene}
-            caption={captionText}
-            imageIndex={imageIndex}
+            currentImageIndex={imageIndex}
             sceneIndex={sceneIndex >= 0 ? sceneIndex + 1 : 1}
             totalScenes={allScenes.length}
           />
