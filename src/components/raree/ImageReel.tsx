@@ -1,6 +1,6 @@
 "use client"
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react"
 
 export type StoryImageSlide = {
   url: string
@@ -8,10 +8,6 @@ export type StoryImageSlide = {
 }
 
 export interface ImageReelProps {
-  scene: {
-    id: string
-    story_images?: unknown[]
-  }
   images: StoryImageSlide[]
   imageIndex: number
   onNext: () => void
@@ -26,7 +22,7 @@ export type ImageReelHandle = {
 type SlideDir = "forward" | "backward"
 
 const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel(
-  { scene, images, imageIndex, onNext, onPrev },
+  { images, imageIndex, onNext, onPrev },
   ref
 ) {
   const [sliding, setSliding] = useState(false)
@@ -37,28 +33,6 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
   const nextIdx = n > 0 ? (imageIndex + 1) % n : 0
   const prevIdx = n > 0 ? (imageIndex - 1 + n) % n : 0
   const current = n > 0 ? images[imageIndex] : null
-
-  const normalizedSceneImages = (scene?.story_images ?? [])
-    .map((item) => {
-      if (typeof item === "string") return item.trim() ? { url: item.trim(), caption: "" } : null
-      if (item && typeof item === "object" && "url" in item) {
-        const rec = item as { url?: unknown; caption?: unknown }
-        if (typeof rec.url === "string" && rec.url.trim()) {
-          return { url: rec.url, caption: typeof rec.caption === "string" ? rec.caption : "" }
-        }
-      }
-      return null
-    })
-    .filter(Boolean)
-
-  console.log("[ImageReel] full scene prop:", JSON.stringify(scene, null, 2))
-  console.log("[ImageReel] story_images value:", scene?.story_images)
-  console.log(
-    "[ImageReel] story_images type:",
-    typeof scene?.story_images,
-    Array.isArray(scene?.story_images)
-  )
-  console.log("[ImageReel] normalized scene images count:", normalizedSceneImages.length)
 
   const startForward = useCallback(() => {
     if (sliding || n <= 1 || !current) return
@@ -93,15 +67,6 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
     }
     setSliding(false)
   }, [onNext, onPrev, slideDir])
-
-  useEffect(() => {
-    console.log(
-      "[ImageReel] scene.id =",
-      scene?.id,
-      "story_images count =",
-      scene?.story_images?.length ?? 0
-    )
-  }, [scene?.id, scene?.story_images?.length])
 
   if (n === 0 || !current) {
     return (
