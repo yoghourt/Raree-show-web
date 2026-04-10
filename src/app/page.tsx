@@ -1,6 +1,8 @@
 import { getAllWorks } from "@/lib/data"
 import Bookshelf from "@/components/raree/Bookshelf"
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const works = await getAllWorks()
 

@@ -7,6 +7,8 @@ import {
 } from "@/lib/data"
 import SceneExperience from "../../../../../components/raree/SceneExperience"
 
+export const dynamic = 'force-dynamic'
+
 interface Props {
   params: Promise<{
     workId: string
