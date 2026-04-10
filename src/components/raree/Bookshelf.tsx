@@ -227,6 +227,7 @@ export default function Bookshelf({ works }: BookshelfProps) {
                 display: "flex",
                 width: "700px",
                 height: "460px",
+                overflow: "hidden",
                 filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.8))",
                 animation: "bookOpen 0.5s ease forwards",
                 position: "relative",
@@ -304,7 +305,6 @@ export default function Bookshelf({ works }: BookshelfProps) {
                   padding: "40px 40px 36px 40px",
                   display: "flex",
                   flexDirection: "column",
-                  justifyContent: "space-between",
                   position: "relative",
                   boxShadow: "inset 8px 0 20px rgba(0,0,0,0.15)",
                   borderLeft: "none",
@@ -337,7 +337,15 @@ export default function Bookshelf({ works }: BookshelfProps) {
                   }}
                 />
 
-                <div style={{ position: "relative", zIndex: 1 }}>
+                <div
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    flex: "1 1 auto",
+                    minHeight: 0,
+                    overflow: "hidden",
+                  }}
+                >
                   <h2
                     id="bookshelf-modal-title"
                     style={{
@@ -356,6 +364,10 @@ export default function Bookshelf({ works }: BookshelfProps) {
                       color: "#6b4c35",
                       lineHeight: 1.8,
                       marginBottom: "8px",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 8,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
                     }}
                   >
                     {openWork.description}
@@ -366,6 +378,7 @@ export default function Bookshelf({ works }: BookshelfProps) {
                   style={{
                     position: "relative",
                     zIndex: 1,
+                    flex: "0 0 auto",
                     display: "flex",
                     justifyContent: "flex-end",
                     alignItems: "flex-end",
