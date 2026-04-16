@@ -68,11 +68,15 @@ export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
 
       const decoder = new TextDecoder()
       let acc = ""
+      let lineBuffer = ""
+      let eventDataLines: string[] = []
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        acc += decoder.decode(value, { stream: true })
+      const flushEvent = () => {
+        if (eventDataLines.length === 0) return
+        const payload = eventDataLines.join("\n")
+        eventDataLines = []
+        if (!payload || payload === "[DONE]") return
+        acc += payload
         setMessages((m) => {
           const next = [...m]
           const last = next[next.length - 1]
@@ -81,6 +85,38 @@ export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
           }
           return next
         })
+      }
+
+      const processSseChunk = (text: string) => {
+        lineBuffer += text
+        const lines = lineBuffer.split("\n")
+        lineBuffer = lines.pop() ?? ""
+
+        for (const rawLine of lines) {
+          const line = rawLine.replace(/\r$/, "")
+          if (line === "") {
+            flushEvent()
+            continue
+          }
+          if (line.startsWith("data:")) {
+            eventDataLines.push(line.slice(5).trimStart())
+          }
+        }
+      }
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) {
+          processSseChunk(decoder.decode())
+          const trailingLine = lineBuffer.replace(/\r$/, "")
+          if (trailingLine.startsWith("data:")) {
+            eventDataLines.push(trailingLine.slice(5).trimStart())
+          }
+          lineBuffer = ""
+          flushEvent()
+          break
+        }
+        processSseChunk(decoder.decode(value, { stream: true }))
       }
 
       setMessages((m) => {
