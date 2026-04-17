@@ -45,7 +45,7 @@ It’s a naive RAG: retrieval is hardcoded to “the current scene only”, rega
 RAG retrieval needs a text-per-scene to embed; we need to either
 (a) restore summary, or (b) derive a summary from story_images_v2
 captions, or (c) introduce a dedicated rag_text field.
-→ Decision deferred to Phase 1 implementation kickoff.
+→ Decision: option (b) — derive from story_images_v2 captions. At embedding time, concatenate all non-empty captions for the scene: `story_images_v2.map(img => img.caption).filter(Boolean).join(" ")`. No new DB field required.
 - **Data completeness**: admin currently has partial scene data for ASOIAF.
 RAG quality scales with data coverage. Phase 1 can start with whatever
 is in the DB at kickoff time; missing scenes will simply be invisible
@@ -53,7 +53,7 @@ to retrieval (a known limitation, not a correctness bug).
 
 ### Setup(one-time)
 
-- Pre-compute: each scene’s summary is embedded once and stored(in pgvector or a vector DB), keyed by scene tsid. Triggered when a scene is created or its summary is edited in admin(write-time embedding); a one-time backfill script handles existing scenes.
+- Pre-compute: each scene's rag_text (derived from captions, see Prerequisites) is embedded once and stored in pgvector via Supabase's native extension. Triggered on caption update (single scene) or via one-time backfill script for existing scenes.
 - At query time: user question is embedded on-the-fly
 
 ## Universal flow (Phase 1)
@@ -138,3 +138,4 @@ Phase 1 fails (No-go on proceeding to Phase 2) if:
 chapter-filter-only baseline
 - Embedding pipeline proves too complex to maintain at current
 scale
+- Gemini bypasses spoiler protection via training knowledge (i.e., answers correctly about unread events even when those scenes are excluded from context) and no viable mitigation exists (e.g., system prompt suppression proves unreliable)
