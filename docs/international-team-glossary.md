@@ -178,6 +178,43 @@
 
 ---
 
+### Workflow hygiene ⭐⭐
+
+**直白定义**：工作流卫生。指一组看起来琐碎、但决定团队协作质量的基础动作是否持续做好。
+
+**典型动作**：
+- ticket 状态及时更新（不是做完才一次性改）
+- 分支、PR、issue 命名一致且可追踪
+- 合并前补齐测试证据和已知限制
+- 完成后 close the loop（写清后续项）
+
+**为什么它重要**：workflow hygiene 差时，团队不会立刻爆炸，但会持续流失时间在"找上下文、猜状态、反复确认"上。
+
+**核心潜规则**：国际团队里，workflow hygiene 往往被视为 seniority 信号。不是谁代码炫，而是谁让协作成本最低。
+
+---
+
+### Issue auto-linking keywords ⭐
+
+**直白定义**：在 PR/commit 里使用自动关联关键词，让平台自动链接并关闭 issue。
+
+**常见关键词**：
+- `Closes #123`
+- `Fixes #123`
+- `Resolves #123`
+
+**典型用法**：
+```markdown
+## Why
+This PR fixes stale cache invalidation for scene pages.
+
+Closes #248
+```
+
+**边界提醒**：只有在"这次真的完成 issue 定义"时才用 closes/fixes；如果只是部分完成，改用 `Refs #123` 更准确。
+
+---
+
 ## Part 2: 文档与决策
 
 ### Spec / Specification ⭐⭐
@@ -306,6 +343,24 @@
 
 ---
 
+### Incident retrospective ⭐⭐
+
+**直白定义**：事故回顾会议或回顾文档，通常是 postmortem 的同义近义表达，强调"事件后回看并改进系统"。
+
+**和 postmortem 的关系**：
+- 在很多团队里两者可互换使用
+- `incident retrospective` 语气更中性，更强调学习闭环
+- `postmortem` 在工程语境里历史更久、模板更固定
+
+**核心目标一致**：
+1. 还原事实（发生了什么）
+2. 识别系统性原因（不是找替罪羊）
+3. 输出可执行改进项并跟踪完成
+
+**沟通建议**：跨职能场景（工程 + 运营 + 客服）里，`incident retrospective` 往往更容易被非工程角色接受。
+
+---
+
 ### PR description ⭐
 
 **直白定义**：Pull Request 的文字说明，解释你为什么改、改了什么、怎么测的、有什么已知问题。
@@ -334,6 +389,37 @@
 **为什么这个对你这么重要**：招聘方看你 GitHub 时，**先看 PR description 写得怎么样，再看代码**。代码能力可以面试时考，但"会不会把上下文留给未来的人"——只能通过 PR 历史看出来。
 
 **你已经在做的事**：raree-show 的 PR #1 到 PR #12 都有英文描述。继续保持。
+
+---
+
+### Single source of truth ⭐⭐
+
+**直白定义**：单一事实源。某类信息只认一个权威位置，其他地方只做引用，不做并行真相。
+
+**例子**：
+- 需求状态以 issue tracker 为准，不以聊天记录为准
+- 架构决策以 ADR 为准，不以会议口头记忆为准
+- API contract 以 spec/repo 中的定义为准，不以截图为准
+
+**为什么是核心原则**：一旦出现多个"看起来都像真相"的位置，团队会在同步差异上持续消耗。
+
+**落地动作**：在文档开头明确写 "Source of truth: ..."，并把其他文档改为链接该源。
+
+---
+
+### Decisions are contextual, and context must be captured ⭐⭐⭐
+
+**直白定义**：决策不是抽象真理，而是当时约束下的最优解；所以必须把当时上下文写下来，否则后人无法判断该不该沿用。
+
+**典型上下文包括**：
+- 业务目标与时间窗口
+- 技术约束（团队能力、基础设施、兼容性）
+- 风险偏好（稳定优先还是速度优先）
+- 被拒绝方案及拒绝理由
+
+**为什么这句话关键**：很多"历史决策看起来很蠢"并不是决策者差，而是上下文丢失了。
+
+**和 ADR 的关系**：ADR 不只记录 `Decision`，更要把 `Context` 写实。没有上下文的决策记录，半年后几乎不可复用。
 
 ---
 
@@ -394,6 +480,29 @@ And it must NOT mention any scene with order_index >= 50.
 - Plot reasoning questions (intentionally excluded - see RFC-001)
 - Image-based retrieval (Phase 3)
 ```
+
+---
+
+### MoSCoW prioritization ⭐⭐
+
+**直白定义**：一种需求优先级方法，把需求分成四档：
+- **Must have**：没有就不能上线
+- **Should have**：重要但可短期延后
+- **Could have**：有更好，没有也不影响核心价值
+- **Won't have (this time)**：这次明确不做
+
+**为什么在国际团队高频出现**：它能把"大家都觉得重要"拆成可执行的层级，避免需求讨论变成主观拉扯。
+
+**你在 ticket 里可直接用的写法**：
+```
+## Prioritization (MoSCoW)
+- Must: spoiler-safe scene retrieval for prior scenes
+- Should: answer citations in response body
+- Could: richer markdown formatting
+- Won't (this sprint): cross-book retrieval
+```
+
+**核心潜规则**：**Won't have 不是放弃，而是对本轮范围负责**。把不做的写出来，反而更专业。
 
 ---
 
@@ -472,6 +581,35 @@ Q4 2026: Enterprise features
 
 ---
 
+### IP sprint ⭐
+
+**直白定义**：**In-Progress sprint**（进行中的 sprint）。强调"现在这个迭代还在跑，结论尚未定型"。
+
+**为什么这个说法有用**：在跨时区协作里，它是一个状态信号，提醒别人当前数字（完成率、风险、变更）都可能继续波动。
+
+**常见表达**：
+- "Given we're mid IP sprint, this estimate may change after Thursday's dependency check."
+- "Let's avoid hard commitments until IP sprint stabilizes."
+
+**核心动作**：在 IP sprint 里汇报进度时，尽量同时给出**当前状态 + 风险 + 下一检查点**，减少误读。
+
+---
+
+### Partial issue completion ⭐⭐
+
+**直白定义**：一个 issue 没有一次性做完，而是完成了其中可交付的一部分，并清楚记录剩余部分。
+
+**什么时候是好事**：当你能先交付高价值子集、降低风险、加快反馈循环时，partial completion 是成熟做法，不是"没做完"。
+
+**正确落地方式**：
+1. 在 issue/PR 中标明本次完成了哪些 acceptance criteria
+2. 明确列出未完成项和原因
+3. 立 follow-up ticket 并互相链接
+
+**反模式**：只说 "partially done" 但不写边界。这样 reviewer 无法判断是否可合并、是否可上线。
+
+---
+
 ## Part 5: 交付与发布
 
 ### Ship ⭐⭐
@@ -527,6 +665,35 @@ Q4 2026: Enterprise features
 **核心价值**：**让任何人在压力下都能做对**。不依赖某个英雄半夜爬起来回忆"上次怎么处理的"。
 
 **你已经在做的事**：SDK 文档、用户文档都写过。
+
+---
+
+### Opportunistic cleanup ⭐
+
+**直白定义**：在做主任务时，顺手清理同一路径上的小问题（命名、注释、死代码、轻量重构）。
+
+**什么时候合理**：清理成本很低、不会扩大评审负担、不会影响主任务交付时机。
+
+**边界判断（30 秒规则）**：
+- 30 秒内能解释清楚"为什么顺手修"
+- 不引入新的行为变化
+- 不把小清理演变成 scope creep
+
+**在 PR 里的推荐写法**：把它放在 "Additional cleanup" 小节，明确是 opportunistic，不是主交付目标。
+
+---
+
+### Drive-by fix ⭐
+
+**直白定义**：你路过某段代码时，顺手修一个明显小 bug 或明显坏味道，不开大工程。
+
+**和 opportunistic cleanup 的区别**：
+- **Drive-by fix** 更偏"修一个具体问题"
+- **Opportunistic cleanup** 更偏"顺手清理一组低风险杂项"
+
+**核心潜规则**：drive-by fix 可以做，但**必须可审、可回滚、可追踪**。最差做法是"顺手改了但没留上下文"。
+
+**最稳妥实践**：若改动超过一两个文件，优先拆成单独 commit 或单独 ticket，避免主 PR 可读性下降。
 
 ---
 
@@ -613,6 +780,56 @@ Q4 2026: Enterprise features
 
 ---
 
+### Register mismatch ⭐⭐
+
+**直白定义**：沟通语体（register）不匹配。比如你用命令口吻，对方期待协作口吻；或你写得过学术，对方需要操作指令。
+
+**常见症状**：
+- 你觉得自己"说清楚了"，对方却觉得你"在指责/在绕圈"
+- 同一句话在不同角色（PM、工程师、客户）那里反应完全不同
+
+**修正方法**：
+1. 先判断对象：peer / manager / cross-functional / user
+2. 调整语气强度：建议、请求、结论分别用不同句式
+3. 在高风险沟通里先发简版，再补细节
+
+**对国际团队特别关键**：跨文化团队里，很多冲突并非观点分歧，而是 register mismatch。
+
+---
+
+### Own your narrative ⭐⭐
+
+**直白定义**：主动定义并持续维护你工作的叙事主线（你在解决什么问题、做出什么取舍、带来什么结果）。
+
+**它不是自夸**：而是把事实组织成可理解、可验证、可复用的故事，避免你的贡献被随机片段化。
+
+**应用场景**：
+- 1:1 里讲本周进展时，不只报动作，要讲影响
+- PR description 里写 Why 和 trade-off
+- 面试里讲项目时，从问题到结果形成闭环
+
+**一句话模板**：
+> "I focused on X because Y was blocking Z, chose A over B due to C, and the result was D."
+
+---
+
+### Context handoff hygiene ⭐⭐
+
+**直白定义**：交接上下文时的卫生标准。目标是让接手人不需要猜、不卡住、少返工。
+
+**最小交接包**：
+- 当前状态（做到哪一步）
+- 决策与理由（为什么这样做）
+- 未完成项与风险（下一步要注意什么）
+- 入口链接（ticket / PR / 文档 / 环境）
+
+**为什么叫 hygiene**：它像代码风格一样是基础卫生，不是"有空再做"。交接质量差会直接放大跨时区协作成本。
+
+**你可复用的交接句式**：
+> "Current state / Decision made / Open risks / Next action owner"
+
+---
+
 ## Part 7: 写作技巧
 
 这一节是国际团队写作的核心方法论。**写作能力 = 异步协作能力 = 远程工作的硬通货**。
@@ -690,6 +907,36 @@ Spoiler protection enforced at the data layer, not the prompt layer.
 - 文档修订时，**展示原版 vs 新版**，而不是只展示新版
 - PR 中，**注释解释为什么这么改**，而不是只放新代码
 - 决策时，**列出 alternatives**，而不是只列最终选择
+
+---
+
+### Template fatigue ⭐
+
+**直白定义**：模板使用过度导致写作机械化，内容看起来完整但信息密度很低。
+
+**典型信号**：
+- 每段都像填空，读完仍不知道发生了什么
+- "What/Why/How" 都有，但没有具体约束、数据和取舍
+- 读者要二次追问才能执行
+
+**解决思路**：模板保留骨架，内容必须"具体到可行动"。宁可少写一句套话，也要多写一条关键事实。
+
+**核心潜规则**：模板是护栏，不是替代思考。真正有效的文档依然靠作者做判断。
+
+---
+
+### Decision durability ⭐⭐
+
+**直白定义**：一个决策在时间和人员变动后依然站得住、可理解、可延续的能力。
+
+**高 durability 决策通常具备**：
+- 背景与约束写清楚（不是只写结论）
+- 备选方案与否决理由可追溯
+- 触发重审的条件提前定义
+
+**和 ADR 的关系**：ADR 是载体，decision durability 是目标。你写 ADR 不是为了存档，而是为了让半年后的团队还能可靠接着走。
+
+**自查问题**：如果今天 owner 离职，3 个月后新同事能否仅靠文档继续做对决策？
 
 ---
 
@@ -773,5 +1020,5 @@ Spoiler protection enforced at the data layer, not the prompt layer.
 
 ---
 
-**Last updated**: Day 10 (2026-04-12)
+**Last updated**: Day 22 (2026-04-24)
 **Next review**: Day 17 (合并 retro 时)
