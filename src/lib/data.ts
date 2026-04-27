@@ -201,10 +201,10 @@ export async function getScenesByWork(workTsid: string): Promise<Scene[]> {
     .from("scenes")
     .select("*")
     .eq("work_id", work.id)
+    .order("chapter_number", { ascending: true })
     .order("order_index", { ascending: true })
 
   if (error) return []
-
   return (data as SceneRow[]).map(sceneFromRow)
 }
 
