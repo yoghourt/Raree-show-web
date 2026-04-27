@@ -22,6 +22,7 @@ export default async function WorkRedirectPage({ params }: Props) {
     .from("scenes")
     .select("tsid")
     .eq("work_id", work.id)
+    .order("chapter_number", { ascending: true })
     .order("order_index", { ascending: true })
     .limit(1)
 
