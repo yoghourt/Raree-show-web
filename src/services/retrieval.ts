@@ -1,0 +1,305 @@
+/**
+ * RAG Phase 2 — serial retrieval runtime (ADR-002).
+ *
+ * Topology (mandatory, no routing / no fallback):
+ *   metadataPreFiltering (SQL) → candidateSet → match_scenes RPC (vector rerank).
+ *
+ * Supabase `match_scenes` (contract — see `supabase/migrations/*match_scenes*.sql`):
+ *   Params: query_embedding, work_id_filter (works.id UUID), candidate_tsids (text[]), match_count
+ *   Returns: tsid, title, similarity = 1 - (rag_embedding <=> query_embedding)
+ *   WHERE includes: scenes.tsid = ANY(candidate_tsids) so the vector sort runs only on the SQL gate output.
+ *
+ * confirm-db-contract — progress fields match [src/lib/data.ts](src/lib/data.ts) `SceneRow`:
+ *   chapter_number + order_index (Day 24-25 PR #27); there is no chapter_id in the app schema.
+ */
+
+import { cache } from "react"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import nodeFetch, { type RequestInit as NodeFetchRequestInit } from "node-fetch"
+import { HttpsProxyAgent } from "https-proxy-agent"
+
+/** Gemini embedding dimension locked with pgvector / backfill (ADR-001). */
+const RAG_EMBEDDING_DIM = 768
+
+const DEFAULT_MATCH_COUNT = 10
+
+const MATCH_SCENES_RPC = "match_scenes" as const
+
+let retrievalSupabase: SupabaseClient | null = null
+
+function getRetrievalSupabase(): SupabaseClient {
+  if (retrievalSupabase) return retrievalSupabase
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    throw new Error(
+      "retrieveScenes requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (server-only)."
+    )
+  }
+  retrievalSupabase = createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  return retrievalSupabase
+}
+
+/**
+ * Reading progress for spoiler-safe metadataPreFiltering.
+ * Maps to `scenes.chapter_number` and `scenes.order_index` (same as SceneRow in src/lib/data.ts).
+ */
+export type ProgressConfig = {
+  workTsid: string
+  readUpToChapter: number
+  readUpToOrderIndex: number
+}
+
+export type RetrievedScene = {
+  tsid: string
+} & Record<string, unknown>
+
+export type RetrieveScenesResult = {
+  results: RetrievedScene[]
+  observability: {
+    candidateSetSize: number
+    retrievalLatency: number
+    rerankScores: number[]
+  }
+}
+
+type MatchScenesRpcRow = Record<string, unknown>
+
+/** RPC args — aligned with Postgres `match_scenes` (single batch call; no per-id loops). */
+type MatchScenesRpcArgs = {
+  query_embedding: number[]
+  work_id_filter: string
+  candidate_tsids: string[]
+  match_count: number
+}
+
+function extractRerankScore(row: MatchScenesRpcRow): number {
+  const similarity = row.similarity
+  const score = row.score
+  const distance = row.distance
+  if (typeof similarity === "number" && !Number.isNaN(similarity)) return similarity
+  if (typeof score === "number" && !Number.isNaN(score)) return score
+  if (typeof distance === "number" && !Number.isNaN(distance)) return distance
+  return Number.NaN
+}
+
+function rowToRetrievedScene(row: MatchScenesRpcRow): RetrievedScene {
+  const tsid = row.tsid
+  if (typeof tsid !== "string" || !tsid) {
+    throw new Error("match_scenes row missing string tsid")
+  }
+  return { ...row, tsid }
+}
+
+async function embedQuery(query: string): Promise<number[]> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error("embedQuery requires GEMINI_API_KEY")
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${encodeURIComponent(apiKey)}`
+
+  const body = {
+    model: "models/gemini-embedding-001",
+    content: { parts: [{ text: query }] },
+    outputDimensionality: RAG_EMBEDDING_DIM,
+    taskType: "RETRIEVAL_QUERY",
+  }
+
+  const proxyUrl = process.env.HTTPS_PROXY
+  const headers = { "Content-Type": "application/json" }
+  const init: RequestInit & NodeFetchRequestInit = {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  }
+
+  let res: globalThis.Response
+  try {
+    if (proxyUrl) {
+      init.agent = new HttpsProxyAgent(proxyUrl)
+      const nodeRes = await nodeFetch(url, init as Parameters<typeof nodeFetch>[1])
+      res = nodeRes as unknown as globalThis.Response
+    } else {
+      res = await fetch(url, init as RequestInit)
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Gemini embedContent fetch failed"
+    throw new Error(msg)
+  }
+
+  const raw = await res.text()
+  if (!res.ok) {
+    throw new Error(`Gemini embedContent failed (${res.status}): ${raw.slice(0, 500)}`)
+  }
+
+  let json: unknown
+  try {
+    json = JSON.parse(raw)
+  } catch {
+    throw new Error("Gemini embedContent returned non-JSON")
+  }
+
+  const values = parseGeminiEmbeddingValues(json)
+  if (values.length !== RAG_EMBEDDING_DIM) {
+    throw new Error(
+      `Gemini embedding length ${values.length} !== expected ${RAG_EMBEDDING_DIM}`
+    )
+  }
+  return values
+}
+
+function parseGeminiEmbeddingValues(json: unknown): number[] {
+  if (!json || typeof json !== "object") return []
+  const root = json as Record<string, unknown>
+
+  const pickValues = (emb: unknown): number[] | null => {
+    if (!emb || typeof emb !== "object") return null
+    const v = (emb as { values?: unknown }).values
+    if (!Array.isArray(v)) return null
+    return v.map((x) => Number(x))
+  }
+
+  const single = pickValues(root.embedding)
+  if (single) return single
+
+  const embArr = root.embeddings
+  if (Array.isArray(embArr) && embArr.length > 0) {
+    const first = pickValues(embArr[0])
+    if (first) return first
+  }
+
+  return []
+}
+
+async function resolveWorkId(
+  supabase: SupabaseClient,
+  workTsid: string
+): Promise<string | null> {
+  const { data: work, error: workError } = await supabase
+    .from("works")
+    .select("id")
+    .eq("tsid", workTsid)
+    .maybeSingle()
+
+  if (workError) throw workError
+  if (!work || typeof work.id !== "string") return null
+  return work.id
+}
+
+/**
+ * ADR-002 Step 1 — mandatory SQL safety gate (metadataPreFiltering).
+ * Produces candidateSet: scene tsids the user is allowed to see.
+ */
+async function metadataPreFiltering(
+  supabase: SupabaseClient,
+  workId: string,
+  userProgress: ProgressConfig
+): Promise<string[]> {
+  const ch = userProgress.readUpToChapter
+  const ord = userProgress.readUpToOrderIndex
+
+  // Lexicographic bound on SceneRow columns (chapter_number / order_index — not chapter_id).
+  const orFilter = `chapter_number.lt.${ch},and(chapter_number.eq.${ch},order_index.lte.${ord})`
+
+  const { data: rows, error: scenesError } = await supabase
+    .from("scenes")
+    .select("tsid")
+    .eq("work_id", workId)
+    .or(orFilter)
+
+  if (scenesError) throw scenesError
+
+  const candidateSet: string[] = []
+  for (const row of rows ?? []) {
+    if (row && typeof row.tsid === "string" && row.tsid) {
+      candidateSet.push(row.tsid)
+    }
+  }
+  return candidateSet
+}
+
+/**
+ * Same-request dedupe for Server Components / RSC data loaders (React.cache + primitive args).
+ * On cache hit, the returned object (including observability) is the snapshot from the first call.
+ */
+const retrieveScenesCached = cache(
+  async (
+    query: string,
+    workTsid: string,
+    readUpToChapter: number,
+    readUpToOrderIndex: number
+  ): Promise<RetrieveScenesResult> => {
+    return retrieveScenesUncached(query, {
+      workTsid,
+      readUpToChapter,
+      readUpToOrderIndex,
+    })
+  }
+)
+
+/**
+ * Serial pipeline: resolve work → metadataPreFiltering → candidateSet → embedQuery → match_scenes(..., candidate_tsids).
+ * RPC is always invoked for a valid work (including empty candidateSet). Unknown workTsid throws.
+ */
+async function retrieveScenesUncached(
+  query: string,
+  userProgress: ProgressConfig
+): Promise<RetrieveScenesResult> {
+  const t0 = performance.now()
+  const supabase = getRetrievalSupabase()
+
+  const workId = await resolveWorkId(supabase, userProgress.workTsid)
+  if (!workId) {
+    throw new Error(`retrieveScenes: unknown workTsid ${userProgress.workTsid}`)
+  }
+
+  // --- metadataPreFiltering: SQL mandatory gate → candidateSet ---
+  const candidateSet = await metadataPreFiltering(supabase, workId, userProgress)
+  const candidateSetSize = candidateSet.length
+
+  // --- downstream semantic reranking: single RPC over candidateSet (ADR-002) ---
+  const queryEmbedding = await embedQuery(query)
+
+  const rpcArgs: MatchScenesRpcArgs = {
+    query_embedding: queryEmbedding,
+    work_id_filter: workId,
+    candidate_tsids: candidateSet,
+    match_count: DEFAULT_MATCH_COUNT,
+  }
+
+  const { data: rpcData, error: rpcError } = await supabase.rpc(MATCH_SCENES_RPC, rpcArgs)
+
+  if (rpcError) {
+    throw rpcError
+  }
+
+  const rows = (rpcData ?? []) as MatchScenesRpcRow[]
+  const results: RetrievedScene[] = rows.map(rowToRetrievedScene)
+  const rerankScores = rows.map((row) => extractRerankScore(row))
+
+  const retrievalLatency = performance.now() - t0
+
+  return {
+    results,
+    observability: {
+      candidateSetSize,
+      retrievalLatency,
+      rerankScores,
+    },
+  }
+}
+
+export async function retrieveScenes(
+  query: string,
+  userProgress: ProgressConfig
+): Promise<RetrieveScenesResult> {
+  return retrieveScenesCached(
+    query,
+    userProgress.workTsid,
+    userProgress.readUpToChapter,
+    userProgress.readUpToOrderIndex
+  )
+}
