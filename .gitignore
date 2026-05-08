@@ -43,3 +43,7 @@ public/characters/
 public/maps/
 
 .cursorrules
+.cursor/
+
+# supabase
+supabase/
