@@ -142,6 +142,15 @@ export default function SceneExperience({
     [visualScene, currentLocation, presentCharacters]
   )
 
+  const sceneAssistantUserProgress = useMemo(
+    () => ({
+      workTsid: workId,
+      readUpToChapter: visualScene.chapter_number,
+      readUpToOrderIndex: visualScene.order_index ?? visualScene.order,
+    }),
+    [workId, visualScene.chapter_number, visualScene.order, visualScene.order_index]
+  )
+
   useEffect(() => {
     const onPopState = () => {
       const parts = window.location.pathname.split("/")
@@ -280,7 +289,10 @@ export default function SceneExperience({
       />
       <HomeButton />
 
-      <SceneAssistant sceneContext={sceneAssistantContext} />
+      <SceneAssistant
+        sceneContext={sceneAssistantContext}
+        userProgress={sceneAssistantUserProgress}
+      />
 
       <style jsx>{`
         .scene-device-shell {
