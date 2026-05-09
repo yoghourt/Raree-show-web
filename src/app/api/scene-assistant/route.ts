@@ -1,202 +1,186 @@
+import { streamText, type ModelMessage } from "ai"
+import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { NextRequest } from "next/server"
-import { Readable } from "node:stream"
-import nodeFetch, { type RequestInit as NodeFetchRequestInit } from "node-fetch"
-import { HttpsProxyAgent } from "https-proxy-agent"
+import { getFetchForGoogleGenerativeAI } from "@/lib/gemini-proxy-fetch"
+import { retrieveScenes, type RetrievedScene } from "@/services/retrieval"
 
-/** node-fetch 的 body 是 Node Readable，没有 getReader；原生 fetch 的 body 是 Web ReadableStream。 */
-function getBodyReader(body: NonNullable<globalThis.Response["body"]>) {
-  if (typeof body.getReader === "function") {
-    return body.getReader()
-  }
-  return Readable.toWeb(body as unknown as import("stream").Readable).getReader()
+export const maxDuration = 30
+
+type ChatTurn = { role: "user" | "assistant"; content: string }
+
+type SceneCtx = {
+  title: string
+  chapter_number: number
+  chapter_title: string | null
+  location: string
+  characters: string[]
+  summary: string
 }
 
-function extractGeminiText(data: unknown): string {
-  if (!data || typeof data !== "object") return ""
-  const d = data as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
-  }
-  const texts: string[] = []
-  for (const candidate of d.candidates ?? []) {
-    for (const part of candidate.content?.parts ?? []) {
-      if (typeof part.text === "string" && part.text.length > 0) {
-        texts.push(part.text)
-      }
-    }
-  }
-  return texts.join("")
+type UserProgressBody = {
+  workTsid: string
+  readUpToChapter: number
+  readUpToOrderIndex: number
 }
 
-function parseSseEvent(rawEvent: string): string | null {
-  // SSE 允许同一事件由多行 data: 组成，需拼接后再解析 JSON。
-  const dataLines = rawEvent
-    .split("\n")
-    .filter((line) => line.startsWith("data:"))
-    .map((line) => line.slice(5).trimStart())
-
-  if (dataLines.length === 0) return null
-
-  const payload = dataLines.join("\n")
-  if (!payload || payload === "[DONE]") return null
-
-  try {
-    const json = JSON.parse(payload)
-    return extractGeminiText(json) || null
-  } catch {
-    return null
-  }
+function formatRetrievedLine(scene: RetrievedScene): string {
+  const title = typeof scene.title === "string" ? scene.title : ""
+  const sim = scene.similarity
+  const score =
+    typeof sim === "number" && !Number.isNaN(sim) ? ` similarity=${sim.toFixed(4)}` : ""
+  return `- ${scene.tsid}${title ? ` | ${title}` : ""}${score}`
 }
+
+function buildSystemPrompt(sceneContext: SceneCtx, ragBlock: string): string {
+  const chapterLine =
+    sceneContext.chapter_title != null && sceneContext.chapter_title !== ""
+      ? `Chapter ${sceneContext.chapter_number} · ${sceneContext.chapter_title}`
+      : `Chapter ${sceneContext.chapter_number}`
+
+  return `You are a knowledgeable guide for "A Song of Ice and Fire".
+Answer in maximum 2 sentences. Be concise and direct.
+
+Current scene:
+- Title: ${sceneContext.title}
+- ${chapterLine}
+- Location: ${sceneContext.location}
+- Characters: ${sceneContext.characters.join(", ")}
+- Summary: ${sceneContext.summary}
+
+Retrieved context (background only; may be incomplete):
+${ragBlock}`
+}
+
 export async function POST(req: NextRequest) {
-  // 1. 参数校验
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
     return new Response("Missing GEMINI_API_KEY in environment.", { status: 500 })
   }
 
-  let body: { question?: string; sceneContext?: Record<string, unknown> }
+  let body: {
+    messages?: unknown
+    sceneContext?: unknown
+    userProgress?: unknown
+  }
   try {
     body = await req.json()
   } catch {
     return new Response("Invalid JSON body", { status: 400 })
   }
 
-  const { question, sceneContext } = body
-  if (!question || typeof question !== "string") {
-    return new Response("Missing question", { status: 400 })
+  const { messages: rawMessages, sceneContext: rawCtx, userProgress: rawProgress } = body
+
+  if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
+    return new Response("Missing messages", { status: 400 })
   }
-  if (!sceneContext || typeof sceneContext !== "object") {
+
+  const messages: ChatTurn[] = []
+  for (const m of rawMessages) {
+    if (!m || typeof m !== "object") {
+      return new Response("Invalid messages", { status: 400 })
+    }
+    const role = (m as { role?: unknown }).role
+    const content = (m as { content?: unknown }).content
+    if (role !== "user" && role !== "assistant") {
+      return new Response("Invalid message role", { status: 400 })
+    }
+    if (typeof content !== "string") {
+      return new Response("Invalid message content", { status: 400 })
+    }
+    messages.push({ role, content })
+  }
+
+  const last = messages[messages.length - 1]
+  if (!last || last.role !== "user") {
+    return new Response("Last message must be from user", { status: 400 })
+  }
+  const query = last.content.trim()
+  if (!query) {
+    return new Response("Empty user message", { status: 400 })
+  }
+
+  if (!rawCtx || typeof rawCtx !== "object") {
     return new Response("Missing sceneContext", { status: 400 })
   }
-  // 2. 构造 prompt
-  const ctx = sceneContext as {
-    title: string
-    chapter_number: number
-    chapter_title: string | null
-    location: string
-    characters: string[]
-    summary: string
+  const ctx = rawCtx as Record<string, unknown>
+  const sceneContext: SceneCtx = {
+    title: typeof ctx.title === "string" ? ctx.title : "",
+    chapter_number: typeof ctx.chapter_number === "number" ? ctx.chapter_number : NaN,
+    chapter_title: ctx.chapter_title === null ? null : typeof ctx.chapter_title === "string" ? ctx.chapter_title : null,
+    location: typeof ctx.location === "string" ? ctx.location : "",
+    characters: Array.isArray(ctx.characters) ? ctx.characters.filter((c): c is string => typeof c === "string") : [],
+    summary: typeof ctx.summary === "string" ? ctx.summary : "",
+  }
+  if (!sceneContext.title || Number.isNaN(sceneContext.chapter_number)) {
+    return new Response("Invalid sceneContext", { status: 400 })
   }
 
-  const chapterLine =
-    ctx.chapter_title != null && ctx.chapter_title !== ""
-      ? `Chapter ${ctx.chapter_number} · ${ctx.chapter_title}`
-      : `Chapter ${ctx.chapter_number}`
-
-  const prompt = `You are a knowledgeable guide for "A Song of Ice and Fire".
-
-Current scene:
-- Title: ${ctx.title}
-- ${chapterLine}
-- Location: ${ctx.location}
-- Characters: ${ctx.characters.join(", ")}
-- Summary: ${ctx.summary}
-
-Question: ${question}
-
-Answer in maximum 2 sentences. Be concise and direct.`
-
-  // Only use a proxy when HTTPS_PROXY is set (e.g. local dev). Vercel has no proxy.
-  const proxyUrl = process.env.HTTPS_PROXY
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`
-
-  const fetchOptions: NodeFetchRequestInit = {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
+  if (!rawProgress || typeof rawProgress !== "object") {
+    return new Response("Missing userProgress", { status: 400 })
+  }
+  const p = rawProgress as Record<string, unknown>
+  const workTsid = typeof p.workTsid === "string" ? p.workTsid.trim() : ""
+  const readUpToChapter = p.readUpToChapter
+  const readUpToOrderIndex = p.readUpToOrderIndex
+  if (
+    !workTsid ||
+    typeof readUpToChapter !== "number" ||
+    !Number.isFinite(readUpToChapter) ||
+    typeof readUpToOrderIndex !== "number" ||
+    !Number.isFinite(readUpToOrderIndex)
+  ) {
+    return new Response("Invalid userProgress", { status: 400 })
   }
 
-  if (proxyUrl) {
-    const { HttpsProxyAgent } = await import("https-proxy-agent")
-    fetchOptions.agent = new HttpsProxyAgent(proxyUrl)
+  const userProgress: UserProgressBody = {
+    workTsid,
+    readUpToChapter,
+    readUpToOrderIndex,
   }
-  // 3. 调 Gemini 的 streamGenerateContent端点
-    let response: globalThis.Response
-    try {
-      const proxyUrl = process.env.HTTPS_PROXY
-      if (proxyUrl) {
-        const agent = new HttpsProxyAgent(proxyUrl)
-        const nodeFetchOptions = { ...fetchOptions, agent }
-        const nodeRes = await nodeFetch(url, nodeFetchOptions as Parameters<typeof nodeFetch>[1])
-        response = nodeRes as unknown as globalThis.Response
-      } else {
-        response = await fetch(url, fetchOptions as RequestInit)
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Fetch failed"
-      return new Response(msg, { status: 502 })
-    }
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      if (!response.body) {
-        controller.error(new Error("No response body from Gemini"))
-        return
-      }
-      const reader = getBodyReader(response.body)
-      const decoder = new TextDecoder()
-      const encoder = new TextEncoder()
-      let lineBuffer = ""
-      let eventDataLines: string[] = []
-      try {
-        const flushEvent = () => {
-          if (eventDataLines.length === 0) return
-          const event = eventDataLines.join("\n")
-          const geminiText = parseSseEvent(event)
-          if (geminiText) {
-            controller.enqueue(encoder.encode(`data: ${geminiText}\n\n`))
-          }
-          eventDataLines = []
-        }
+  // Integrating ADR-002: Serial Pipeline with Metadata Pre-filtering
+  let results: RetrievedScene[]
+  let observability: { candidateSetSize: number; retrievalLatency: number }
+  try {
+    const out = await retrieveScenes(query, userProgress)
+    results = out.results
+    observability = out.observability
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "retrieveScenes failed"
+    return new Response(msg, { status: 502 })
+  }
 
-        const processChunkText = (text: string) => {
-          lineBuffer += text
-          const lines = lineBuffer.split("\n")
-          lineBuffer = lines.pop() ?? ""
+  console.log(
+    `[RAG] CandidateSet: ${observability.candidateSetSize} | Latency: ${Math.round(observability.retrievalLatency)}ms`
+  )
 
-          for (const rawLine of lines) {
-            const line = rawLine.replace(/\r$/, "")
-            if (line === "") {
-              flushEvent()
-              continue
-            }
-            if (line.startsWith("data:")) {
-              eventDataLines.push(line)
-            }
-          }
-        }
+  const ragBlock =
+    results.length > 0
+      ? results.map(formatRetrievedLine).join("\n")
+      : "(No additional scenes retrieved beyond the current scene metadata.)"
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) {
-            processChunkText(decoder.decode())
-            const trailingLine = lineBuffer.replace(/\r$/, "")
-            if (trailingLine.startsWith("data:")) {
-              eventDataLines.push(trailingLine)
-            }
-            lineBuffer = ""
-            flushEvent()
-            break
-          }
-          processChunkText(decoder.decode(value, { stream: true }))
-        }
-        // 结束时
-        controller.close()
-        return
-      } catch (e) {
-        controller.error(e)
-        return
-      }
-    }
+  const system = buildSystemPrompt(sceneContext, ragBlock)
+
+  const modelMessages: ModelMessage[] = messages.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }))
+
+  const google = createGoogleGenerativeAI({
+    apiKey,
+    fetch: getFetchForGoogleGenerativeAI(),
   })
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
-    }
-  })
+  try {
+    const result = streamText({
+      model: google("gemini-3-flash-preview"),
+      system,
+      messages: modelMessages,
+      timeout: 60_000,
+    })
+    return result.toUIMessageStreamResponse()
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "streamText failed"
+    return new Response(msg, { status: 502 })
+  }
 }

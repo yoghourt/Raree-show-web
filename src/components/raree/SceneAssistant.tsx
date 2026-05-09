@@ -12,8 +12,16 @@ export interface SceneAssistantContext {
   summary: string
 }
 
+/** Mirrors ProgressConfig in retrieval (client-safe shape, no server imports). */
+export interface SceneAssistantUserProgress {
+  workTsid: string
+  readUpToChapter: number
+  readUpToOrderIndex: number
+}
+
 interface SceneAssistantProps {
   sceneContext: SceneAssistantContext
+  userProgress: SceneAssistantUserProgress
 }
 
 type ChatMessage = {
@@ -22,7 +30,34 @@ type ChatMessage = {
   streaming?: boolean
 }
 
-export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
+type ApiChatTurn = { role: "user" | "assistant"; content: string }
+
+function parseUiMessageSseEvent(rawEvent: string): { delta?: string; error?: string } {
+  const dataLines = rawEvent
+    .split("\n")
+    .filter((line) => line.startsWith("data:"))
+    .map((line) => line.slice(5).trimStart())
+
+  if (dataLines.length === 0) return {}
+
+  const payload = dataLines.join("\n")
+  if (!payload || payload === "[DONE]") return {}
+
+  try {
+    const json = JSON.parse(payload) as { type?: string; delta?: string; errorText?: string }
+    if (json.type === "error" && typeof json.errorText === "string") {
+      return { error: json.errorText }
+    }
+    if (json.type === "text-delta" && typeof json.delta === "string") {
+      return { delta: json.delta }
+    }
+  } catch {
+    // ignore malformed chunks
+  }
+  return {}
+}
+
+export default function SceneAssistant({ sceneContext, userProgress }: SceneAssistantProps) {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -42,10 +77,16 @@ export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
     if (!question || sendingRef.current) return
     sendingRef.current = true
 
+    const prior = messages.filter((m) => !(m.role === "assistant" && m.streaming))
+    const apiMessages: ApiChatTurn[] = [
+      ...prior.map(({ role, content }) => ({ role, content })),
+      { role: "user", content: question },
+    ]
+
     setInput("")
     setError(null)
     setMessages((m) => [
-      ...m,
+      ...m.filter((x) => !(x.role === "assistant" && x.streaming)),
       { role: "user", content: question },
       { role: "assistant", content: "", streaming: true },
     ])
@@ -55,7 +96,11 @@ export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
       const res = await fetch("/api/scene-assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, sceneContext }),
+        body: JSON.stringify({
+          messages: apiMessages,
+          sceneContext,
+          userProgress,
+        }),
       })
 
       if (!res.ok) {
@@ -73,18 +118,23 @@ export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
 
       const flushEvent = () => {
         if (eventDataLines.length === 0) return
-        const payload = eventDataLines.join("\n")
+        const event = eventDataLines.join("\n")
         eventDataLines = []
-        if (!payload || payload === "[DONE]") return
-        acc += payload
-        setMessages((m) => {
-          const next = [...m]
-          const last = next[next.length - 1]
-          if (last?.role === "assistant") {
-            next[next.length - 1] = { role: "assistant", content: acc, streaming: true }
-          }
-          return next
-        })
+        const parsed = parseUiMessageSseEvent(event)
+        if (parsed.error) {
+          throw new Error(parsed.error)
+        }
+        if (parsed.delta) {
+          acc += parsed.delta
+          setMessages((m) => {
+            const next = [...m]
+            const last = next[next.length - 1]
+            if (last?.role === "assistant") {
+              next[next.length - 1] = { role: "assistant", content: acc, streaming: true }
+            }
+            return next
+          })
+        }
       }
 
       const processSseChunk = (text: string) => {
@@ -99,7 +149,7 @@ export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
             continue
           }
           if (line.startsWith("data:")) {
-            eventDataLines.push(line.slice(5).trimStart())
+            eventDataLines.push(line)
           }
         }
       }
@@ -110,7 +160,7 @@ export default function SceneAssistant({ sceneContext }: SceneAssistantProps) {
           processSseChunk(decoder.decode())
           const trailingLine = lineBuffer.replace(/\r$/, "")
           if (trailingLine.startsWith("data:")) {
-            eventDataLines.push(trailingLine.slice(5).trimStart())
+            eventDataLines.push(trailingLine)
           }
           lineBuffer = ""
           flushEvent()
