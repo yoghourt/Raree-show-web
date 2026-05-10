@@ -93,6 +93,91 @@ function rowToRetrievedScene(row: MatchScenesRpcRow): RetrievedScene {
   return { ...row, tsid }
 }
 
+/** RPC may omit narrative fields; hydrate from `scenes` so the assistant prompt has summaries. */
+async function mergeScenesTableSummaries(
+  supabase: SupabaseClient,
+  results: RetrievedScene[]
+): Promise<RetrievedScene[]> {
+  if (results.length === 0) return results
+  const tsids = [...new Set(results.map((r) => r.tsid))]
+  const { data, error } = await supabase
+    .from("scenes")
+    .select("tsid, title, summary")
+    .in("tsid", tsids)
+
+  if (error) throw error
+
+  const byTsid = new Map<string, { title?: string; summary?: string }>()
+  for (const row of data ?? []) {
+    if (row && typeof row.tsid === "string") {
+      byTsid.set(row.tsid, {
+        title: typeof row.title === "string" ? row.title : undefined,
+        summary: typeof row.summary === "string" ? row.summary : undefined,
+      })
+    }
+  }
+
+  return results.map((r) => {
+    const extra = byTsid.get(r.tsid)
+    if (!extra) return r
+    const titleFromRow = extra.title?.trim() !== "" ? extra.title : undefined
+    const summaryFromRow = extra.summary?.trim() !== "" ? extra.summary : undefined
+    const hasTitle = typeof r.title === "string" && r.title.trim() !== ""
+    const hasSummary = typeof r.summary === "string" && r.summary.trim() !== ""
+    if (hasTitle && hasSummary) return r
+    return {
+      ...r,
+      ...(!hasTitle && titleFromRow ? { title: titleFromRow } : {}),
+      ...(!hasSummary && summaryFromRow ? { summary: summaryFromRow } : {}),
+    }
+  })
+}
+
+/** Ordered scenes in the same chapter, up to and including reader progress (spoiler-safe). */
+export type ChapterSceneSnippet = {
+  tsid: string
+  title: string
+  summary: string
+  order_index: number
+}
+
+export async function fetchChapterScenesWithinProgress(
+  userProgress: ProgressConfig,
+  chapterNumber: number
+): Promise<ChapterSceneSnippet[]> {
+  if (chapterNumber !== userProgress.readUpToChapter) {
+    return []
+  }
+
+  const supabase = getRetrievalSupabase()
+  const workId = await resolveWorkId(supabase, userProgress.workTsid)
+  if (!workId) {
+    throw new Error(`fetchChapterScenesWithinProgress: unknown workTsid ${userProgress.workTsid}`)
+  }
+
+  const { data, error } = await supabase
+    .from("scenes")
+    .select("tsid, title, summary, order_index")
+    .eq("work_id", workId)
+    .eq("chapter_number", chapterNumber)
+    .lte("order_index", userProgress.readUpToOrderIndex)
+    .order("order_index", { ascending: true })
+
+  if (error) throw error
+
+  const out: ChapterSceneSnippet[] = []
+  for (const row of data ?? []) {
+    if (!row || typeof row.tsid !== "string") continue
+    out.push({
+      tsid: row.tsid,
+      title: typeof row.title === "string" ? row.title : "",
+      summary: typeof row.summary === "string" ? row.summary : "",
+      order_index: typeof row.order_index === "number" ? row.order_index : 0,
+    })
+  }
+  return out
+}
+
 async function embedQuery(query: string): Promise<number[]> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
@@ -277,7 +362,10 @@ async function retrieveScenesUncached(
   }
 
   const rows = (rpcData ?? []) as MatchScenesRpcRow[]
-  const results: RetrievedScene[] = rows.map(rowToRetrievedScene)
+  const results: RetrievedScene[] = await mergeScenesTableSummaries(
+    supabase,
+    rows.map(rowToRetrievedScene)
+  )
   const rerankScores = rows.map((row) => extractRerankScore(row))
 
   const retrievalLatency = performance.now() - t0
