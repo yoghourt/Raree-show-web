@@ -17,6 +17,10 @@ import { cache } from "react"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import nodeFetch, { type RequestInit as NodeFetchRequestInit } from "node-fetch"
 import { HttpsProxyAgent } from "https-proxy-agent"
+import {
+  effectiveStorySlidesFromV2,
+  sliceRevealedStorySlides,
+} from "@/lib/story-images-v2"
 
 /** Gemini embedding dimension locked with pgvector / backfill (ADR-001). */
 const RAG_EMBEDDING_DIM = 768
@@ -43,13 +47,20 @@ function getRetrievalSupabase(): SupabaseClient {
 }
 
 /**
- * Reading progress for spoiler-safe metadataPreFiltering.
- * Maps to `scenes.chapter_number` and `scenes.order_index` (same as SceneRow in src/lib/data.ts).
+ * Reading progress for spoiler-safe metadataPreFiltering + story-level prompt truncation.
+ * `chapter_number` / `order_index` map to SceneRow; `sceneTsid` / `readUpToStoryIndexLast` refine current-scene captions.
  */
 export type ProgressConfig = {
   workTsid: string
   readUpToChapter: number
   readUpToOrderIndex: number
+  /** Current scene business id (`scenes.tsid`). */
+  sceneTsid: string
+  /**
+   * 0-based index into the effective story list (non-empty `url` slides, same order as client ImageReel).
+   * Inclusive: visible slide counts as revealed. Use `-1` when there are no slides.
+   */
+  readUpToStoryIndexLast: number
 }
 
 export type RetrievedScene = {
@@ -133,12 +144,14 @@ async function mergeScenesTableSummaries(
   })
 }
 
-/** Ordered scenes in the same chapter, up to and including reader progress (spoiler-safe). */
+/**
+ * Same-chapter revealed-scene context: physically truncated `story_images_v2` captions only (ADR-002 doc).
+ */
 export type ChapterSceneSnippet = {
   tsid: string
   title: string
-  summary: string
   order_index: number
+  revealedStorySlides: { caption: string }[]
 }
 
 export async function fetchChapterScenesWithinProgress(
@@ -157,7 +170,7 @@ export async function fetchChapterScenesWithinProgress(
 
   const { data, error } = await supabase
     .from("scenes")
-    .select("tsid, title, summary, order_index")
+    .select("tsid, title, order_index, story_images_v2")
     .eq("work_id", workId)
     .eq("chapter_number", chapterNumber)
     .lte("order_index", userProgress.readUpToOrderIndex)
@@ -166,13 +179,32 @@ export async function fetchChapterScenesWithinProgress(
   if (error) throw error
 
   const out: ChapterSceneSnippet[] = []
+  const ordTarget = userProgress.readUpToOrderIndex
+  const sceneTsid = userProgress.sceneTsid.trim()
+  const rawLast = userProgress.readUpToStoryIndexLast
+
   for (const row of data ?? []) {
     if (!row || typeof row.tsid !== "string") continue
+    const orderIdx = typeof row.order_index === "number" ? row.order_index : 0
+    const slides = effectiveStorySlidesFromV2(row.story_images_v2)
+    let revealedRaw: typeof slides
+
+    if (orderIdx < ordTarget) {
+      revealedRaw = slides
+    } else if (row.tsid === sceneTsid) {
+      const maxLast = slides.length > 0 ? slides.length - 1 : -1
+      const clampedLast = Math.min(Math.max(rawLast, -1), maxLast)
+      revealedRaw = sliceRevealedStorySlides(slides, clampedLast)
+    } else {
+      // `lte` query tip row that is not the declared current scene — do not inject captions.
+      revealedRaw = []
+    }
+
     out.push({
       tsid: row.tsid,
       title: typeof row.title === "string" ? row.title : "",
-      summary: typeof row.summary === "string" ? row.summary : "",
-      order_index: typeof row.order_index === "number" ? row.order_index : 0,
+      order_index: orderIdx,
+      revealedStorySlides: revealedRaw.map((s) => ({ caption: s.caption })),
     })
   }
   return out
@@ -315,12 +347,16 @@ const retrieveScenesCached = cache(
     query: string,
     workTsid: string,
     readUpToChapter: number,
-    readUpToOrderIndex: number
+    readUpToOrderIndex: number,
+    sceneTsid: string,
+    readUpToStoryIndexLast: number
   ): Promise<RetrieveScenesResult> => {
     return retrieveScenesUncached(query, {
       workTsid,
       readUpToChapter,
       readUpToOrderIndex,
+      sceneTsid,
+      readUpToStoryIndexLast,
     })
   }
 )
@@ -388,6 +424,8 @@ export async function retrieveScenes(
     query,
     userProgress.workTsid,
     userProgress.readUpToChapter,
-    userProgress.readUpToOrderIndex
+    userProgress.readUpToOrderIndex,
+    userProgress.sceneTsid,
+    userProgress.readUpToStoryIndexLast
   )
 }

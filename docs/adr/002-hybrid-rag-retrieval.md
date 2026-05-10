@@ -45,3 +45,44 @@ Hybrid RAG is a two stage serial pipeline. It consists of two retrieval steps: a
 ### Trade-offs
 -  The two-stage retrieval increases the total response latency.
 -  The two-stage retrieval increases complexity for debugging SQL filtering vs vector reranking.
+
+---
+
+## Reading boundary (scene + story) — prompt assembly (2026)
+
+This section documents **finer-grained spoiler control** for the Scene Assistant. It **does not** change the retrieval topology above: the **only** semantic retrieval path remains **`metadataPreFiltering` → `match_scenes`**.
+
+### Two-stage boundary
+
+1. **SQL gate (unchanged)**  
+   `metadataPreFiltering` still builds the candidate scene set using `chapter_number` and `order_index` (lexicographic “read up to” semantics). This is the mandatory ADR-002 safety gate for vector search.
+
+2. **Physical truncation at prompt assembly**  
+   For narrative text derived from `story_images_v2`, the server **must** slice captions **before** any LLM call:
+   - Scenes **strictly before** the reader’s current `order_index` within the work: **all** effective story slides (see below) are eligible.
+   - The **current** scene (identified by business id `scenes.tsid` = `sceneTsid`): only slides with indices `0..readUpToStoryIndexLast` (inclusive) are eligible.
+
+**Hard rule:** never send the full `story_images_v2` caption list for the current scene and ask the model to “ignore” unread slides. Unread captions must not appear in model-visible tokens.
+
+### Progress fields (API / `ProgressConfig`)
+
+- Existing: `workTsid`, `readUpToChapter`, `readUpToOrderIndex` (scene-level gate; unchanged for SQL).
+- Added: `sceneTsid` (current scene `tsid`), `readUpToStoryIndexLast` (0-based index into the **effective** story list; see below).
+
+**Effective story list** (must match the client ImageReel): entries from `story_images_v2` with non-empty trimmed `url`, in array order; `caption` is a string (empty allowed).
+
+**Product default (locked):** `readUpToStoryIndexLast` aligns with the client carousel index for the **currently visible** slide (`imageIndex`), inclusive — i.e. the visible caption counts as revealed. If there are no slides, send `-1` and the server reveals **no** story captions for the current scene.
+
+Server **clamps** `readUpToStoryIndexLast` to `[ -1, effectiveSlideCount - 1 ]` per scene to avoid drift or malicious bodies.
+
+### Same-chapter revealed-scene context (terminology)
+
+Prompt-only reads from the `scenes` table that load `story_images_v2` (after truncation) and related fields to build the system prompt are called **same-chapter revealed-scene context**. This is **not** semantic retrieval, **not** a second pipeline branch, and **not** “chapter retrieval” or “cross-scene retrieval” in the ADR-002 sense.
+
+### Model-visible context
+
+- **`match_scenes` similarity / score / distance** metadata is intentionally **excluded** from the model-facing system prompt (observability may still log on the server).
+
+### Follow-up (optional)
+
+- Story-level embedding chunks (ADR-001 granularity evolution) if RAG text should align exactly with story boundaries without relying on post-filtering.
