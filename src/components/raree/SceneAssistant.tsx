@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 
 export interface SceneAssistantContext {
+  /** Business scene id (`scenes.tsid`); must match `userProgress.sceneTsid`. */
+  tsid: string
+  /** Raree 作品展示名，供模型把握语气与世界观边界；勿写死某一 IP。 */
+  workTitle: string
   title: string
   chapter_number: number
   chapter_title: string | null
@@ -17,6 +21,12 @@ export interface SceneAssistantUserProgress {
   workTsid: string
   readUpToChapter: number
   readUpToOrderIndex: number
+  sceneTsid: string
+  /**
+   * Last revealed story slide index (0-based, inclusive), aligned with ImageReel / filtered `story_images_v2`.
+   * `-1` when there are no slides.
+   */
+  readUpToStoryIndexLast: number
 }
 
 interface SceneAssistantProps {

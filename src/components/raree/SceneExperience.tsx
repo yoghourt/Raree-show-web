@@ -129,6 +129,8 @@ export default function SceneExperience({
 
   const sceneAssistantContext = useMemo(
     () => ({
+      tsid: visualScene.tsid,
+      workTitle: workTitle.trim() || "未命名作品",
       title: visualScene.title,
       chapter_number: visualScene.chapter_number,
       chapter_title: visualScene.chapter_title,
@@ -139,7 +141,7 @@ export default function SceneExperience({
       characters: presentCharacters.map((p) => p.name),
       summary: visualScene.summary,
     }),
-    [visualScene, currentLocation, presentCharacters]
+    [visualScene, currentLocation, presentCharacters, workTitle]
   )
 
   const sceneAssistantUserProgress = useMemo(
@@ -147,8 +149,18 @@ export default function SceneExperience({
       workTsid: workId,
       readUpToChapter: visualScene.chapter_number,
       readUpToOrderIndex: visualScene.order_index ?? visualScene.order,
+      sceneTsid: visualScene.tsid,
+      readUpToStoryIndexLast: storyImages.length === 0 ? -1 : imageIndex,
     }),
-    [workId, visualScene.chapter_number, visualScene.order, visualScene.order_index]
+    [
+      workId,
+      visualScene.chapter_number,
+      visualScene.order,
+      visualScene.order_index,
+      visualScene.tsid,
+      storyImages.length,
+      imageIndex,
+    ]
   )
 
   useEffect(() => {

@@ -110,6 +110,8 @@ async function main() {
     workTsid,
     readUpToChapter: 1,
     readUpToOrderIndex: 5,
+    sceneTsid: "smoke-test-scene-tsid",
+    readUpToStoryIndexLast: -1,
   }
 
   const expectedCandidates = await countCandidatesInDb(workId, userProgress)
