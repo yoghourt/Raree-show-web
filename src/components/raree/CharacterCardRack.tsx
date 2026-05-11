@@ -46,55 +46,116 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
   const totalCards = characters.length
   return (
     <div key={sceneId} className="character-rack-root">
-      {characters.map((character, index) => {
-        const showHouse =
-          character.house &&
-          character.house.trim() &&
-          character.house.trim().toLowerCase() !== "unknown house"
-        const reverseIndex = totalCards - 1 - index
-        return (
-          <motion.article
-            key={`${sceneId}-${character.id}`}
-            className="character-card"
-            title={character.name}
-            style={{
-              width: 88,
-              height: 124,
-              flexShrink: 0,
-              overflow: "hidden",
-              position: "relative",
-            }}
-            initial={{ opacity: 0, y: 140, scale: 0.82 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{
-              delay: reverseIndex * 0.15,
-              duration: 0.6,
-              ease: [0.34, 1.56, 0.64, 1],
-            }}
-          >
-            <CharacterPortrait character={character} />
-            <div className="char-meta">
-              <span className="char-name" title={character.name}>
-                {character.name}
-              </span>
-              {showHouse ? <span className="char-house">{character.house?.trim()}</span> : null}
-            </div>
-          </motion.article>
-        )
-      })}
+      <div className="character-rack-scroll">
+        <div className="character-rack-scroll-inner">
+          {characters.map((character, index) => {
+            const showHouse =
+              character.house &&
+              character.house.trim() &&
+              character.house.trim().toLowerCase() !== "unknown house"
+            const reverseIndex = totalCards - 1 - index
+            return (
+              <motion.article
+                key={`${sceneId}-${character.id}`}
+                className="character-card"
+                title={character.name}
+                style={{
+                  width: 88,
+                  height: 124,
+                  flexShrink: 0,
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+                initial={{ opacity: 0, y: 140, scale: 0.82 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{
+                  delay: reverseIndex * 0.15,
+                  duration: 0.6,
+                  ease: [0.34, 1.56, 0.64, 1],
+                }}
+              >
+                <CharacterPortrait character={character} />
+                <div className="char-meta">
+                  <span className="char-name" title={character.name}>
+                    {character.name}
+                  </span>
+                  {showHouse ? <span className="char-house">{character.house?.trim()}</span> : null}
+                </div>
+              </motion.article>
+            )
+          })}
+        </div>
+      </div>
 
       <style jsx>{`
         .character-rack-root {
-          position: fixed;
-          right: 32px;
-          bottom: 110px;
-          width: auto;
-          z-index: 8;
+          /* 由 SceneExperience.rs-scene-right-rail 提供定位与高度；此处占满 rail-body 的 flex 区域 */
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          flex: 1 1 0;
+          min-height: 0;
+          width: fit-content;
+          max-width: 100%;
+          pointer-events: auto;
+          --rack-card-width: 88px;
+          --rack-scrollbar-gap: 18px;
+        }
+
+        .character-rack-scroll {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          box-sizing: border-box;
+          scrollbar-gutter: stable;
+          padding-right: var(--rack-scrollbar-gap);
+          flex: 1 1 0;
+          min-height: 0;
+          overflow-y: auto;
+          overflow-x: hidden;
+          /* Firefox：细滚动条 + hover 不显式加粗变色 */
+          scrollbar-width: thin;
+          scrollbar-color: rgba(232, 228, 220, 0.28) transparent;
+        }
+
+        .character-rack-scroll::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .character-rack-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .character-rack-scroll::-webkit-scrollbar-thumb {
+          background-color: rgba(232, 228, 220, 0.22);
+          border-radius: 999px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+
+        /* 与默认 thumb 同色，避免系统 hover 时灰白加粗 */
+        .character-rack-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(232, 228, 220, 0.22);
+        }
+
+        .character-rack-scroll::-webkit-scrollbar-thumb:active {
+          background-color: rgba(232, 228, 220, 0.3);
+        }
+
+        .character-rack-scroll-inner {
+          /*
+           * margin-top:auto：内容少于视口时整块贴在滚动区底部（贴近场景助手上方）；
+           * 内容超出时 auto 边距为 0，由 overflow-y 正常滚动。
+           * Safari: flex + overflow:auto + margin-top:auto is easy to regress—QA if this layout changes.
+           */
+          margin-top: auto;
+          flex-shrink: 0;
+          width: var(--rack-card-width);
           display: flex;
           flex-direction: column-reverse;
           gap: 10px;
-          align-items: flex-end;
-          pointer-events: auto;
+          align-items: stretch;
+          box-sizing: border-box;
         }
 
         .character-card {

@@ -207,6 +207,7 @@ export default function SceneAssistant({ sceneContext, userProgress }: SceneAssi
   return (
     <>
       {open && (
+        /* Viewport-fixed: right/bottom align with rs-scene-right-rail edge; if rail inset/width changes, keep in sync. */
         <div
           className="fixed z-[20] flex max-h-[min(500px,calc(100vh-140px))] w-[380px] max-w-[calc(100vw-64px)] flex-col overflow-hidden rounded-xl border border-[#c8b89a] shadow-lg"
           style={{
@@ -305,12 +306,8 @@ export default function SceneAssistant({ sceneContext, userProgress }: SceneAssi
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="fixed z-[20] flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-[#f5f0e8] shadow-md transition hover:brightness-110"
+        className="relative z-[20] flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-semibold text-[#f5f0e8] shadow-md transition hover:brightness-110"
         style={{
-          right: 32,
-          bottom: 32,
-          left: "auto",
-          transform: "none",
           background: "#8b1a1a",
         }}
         aria-label="Open scene assistant"
