@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { Character, Location, Scene } from "@/lib/types"
 import { WESTEROS_MAP_URL } from "@/lib/data"
+import { effectiveStorySlidesFromV2 } from "@/lib/story-images-v2"
 import CaptionDisplay from "@/components/raree/CaptionDisplay"
 import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
 import SceneRopes from "@/components/raree/SceneRopes"
@@ -11,6 +12,7 @@ import SceneTimeCard from "@/components/raree/SceneTimeCard"
 import CharacterCardRack from "@/components/raree/CharacterCardRack"
 import SceneNavButtons from "@/components/raree/SceneNavButtons"
 import HomeButton from "@/components/raree/HomeButton"
+import { useSceneAtomicNavigation } from "@/components/raree/useSceneAtomicNavigation"
 
 const MAP_TRANSITION_MS = 1200
 
@@ -38,6 +40,12 @@ function getInitials(name: string): string {
   ).toUpperCase() || "?"
 }
 
+function tactileOverflowHint() {
+  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    navigator.vibrate(12)
+  }
+}
+
 export default function SceneExperience({
   currentScene,
   allScenes,
@@ -46,38 +54,22 @@ export default function SceneExperience({
   workId,
   workTitle,
 }: SceneExperienceProps) {
-  const [visualScene, setVisualScene] = useState(currentScene)
-  // TODO: when Work gains a dedicated timeline field, prefer it over title here.
+  // W-01: Visibility-Synchronized Navigation — docs/specs/w-01-visibility-synchronized-navigation.md
+  const { visualScene, imageIndex, dispatch } = useSceneAtomicNavigation(currentScene)
+
   const displayedTimeline = workTitle.toUpperCase()
   const [mapError, setMapError] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapImgRef = useRef<HTMLImageElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
-  const [imageIndex, setImageIndex] = useState(0)
   const imageReelRef = useRef<ImageReelHandle>(null)
 
-  const storyImages = useMemo(() => {
-    const v2 = visualScene.story_images_v2
-    if (!v2?.length) return []
-    return v2
-      .map((item) => ({
-        url: typeof item.url === "string" ? item.url.trim() : "",
-        caption: typeof item.caption === "string" ? item.caption : "",
-      }))
-      .filter((s) => s.url.length > 0)
-  }, [visualScene.story_images_v2])
+  const storyImages = useMemo(
+    () => effectiveStorySlidesFromV2(visualScene.story_images_v2),
+    [visualScene.story_images_v2]
+  )
 
   useEffect(() => {
-    const t = window.setTimeout(() => setImageIndex(0), 0)
-    return () => window.clearTimeout(t)
-  }, [visualScene.id])
-
-  useEffect(() => {
-    setVisualScene(currentScene)
-  }, [currentScene])
-
-  useEffect(() => {
-    // Defer state reset to avoid "cascading render" warnings.
     setTimeout(() => {
       setMapError(false)
     }, 0)
@@ -115,6 +107,7 @@ export default function SceneExperience({
           name: matched.name,
           initials: getInitials(matched.name),
           image_url: matched.image_url?.trim() ?? "",
+          description: matched.description?.trim() ?? "",
         }
       }
       const fallbackName = formatIdToName(id)
@@ -123,6 +116,7 @@ export default function SceneExperience({
         name: fallbackName || id,
         initials: (fallbackName || id).charAt(0).toUpperCase() || "?",
         image_url: "",
+        description: "",
       }
     })
   }, [visualScene.characters_present, characters])
@@ -168,16 +162,83 @@ export default function SceneExperience({
       const parts = window.location.pathname.split("/")
       const sceneId = parts[parts.length - 1]
       const matched = allScenes.find((s) => s.id === sceneId)
-      if (matched) setVisualScene(matched)
+      if (matched) {
+        dispatch({ type: "FULL_SYNC", scene: matched, imageIndex: 0 })
+      }
     }
     window.addEventListener("popstate", onPopState)
     return () => window.removeEventListener("popstate", onPopState)
-  }, [allScenes])
+  }, [allScenes, dispatch])
+
+  function replaceSceneUrl(target: Scene) {
+    window.history.replaceState({}, "", `/works/${workId}/scenes/${target.id}`)
+  }
 
   function navigateScene(target: Scene | null) {
     if (!target) return
-    setVisualScene(target)
-    window.history.replaceState({}, "", `/works/${workId}/scenes/${target.id}`)
+    dispatch({ type: "COMMIT_SCENE", scene: target, imageIndex: 0 })
+    replaceSceneUrl(target)
+  }
+
+  function lastSlideIndexForScene(scene: Scene): number {
+    const slides = effectiveStorySlidesFromV2(scene.story_images_v2)
+    return slides.length === 0 ? 0 : slides.length - 1
+  }
+
+  function handleReelNext() {
+    const n = storyImages.length
+    if (n === 0) return
+
+    if (n === 1) {
+      if (nextScene) {
+        dispatch({ type: "COMMIT_SCENE", scene: nextScene, imageIndex: 0 })
+        replaceSceneUrl(nextScene)
+      } else {
+        tactileOverflowHint()
+      }
+      return
+    }
+
+    if (imageIndex < n - 1) {
+      imageReelRef.current?.goNext()
+      return
+    }
+
+    if (nextScene) {
+      dispatch({ type: "COMMIT_SCENE", scene: nextScene, imageIndex: 0 })
+      replaceSceneUrl(nextScene)
+    } else {
+      tactileOverflowHint()
+    }
+  }
+
+  function handleReelPrev() {
+    const n = storyImages.length
+    if (n === 0) return
+
+    if (n === 1) {
+      if (prevScene) {
+        const lastIdx = lastSlideIndexForScene(prevScene)
+        dispatch({ type: "COMMIT_SCENE", scene: prevScene, imageIndex: lastIdx })
+        replaceSceneUrl(prevScene)
+      } else {
+        tactileOverflowHint()
+      }
+      return
+    }
+
+    if (imageIndex > 0) {
+      imageReelRef.current?.goPrev()
+      return
+    }
+
+    if (prevScene) {
+      const lastIdx = lastSlideIndexForScene(prevScene)
+      dispatch({ type: "COMMIT_SCENE", scene: prevScene, imageIndex: lastIdx })
+      replaceSceneUrl(prevScene)
+    } else {
+      tactileOverflowHint()
+    }
   }
 
   return (
@@ -240,15 +301,8 @@ export default function SceneExperience({
             ref={imageReelRef}
             images={storyImages}
             imageIndex={imageIndex}
-            onNext={() =>
-              setImageIndex((i) => (storyImages.length > 0 ? (i + 1) % storyImages.length : 0))
-            }
-            onPrev={() =>
-              setImageIndex((i) => {
-                const n = storyImages.length
-                return n > 0 ? (i - 1 + n) % n : 0
-              })
-            }
+            onNext={() => dispatch({ type: "STEP_NEXT" })}
+            onPrev={() => dispatch({ type: "STEP_PREV" })}
           />
           <CaptionDisplay
             key={`${visualScene.id}-${imageIndex}`}
@@ -262,9 +316,9 @@ export default function SceneExperience({
       </div>
 
       <SceneRopes
-        onPrev={() => imageReelRef.current?.goPrev()}
-        onNext={() => imageReelRef.current?.goNext()}
-        disabled={storyImages.length <= 1}
+        onPrev={handleReelPrev}
+        onNext={handleReelNext}
+        disabled={storyImages.length === 0}
       />
 
       <SceneTimeCard
@@ -290,12 +344,14 @@ export default function SceneExperience({
                 name: item.name,
                 house: characters.find((c) => c.id === item.id)?.house,
                 image_url: item.image_url,
+                description: item.description,
               }))}
             />
           </div>
         </div>
         <div className="rs-scene-right-rail-assistant">
           <SceneAssistant
+            key={visualScene.tsid}
             sceneContext={sceneAssistantContext}
             userProgress={sceneAssistantUserProgress}
           />
