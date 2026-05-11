@@ -271,10 +271,7 @@ export default function SceneExperience({
         workTitle={displayedTimeline}
         scene={{
           id: visualScene.id,
-          scene_time: visualScene.scene_time,
           chapter_title: visualScene.chapter_title,
-          order_index: visualScene.order_index,
-          orderIndex: visualScene.orderIndex,
         }}
       />
       <SceneNavButtons
@@ -283,15 +280,27 @@ export default function SceneExperience({
         prevDisabled={!prevScene}
         nextDisabled={!nextScene}
       />
-      <CharacterCardRack
-        sceneId={visualScene.id}
-        characters={presentCharacters.map((item) => ({
-          id: item.id,
-          name: item.name,
-          house: characters.find((c) => c.id === item.id)?.house,
-          image_url: item.image_url,
-        }))}
-      />
+      <div className="rs-scene-right-rail">
+        <div className="rs-scene-right-rail-body">
+          <div className="rs-scene-right-rail-rack">
+            <CharacterCardRack
+              sceneId={visualScene.id}
+              characters={presentCharacters.map((item) => ({
+                id: item.id,
+                name: item.name,
+                house: characters.find((c) => c.id === item.id)?.house,
+                image_url: item.image_url,
+              }))}
+            />
+          </div>
+        </div>
+        <div className="rs-scene-right-rail-assistant">
+          <SceneAssistant
+            sceneContext={sceneAssistantContext}
+            userProgress={sceneAssistantUserProgress}
+          />
+        </div>
+      </div>
 
       <MiniMap
         mapUrl={mapError ? "/maps/westeros.jpg" : WESTEROS_MAP_URL}
@@ -301,12 +310,60 @@ export default function SceneExperience({
       />
       <HomeButton />
 
-      <SceneAssistant
-        sceneContext={sceneAssistantContext}
-        userProgress={sceneAssistantUserProgress}
-      />
-
       <style jsx>{`
+        /* 人物列表 + 场景助手同一竖轴，水平居中对齐（与原先各自 fixed right:32 相比，FAB 对齐卡片列中心）
+         * Nested scroll: QA Safari when changing this flex chain (rack scroll vs assistant panel inner scroll). */
+        .rs-scene-right-rail {
+          position: fixed;
+          right: 32px;
+          bottom: 32px;
+          top: calc(28px + env(safe-area-inset-top, 0px));
+          z-index: 20;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          width: max-content;
+          max-width: calc(100vw - 64px);
+          pointer-events: none;
+        }
+
+        .rs-scene-right-rail-body {
+          flex: 1 1 0;
+          min-height: 0;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+          width: 100%;
+          pointer-events: none;
+        }
+
+        .rs-scene-right-rail-rack {
+          pointer-events: auto;
+          flex: 1 1 0;
+          min-height: 0;
+          max-height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+        }
+
+        .rs-scene-right-rail-assistant {
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          pointer-events: none;
+        }
+
+        .rs-scene-right-rail-assistant :global(*) {
+          pointer-events: auto;
+        }
+
         .scene-device-shell {
           position: relative;
           display: flex;

@@ -6,51 +6,39 @@ interface SceneTimeCardProps {
   workTitle: string
   scene: {
     id: string
-    scene_time?: string | null
-    sceneTime?: string | null
     chapter_title?: string | null
     chapterTitle?: string | null
-    order_index?: number | null
-    orderIndex?: number | null
   }
 }
 
-function getDisplayTime(scene: SceneTimeCardProps["scene"]): string {
-  const orderIndex = scene.order_index ?? scene.orderIndex
-  return (
-    (scene.scene_time && String(scene.scene_time).trim()) ||
-    (scene.sceneTime && String(scene.sceneTime).trim()) ||
-    (scene.chapter_title && String(scene.chapter_title).trim()) ||
-    (scene.chapterTitle && String(scene.chapterTitle).trim()) ||
-    (orderIndex && orderIndex > 0 ? `Scene ${orderIndex}` : "Untitled Scene")
-  )
+// Temporary display contract: chapter title only. scene_time was removed as a fallback while
+// that field remains unreliable; widen again once data/API guarantees are clear.
+function getChapterTitleText(scene: SceneTimeCardProps["scene"]): string {
+  return String(scene.chapter_title ?? scene.chapterTitle ?? "").trim()
 }
 
 export default function SceneTimeCard({ workTitle, scene }: SceneTimeCardProps) {
   const sceneId = scene.id
-  const sceneTimeText = getDisplayTime(scene)
+  const chapterTitleText = getChapterTitleText(scene)
   const prevSceneIdRef = useRef(sceneId)
-  const [currentText, setCurrentText] = useState(sceneTimeText)
+  const [currentText, setCurrentText] = useState(chapterTitleText)
   const [outgoingText, setOutgoingText] = useState<string | null>(null)
   const [incomingText, setIncomingText] = useState<string | null>(null)
   const [phase, setPhase] = useState<"idle" | "out" | "in">("idle")
 
-  // Debug current scene payload for field-name mismatch.
-  console.log("[SceneTimeCard] scene =", JSON.stringify(scene, null, 2))
-
   useEffect(() => {
-    if (prevSceneIdRef.current === sceneId && currentText === sceneTimeText) return
+    if (prevSceneIdRef.current === sceneId && currentText === chapterTitleText) return
     prevSceneIdRef.current = sceneId
 
     const t0 = window.setTimeout(() => {
       setOutgoingText(currentText)
-      setIncomingText(sceneTimeText)
+      setIncomingText(chapterTitleText)
       setPhase("out")
     }, 0)
 
     const t1 = window.setTimeout(() => setPhase("in"), 300)
     const t2 = window.setTimeout(() => {
-      setCurrentText(sceneTimeText)
+      setCurrentText(chapterTitleText)
       setOutgoingText(null)
       setIncomingText(null)
       setPhase("idle")
@@ -61,7 +49,7 @@ export default function SceneTimeCard({ workTitle, scene }: SceneTimeCardProps) 
       window.clearTimeout(t1)
       window.clearTimeout(t2)
     }
-  }, [sceneId, sceneTimeText, currentText])
+  }, [sceneId, chapterTitleText, currentText])
 
   return (
     <div className="scene-time-card">
@@ -80,7 +68,7 @@ export default function SceneTimeCard({ workTitle, scene }: SceneTimeCardProps) 
               {outgoingText ?? currentText}
             </span>
             <span className={`scene-time-layer scene-time-in ${phase}`}>
-              {incomingText ?? sceneTimeText}
+              {incomingText ?? chapterTitleText}
             </span>
           </>
         )}
@@ -207,4 +195,3 @@ export default function SceneTimeCard({ workTitle, scene }: SceneTimeCardProps) 
     </div>
   )
 }
-
