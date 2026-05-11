@@ -1,12 +1,14 @@
 "use client"
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 type CharacterRackItem = {
   id: string
   name: string
   house?: string
   image_url?: string
+  /** In-memory only; no extra fetch (W-02). */
+  description?: string
 }
 
 interface CharacterCardRackProps {
@@ -27,7 +29,7 @@ function CharacterPortrait({ character }: { character: CharacterRackItem }) {
       {showImage ? (
         <img
           src={character.image_url}
-          alt={character.name}
+          alt=""
           className="char-portrait"
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           onError={() => setImgError(true)}
@@ -44,6 +46,19 @@ function CharacterPortrait({ character }: { character: CharacterRackItem }) {
 
 export default function CharacterCardRack({ characters, sceneId }: CharacterCardRackProps) {
   const totalCards = characters.length
+  const [selected, setSelected] = useState<CharacterRackItem | null>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+
+  useEffect(() => {
+    const el = dialogRef.current
+    if (!el) return
+    if (selected) {
+      el.showModal()
+    } else if (el.open) {
+      el.close()
+    }
+  }, [selected])
+
   return (
     <div key={sceneId} className="character-rack-root">
       <div className="character-rack-scroll">
@@ -57,6 +72,9 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
             return (
               <motion.article
                 key={`${sceneId}-${character.id}`}
+                role="button"
+                tabIndex={0}
+                aria-label={`${character.name}，查看详情`}
                 className="character-card"
                 title={character.name}
                 style={{
@@ -73,6 +91,13 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
                   duration: 0.6,
                   ease: [0.34, 1.56, 0.64, 1],
                 }}
+                onClick={() => setSelected(character)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    setSelected(character)
+                  }
+                }}
               >
                 <CharacterPortrait character={character} />
                 <div className="char-meta">
@@ -87,9 +112,51 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
         </div>
       </div>
 
+      <dialog
+        ref={dialogRef}
+        className="character-detail-dialog"
+        onClose={() => setSelected(null)}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            dialogRef.current?.close()
+          }
+        }}
+      >
+        {selected ? (
+          <div className="character-detail-inner" onClick={(e) => e.stopPropagation()}>
+            <header className="character-detail-header">
+              <h2 className="character-detail-title">{selected.name}</h2>
+              <button
+                type="button"
+                className="character-detail-close"
+                aria-label="关闭"
+                onClick={() => dialogRef.current?.close()}
+              >
+                ×
+              </button>
+            </header>
+            <div className="character-detail-body">
+              {selected.image_url?.trim() ? (
+                <img
+                  src={selected.image_url}
+                  alt=""
+                  className="character-detail-avatar"
+                />
+              ) : (
+                <div className="character-detail-avatar-fallback">
+                  {(selected.name?.charAt(0) ?? "?").toUpperCase()}
+                </div>
+              )}
+              <p className="character-detail-desc">
+                {selected.description?.trim() ? selected.description.trim() : "暂无介绍。"}
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </dialog>
+
       <style jsx>{`
         .character-rack-root {
-          /* 由 SceneExperience.rs-scene-right-rail 提供定位与高度；此处占满 rail-body 的 flex 区域 */
           position: relative;
           display: flex;
           flex-direction: column;
@@ -113,7 +180,6 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
           min-height: 0;
           overflow-y: auto;
           overflow-x: hidden;
-          /* Firefox：细滚动条 + hover 不显式加粗变色 */
           scrollbar-width: thin;
           scrollbar-color: rgba(232, 228, 220, 0.28) transparent;
         }
@@ -133,7 +199,6 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
           background-clip: padding-box;
         }
 
-        /* 与默认 thumb 同色，避免系统 hover 时灰白加粗 */
         .character-rack-scroll::-webkit-scrollbar-thumb:hover {
           background-color: rgba(232, 228, 220, 0.22);
         }
@@ -143,11 +208,6 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
         }
 
         .character-rack-scroll-inner {
-          /*
-           * margin-top:auto：内容少于视口时整块贴在滚动区底部（贴近场景助手上方）；
-           * 内容超出时 auto 边距为 0，由 overflow-y 正常滚动。
-           * Safari: flex + overflow:auto + margin-top:auto is easy to regress—QA if this layout changes.
-           */
           margin-top: auto;
           flex-shrink: 0;
           width: var(--rack-card-width);
@@ -170,7 +230,16 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
           overflow: hidden;
           display: flex;
           flex-direction: column;
-          transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 280ms ease, box-shadow 280ms ease;
+          cursor: pointer;
+          transition:
+            transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1),
+            filter 280ms ease,
+            box-shadow 280ms ease;
+        }
+
+        .character-card:focus {
+          outline: 2px solid var(--rs-gold);
+          outline-offset: 2px;
         }
 
         .character-card:hover {
@@ -259,8 +328,99 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
           text-overflow: ellipsis;
         }
 
+        .character-detail-dialog {
+          margin: auto;
+          max-width: min(420px, calc(100vw - 48px));
+          width: 100%;
+          border: 1.5px solid var(--rs-wood-mid);
+          border-radius: 8px;
+          padding: 0;
+          background: linear-gradient(180deg, #2a1a0e, #1a100a);
+          color: var(--rs-text);
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.75);
+        }
+
+        .character-detail-dialog::backdrop {
+          background: rgba(0, 0, 0, 0.55);
+        }
+
+        .character-detail-inner {
+          padding: 16px 18px 20px;
+        }
+
+        .character-detail-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+
+        .character-detail-title {
+          margin: 0;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 1.15rem;
+          font-weight: 600;
+          color: var(--rs-gold);
+          line-height: 1.25;
+        }
+
+        .character-detail-close {
+          flex-shrink: 0;
+          width: 32px;
+          height: 32px;
+          border: 1px solid var(--rs-gold-dim);
+          border-radius: 4px;
+          background: rgba(61, 36, 16, 0.6);
+          color: var(--rs-text);
+          font-size: 1.25rem;
+          line-height: 1;
+          cursor: pointer;
+        }
+
+        .character-detail-close:hover {
+          filter: brightness(1.15);
+        }
+
+        .character-detail-body {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          align-items: center;
+        }
+
+        .character-detail-avatar {
+          width: 120px;
+          height: 120px;
+          object-fit: cover;
+          border-radius: 4px;
+          border: 2px solid var(--rs-gold-dim);
+        }
+
+        .character-detail-avatar-fallback {
+          width: 120px;
+          height: 120px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+          border: 2px solid var(--rs-gold-dim);
+          background: linear-gradient(135deg, #3d2410 0%, #2a1a0e 100%);
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 2.5rem;
+          font-weight: 600;
+          color: var(--rs-gold);
+        }
+
+        .character-detail-desc {
+          margin: 0;
+          width: 100%;
+          font-size: 13px;
+          line-height: 1.55;
+          color: var(--rs-text);
+          white-space: pre-wrap;
+        }
       `}</style>
     </div>
   )
 }
-
