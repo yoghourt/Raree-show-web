@@ -1,4 +1,4 @@
-// Verifying ADR-002-VISIBILITY-INVARIANT-SPEC-V1: Physical Truncation Law
+// Verifying ADR-002-VISIBILITY-INVARIANT-SPEC: Physical Truncation Law
 
 import type { ChapterSceneSnippet } from "@/services/retrieval"
 import { measureRetrievedStoryContextBytes } from "@/lib/scene-assistant-context"

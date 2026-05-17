@@ -1,4 +1,4 @@
-# ADR-002-VISIBILITY-INVARIANT-SPEC-V1
+# ADR-002-VISIBILITY-INVARIANT-SPEC
 
 Version: `v1`
 Status: `Architecture Approved`
@@ -7,7 +7,7 @@ Type: `Security Invariant Specification`
 Related ADR:
 
 * `ADR-002 — Visibility Boundary`
-* `AUTHORITY_BOUNDARY_AND_PRECEDENCE_SPEC_V1.md`
+* `/governance/specs/AUTHORITY_BOUNDARY_AND_PRECEDENCE_SPEC.md`
 
 Audience:
 
