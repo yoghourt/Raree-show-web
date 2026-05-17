@@ -50,3 +50,5 @@ supabase/
 
 # governance
 governance/
+
+.github/
