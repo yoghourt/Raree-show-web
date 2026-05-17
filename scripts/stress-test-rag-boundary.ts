@@ -6,7 +6,7 @@
  * Optional: STRESS_TEST_WORK_TSID, STRESS_TEST_SCENE_TSID
  */
 
-// Verifying ADR-002-VISIBILITY-INVARIANT-SPEC-V1: Physical Truncation Law
+// Verifying ADR-002-VISIBILITY-INVARIANT-SPEC: Physical Truncation Law
 
 import path from "path"
 import { config } from "dotenv"

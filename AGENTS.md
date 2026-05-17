@@ -12,6 +12,19 @@ Read (authoritative; do not duplicate locally):
 
 These files are the authoritative governance source. Load from the local filesystem at `/governance` only.
 
+`AGENTS.md` declares entrypoints and repo-local runtime paths only; it does not redefine shared governance rules.
+
+### Operationally relevant specs (read from `/governance/specs/`)
+
+- `/governance/specs/CHANGE_TELEMETRY_SPEC.md` — PR/commit narration contract
+- `/governance/specs/AUTHORITY_BOUNDARY_AND_PRECEDENCE_SPEC.md` — authority layers and conflict semantics
+
+### PR templates (transport only; authority = telemetry spec)
+
+- Source: `/governance/templates/PR_TEMPLATE.md` (default)
+- Consumer adapter: `.github/pull_request_template.md` (regenerate via `npm run sync:governance`)
+- `/governance/templates/ADR_TEMPLATE.md`, `SPIKE_TEMPLATE.md`, `DEBUG_TEMPLATE.md` as applicable
+
 Before governance-aware work, run `npm run check:governance`. Missing governance MUST fail deterministically (`npm run bootstrap`). `npm run dev` runs bootstrap first and syncs `/governance` to `origin/main` latest.
 
 ## Repository Runtime Notes
