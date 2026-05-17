@@ -13,6 +13,7 @@ import {
   fetchChapterScenesWithinProgress,
   retrieveScenes,
   type RetrievedScene,
+  type ChapterSceneSnippet,
 } from "@/services/retrieval"
 
 export const maxDuration = 30
