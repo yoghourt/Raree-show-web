@@ -184,7 +184,7 @@ instead of automatic correction.
 
 | Invalid State                | Required Behavior |
 | ---------------------------- | ----------------- |
-| `readUpToStoryIndexLast < 0` | Fail-fast         |
+| `readUpToStoryIndexLast < -1`| Fail-fast         |
 | `NaN` index                  | Fail-fast         |
 | missing progress state       | Fail-fast         |
 | malformed visibility payload | Fail-fast         |
@@ -368,6 +368,9 @@ The following conditions MUST fail validation:
 - hidden overflow leakage
 - prompt-induced visibility expansion
 ```
+
+Sentinel Visibility State
+-1 = valid empty visibility boundary
 
 ---
 

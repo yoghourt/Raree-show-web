@@ -12,7 +12,8 @@
     "lint": "eslint",
     "import-data": "ts-node scripts/import-data.ts",
     "smoke-retrieval": "tsx scripts/smoke-test-retrieval.ts",
-    "verify-story-truncation": "tsx scripts/verify-story-truncation.ts"
+    "verify-story-truncation": "tsx scripts/verify-story-truncation.ts",
+    "stress-rag-boundary": "tsx scripts/stress-test-rag-boundary.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.71",
