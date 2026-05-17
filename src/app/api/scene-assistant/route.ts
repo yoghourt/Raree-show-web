@@ -3,10 +3,17 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { NextRequest } from "next/server"
 import { getFetchForGoogleGenerativeAI } from "@/lib/gemini-proxy-fetch"
 import {
+  buildChapterScenesXml,
+  buildCurrentSceneRevealedXml,
+  escapeXmlAttr,
+  escapeXmlText,
+} from "@/lib/scene-assistant-context"
+import { assertReadUpToStoryIndexLast, VisibilityInvariantViolation } from "@/lib/visibility-invariant"
+import {
   fetchChapterScenesWithinProgress,
   retrieveScenes,
-  type ChapterSceneSnippet,
   type RetrievedScene,
+  type ChapterSceneSnippet,
 } from "@/services/retrieval"
 
 export const maxDuration = 30
@@ -32,18 +39,6 @@ type UserProgressBody = {
   readUpToStoryIndexLast: number
 }
 
-function escapeXmlAttr(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-}
-
-function escapeXmlText(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-}
-
 /** Narrative fields from match_scenes row only — no scores or internal ids in the model prompt. */
 function sceneBodyFromRetrieved(scene: RetrievedScene): string {
   const summary = scene.summary
@@ -65,46 +60,6 @@ function buildContextXml(results: RetrievedScene[]): string {
     return `  <scene id="${id}" title="${title}">${body}</scene>`
   })
   return `<context>\n${scenes.join("\n")}\n</context>`
-}
-
-function buildChapterScenesXml(scenes: ChapterSceneSnippet[]): string {
-  if (scenes.length === 0) {
-    return "<chapterScenesInProgress></chapterScenesInProgress>"
-  }
-  const lines = scenes.map((s) => {
-    const id = escapeXmlAttr(s.tsid)
-    const title = escapeXmlAttr(s.title)
-    if (s.revealedStorySlides.length === 0) {
-      return `  <scene id="${id}" title="${title}">\n    <story index="0">${escapeXmlText("（无已揭示 story）")}</story>\n  </scene>`
-    }
-    const storyLines = s.revealedStorySlides
-      .map((sl, idx) => {
-        const cap =
-          sl.caption.trim() !== ""
-            ? escapeXmlText(sl.caption.trim())
-            : escapeXmlText("（无 caption）")
-        return `    <story index="${idx}">${cap}</story>`
-      })
-      .join("\n")
-    return `  <scene id="${id}" title="${title}">\n${storyLines}\n  </scene>`
-  })
-  return `<chapterScenesInProgress>\n${lines.join("\n")}\n</chapterScenesInProgress>`
-}
-
-function buildCurrentSceneRevealedXml(slides: { caption: string }[]): string {
-  if (slides.length === 0) {
-    return `<currentSceneRevealedStories>\n  <story index="0">${escapeXmlText("（无已揭示 story）")}</story>\n</currentSceneRevealedStories>`
-  }
-  const inner = slides
-    .map((sl, idx) => {
-      const cap =
-        sl.caption.trim() !== ""
-          ? escapeXmlText(sl.caption.trim())
-          : escapeXmlText("（无 caption）")
-      return `  <story index="${idx}">${cap}</story>`
-    })
-    .join("\n")
-  return `<currentSceneRevealedStories>\n${inner}\n</currentSceneRevealedStories>`
 }
 
 function buildSystemPrompt(
@@ -248,13 +203,15 @@ export async function POST(req: NextRequest) {
     !Number.isFinite(readUpToChapter) ||
     typeof readUpToOrderIndex !== "number" ||
     !Number.isFinite(readUpToOrderIndex) ||
-    !sceneTsid ||
-    typeof readUpToStoryIndexLast !== "number" ||
-    !Number.isFinite(readUpToStoryIndexLast) ||
-    !Number.isInteger(readUpToStoryIndexLast) ||
-    readUpToStoryIndexLast < -1
+    !sceneTsid
   ) {
     return new Response("Invalid userProgress", { status: 400 })
+  }
+  try {
+    assertReadUpToStoryIndexLast(readUpToStoryIndexLast)
+  } catch (e) {
+    const msg = e instanceof VisibilityInvariantViolation ? e.message : "Invalid userProgress"
+    return new Response(msg, { status: 400 })
   }
 
   if (sceneContext.tsid !== sceneTsid) {

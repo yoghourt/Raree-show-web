@@ -21,6 +21,7 @@ import {
   effectiveStorySlidesFromV2,
   sliceRevealedStorySlides,
 } from "@/lib/story-images-v2"
+import { assertReadUpToStoryIndexLast } from "@/lib/visibility-invariant"
 
 /** Gemini embedding dimension locked with pgvector / backfill (ADR-001). */
 const RAG_EMBEDDING_DIM = 768
@@ -158,6 +159,8 @@ export async function fetchChapterScenesWithinProgress(
   userProgress: ProgressConfig,
   chapterNumber: number
 ): Promise<ChapterSceneSnippet[]> {
+  assertReadUpToStoryIndexLast(userProgress.readUpToStoryIndexLast)
+
   if (chapterNumber !== userProgress.readUpToChapter) {
     return []
   }
