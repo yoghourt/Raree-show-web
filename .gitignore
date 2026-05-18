@@ -50,3 +50,6 @@ supabase/
 
 # governance
 /governance/
+
+# RAGAS eval artifacts
+eval/ragas/reports/

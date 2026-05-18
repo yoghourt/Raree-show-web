@@ -14,7 +14,10 @@
     "import-data": "ts-node scripts/import-data.ts",
     "smoke-retrieval": "tsx scripts/smoke-test-retrieval.ts",
     "verify-story-truncation": "tsx scripts/verify-story-truncation.ts",
-    "stress-rag-boundary": "tsx scripts/stress-test-rag-boundary.ts"
+    "stress-rag-boundary": "tsx scripts/stress-test-rag-boundary.ts",
+    "eval:ragas": "tsx eval/ragas/runner/evaluate-suite.ts",
+    "eval:ragas:build-hash": "tsx eval/ragas/dataset/build-expected-hash.ts",
+    "eval:ragas:oracle": "EVAL_ORACLE_ONLY=1 tsx eval/ragas/runner/evaluate-suite.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.71",
