@@ -12,12 +12,11 @@ import path from "path"
 import { config } from "dotenv"
 import { createClient } from "@supabase/supabase-js"
 import { effectiveStorySlidesFromV2 } from "../src/lib/story-images-v2"
+import { collectAuthorizedSemanticBytes } from "../src/lib/production-story-oracle"
 import {
-  assertByteLevelOracle,
+  assertProductionStoryOracle,
   assertReadUpToStoryIndexLast,
   INVARIANT_VIOLATION_PREFIX,
-  retrievedContextSize,
-  sigmaAuthorizedStoryCaptionBytes,
   VisibilityInvariantViolation,
 } from "../src/lib/visibility-invariant"
 import {
@@ -219,11 +218,13 @@ async function runCase1(workTsid: string, fixture: SceneFixture): Promise<void> 
     `effective max index should be ${N - 1}`
   )
 
-  assertByteLevelOracle(chapterScenes, fixture.tsid)
-  const sigma = sigmaAuthorizedStoryCaptionBytes(chapterScenes, fixture.tsid)
-  const retrieved = retrievedContextSize(chapterScenes, fixture.tsid)
-  assert(sigma === retrieved, `strict equality: sigma=${sigma} retrieved=${retrieved}`)
-  console.log(`  revealed=${N} slides, sigma=retrieved=${sigma} bytes`)
+  const oracle = collectAuthorizedSemanticBytes(chapterScenes)
+  assertProductionStoryOracle(chapterScenes, "stress:case1", "stress-fp")
+  assert(
+    oracle.sigmaBytes === oracle.authorizedSemanticBytes.length,
+    `strict equality: sigma=${oracle.sigmaBytes} concatenated=${oracle.authorizedSemanticBytes.length}`
+  )
+  console.log(`  revealed=${N} slides, semanticBytes=${oracle.sigmaBytes}`)
 }
 
 async function runCase2A(workTsid: string, fixture: SceneFixture): Promise<void> {
@@ -247,11 +248,10 @@ async function runCase2A(workTsid: string, fixture: SceneFixture): Promise<void>
     "zero authorized caption tokens (placeholders excluded)"
   )
 
-  assertByteLevelOracle(chapterScenes, fixture.tsid)
-  const sigma = sigmaAuthorizedStoryCaptionBytes(chapterScenes, fixture.tsid)
-  const retrieved = retrievedContextSize(chapterScenes, fixture.tsid)
-  assert(sigma === retrieved, `strict equality: sigma=${sigma} retrieved=${retrieved}`)
-  console.log(`  empty slides OK, oracle bytes=${sigma} (placeholder-aligned)`)
+  const oracle = collectAuthorizedSemanticBytes(chapterScenes)
+  assertProductionStoryOracle(chapterScenes, "stress:case2a", "stress-fp")
+  assert(oracle.sigmaBytes === 0, `sentinel -1: expected 0 semantic bytes, got ${oracle.sigmaBytes}`)
+  console.log(`  empty slides OK, semanticBytes=${oracle.sigmaBytes}`)
 }
 
 async function runCase2B(workTsid: string, fixture: SceneFixture): Promise<void> {
@@ -305,12 +305,12 @@ async function runCase3(workTsid: string, fixture: SceneFixture): Promise<void> 
     `candidateSetSize must not change under injection: ${outBenign.observability.candidateSetSize} vs ${outInjection.observability.candidateSetSize}`
   )
 
-  assertByteLevelOracle(chBenign, fixture.tsid)
-  const bytesBenign = retrievedContextSize(chBenign, fixture.tsid)
-  const bytesInjection = retrievedContextSize(chInjection, fixture.tsid)
+  const oracleBenign = collectAuthorizedSemanticBytes(chBenign)
+  const oracleInjection = collectAuthorizedSemanticBytes(chInjection)
+  assertProductionStoryOracle(chBenign, "stress:case3", "stress-fp")
   assert(
-    bytesBenign === bytesInjection,
-    `retrieved_context_size must match: ${bytesBenign} vs ${bytesInjection}`
+    oracleBenign.sha256 === oracleInjection.sha256,
+    `semantic hash must match under injection: ${oracleBenign.sha256} vs ${oracleInjection.sha256}`
   )
   console.log(`  chapter context stable, candidateSetSize=${outBenign.observability.candidateSetSize}`)
 }

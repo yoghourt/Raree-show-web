@@ -13,10 +13,22 @@
  *   chapter_number + order_index (Day 24-25 PR #27); there is no chapter_id in the app schema.
  */
 
+import { randomUUID } from "node:crypto"
 import { cache } from "react"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import nodeFetch, { type RequestInit as NodeFetchRequestInit } from "node-fetch"
 import { HttpsProxyAgent } from "https-proxy-agent"
+import {
+  buildChapterScenesXml,
+  buildCurrentSceneRevealedXml,
+} from "@/lib/scene-assistant-context"
+import {
+  buildStableRequestFingerprint,
+  collectAuthorizedSemanticBytes,
+  InvariantViolationError,
+  normalizeQueryForFingerprint,
+  verifyProductionStoryOracle,
+} from "@/lib/production-story-oracle"
 import {
   effectiveStorySlidesFromV2,
   sliceRevealedStorySlides,
@@ -75,6 +87,24 @@ export type RetrieveScenesResult = {
     retrievalLatency: number
     rerankScores: number[]
   }
+}
+
+/** LLM ingress bundle — semantic oracle verified in retrieval.ts before export. */
+export type VerifiedAssistantContext = {
+  requestId: string
+  stableFingerprint: string
+  /** Vector rerank rows (summaries non-authoritative for story oracle). */
+  results: RetrievedScene[]
+  /** Sole authoritative source for production story authorization bytes. */
+  chapterScenes: ChapterSceneSnippet[]
+  storyOracle: { byteSize: number; sha256: string }
+  currentSceneRevealedXml: string
+  chapterScenesXml: string
+  observability: RetrieveScenesResult["observability"]
+}
+
+type RetrieveScenesUncachedResult = RetrieveScenesResult & {
+  candidateTsids: string[]
 }
 
 type MatchScenesRpcRow = Record<string, unknown>
@@ -368,10 +398,24 @@ const retrieveScenesCached = cache(
  * Serial pipeline: resolve work → metadataPreFiltering → candidateSet → embedQuery → match_scenes(..., candidate_tsids).
  * RPC is always invoked for a valid work (including empty candidateSet). Unknown workTsid throws.
  */
+function assertRerankResultsWithinCandidateSet(
+  results: RetrievedScene[],
+  candidateTsids: string[]
+): void {
+  const allowed = new Set(candidateTsids)
+  for (const row of results) {
+    if (!allowed.has(row.tsid)) {
+      throw new InvariantViolationError(
+        `post-rerank tsid ${row.tsid} not in SQL candidateSet (${candidateTsids.length} candidates)`
+      )
+    }
+  }
+}
+
 async function retrieveScenesUncached(
   query: string,
   userProgress: ProgressConfig
-): Promise<RetrieveScenesResult> {
+): Promise<RetrieveScenesUncachedResult> {
   const t0 = performance.now()
   const supabase = getRetrievalSupabase()
 
@@ -411,6 +455,7 @@ async function retrieveScenesUncached(
 
   return {
     results,
+    candidateTsids: candidateSet,
     observability: {
       candidateSetSize,
       retrievalLatency,
@@ -423,7 +468,7 @@ export async function retrieveScenes(
   query: string,
   userProgress: ProgressConfig
 ): Promise<RetrieveScenesResult> {
-  return retrieveScenesCached(
+  const out = await retrieveScenesCached(
     query,
     userProgress.workTsid,
     userProgress.readUpToChapter,
@@ -431,4 +476,61 @@ export async function retrieveScenes(
     userProgress.sceneTsid,
     userProgress.readUpToStoryIndexLast
   )
+  return out
+}
+
+/**
+ * Scene Assistant ingress: serial retrieval + chapterScenes authorization + semantic SHA-256 gate.
+ * Only chapterScenes[].revealedStorySlides[].caption bytes participate in the production oracle.
+ * RetrievedScene summaries / rerank metadata are excluded from story oracle hashing.
+ */
+export async function retrieveVerifiedAssistantContext(
+  query: string,
+  userProgress: ProgressConfig,
+  chapterNumber: number
+): Promise<VerifiedAssistantContext> {
+  const normalizedUserQuery = normalizeQueryForFingerprint(query)
+  const stableFingerprint = buildStableRequestFingerprint({
+    sceneTsid: userProgress.sceneTsid,
+    chapterNumber,
+    readUpToStoryIndexLast: userProgress.readUpToStoryIndexLast,
+    normalizedUserQuery,
+  })
+  const requestId = `${stableFingerprint}:${randomUUID()}`
+
+  const [retrievalOut, chapterScenes] = await Promise.all([
+    retrieveScenesUncached(query, userProgress),
+    fetchChapterScenesWithinProgress(userProgress, chapterNumber),
+  ])
+
+  const results = retrievalOut.results.filter(
+    (r) => r.tsid !== userProgress.sceneTsid
+  )
+  assertRerankResultsWithinCandidateSet(results, retrievalOut.candidateTsids)
+
+  const collected = collectAuthorizedSemanticBytes(chapterScenes)
+
+  const storyOracle = verifyProductionStoryOracle({
+    authorizedChunks: collected.chunks,
+    authorizedSemanticBytes: collected.authorizedSemanticBytes,
+    requestId,
+    stableFingerprint,
+  })
+
+  const currentSnippet = chapterScenes.find((s) => s.tsid === userProgress.sceneTsid)
+  const currentSceneRevealedXml = buildCurrentSceneRevealedXml(
+    currentSnippet?.revealedStorySlides ?? []
+  )
+  const chapterScenesXml = buildChapterScenesXml(chapterScenes)
+
+  return {
+    requestId,
+    stableFingerprint,
+    results,
+    chapterScenes,
+    storyOracle,
+    currentSceneRevealedXml,
+    chapterScenesXml,
+    observability: retrievalOut.observability,
+  }
 }

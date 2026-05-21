@@ -1,9 +1,13 @@
 // Verifying ADR-002-VISIBILITY-INVARIANT-SPEC: Physical Truncation Law
 
 import type { ChapterSceneSnippet } from "@/services/retrieval"
-import { measureRetrievedStoryContextBytes } from "@/lib/scene-assistant-context"
+import {
+  collectAuthorizedSemanticBytes,
+  verifyProductionStoryOracle,
+  INVARIANT_VIOLATION_PREFIX,
+} from "@/lib/production-story-oracle"
 
-export const INVARIANT_VIOLATION_PREFIX = "Invariant Violation"
+export { INVARIANT_VIOLATION_PREFIX }
 
 export class VisibilityInvariantViolation extends Error {
   constructor(detail: string) {
@@ -41,30 +45,38 @@ export function assertReadUpToStoryIndexLast(
   }
 }
 
-/** Byte-level oracle: Σ(authorized_story_content) for story captions in prompt assembly. */
+/** Semantic raw-byte oracle (production authority). */
+export function assertProductionStoryOracle(
+  chapterScenes: ChapterSceneSnippet[],
+  requestId: string,
+  stableFingerprint: string
+): { byteSize: number; sha256: string } {
+  const collected = collectAuthorizedSemanticBytes(chapterScenes)
+  return verifyProductionStoryOracle({
+    authorizedChunks: collected.chunks,
+    authorizedSemanticBytes: collected.authorizedSemanticBytes,
+    requestId,
+    stableFingerprint,
+  })
+}
+
+/** @deprecated Use collectAuthorizedSemanticBytes / assertProductionStoryOracle */
 export function sigmaAuthorizedStoryCaptionBytes(
-  chapterScenes: ChapterSceneSnippet[],
-  sceneTsid: string
+  chapterScenes: ChapterSceneSnippet[]
 ): number {
-  return measureRetrievedStoryContextBytes(chapterScenes, sceneTsid)
+  return collectAuthorizedSemanticBytes(chapterScenes).sigmaBytes
 }
 
-export function retrievedContextSize(
-  chapterScenes: ChapterSceneSnippet[],
-  sceneTsid: string
-): number {
-  return measureRetrievedStoryContextBytes(chapterScenes, sceneTsid)
+/** @deprecated Use collectAuthorizedSemanticBytes */
+export function retrievedContextSize(chapterScenes: ChapterSceneSnippet[]): number {
+  return collectAuthorizedSemanticBytes(chapterScenes).sigmaBytes
 }
 
+/** @deprecated Use assertProductionStoryOracle */
 export function assertByteLevelOracle(
   chapterScenes: ChapterSceneSnippet[],
-  sceneTsid: string
+  requestId: string,
+  stableFingerprint: string
 ): void {
-  const sigma = sigmaAuthorizedStoryCaptionBytes(chapterScenes, sceneTsid)
-  const retrieved = retrievedContextSize(chapterScenes, sceneTsid)
-  if (sigma !== retrieved) {
-    throw new VisibilityInvariantViolation(
-      `byte-level oracle mismatch: Σ(authorized_story_content)=${sigma} !== retrieved_context_size=${retrieved}`
-    )
-  }
+  assertProductionStoryOracle(chapterScenes, requestId, stableFingerprint)
 }

@@ -33,9 +33,14 @@ If the API returns `limit: 0` or daily quota errors, the runner fails fast (no l
 
 Partial results resume from `reports/latest.json` unless `EVAL_NO_RESUME=1`.
 
+## Production vs eval authority
+
+- **Production** (Scene Assistant): `sha256(concat(raw caption UTF-8))` from `chapterScenes[].revealedStorySlides` only — see `src/lib/production-story-oracle.ts`. This gates LLM ingress.
+- **Eval v1 (this suite)**: `sha256(contexts.join("\n"))` on dataset fixture chunks — **legacy serialization** for `seed-v1.json`; not interchangeable with production hashes.
+
 ## Topology
 
-1. **Content-hash Oracle** (deterministic, runs first)
+1. **Content-hash Oracle** (deterministic, runs first; **eval authority only**)
    - `sha256(normalized(contexts)) === expected_context_hash`
    - `expected_context_size` is telemetry only
    - `authorized_story_indices` → index diagnostics only (never fails Oracle)

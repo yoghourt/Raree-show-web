@@ -2,18 +2,12 @@ import { streamText, type ModelMessage } from "ai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { NextRequest } from "next/server"
 import { getFetchForGoogleGenerativeAI } from "@/lib/gemini-proxy-fetch"
-import {
-  buildChapterScenesXml,
-  buildCurrentSceneRevealedXml,
-  escapeXmlAttr,
-  escapeXmlText,
-} from "@/lib/scene-assistant-context"
+import { escapeXmlAttr, escapeXmlTextForPresentation } from "@/lib/scene-assistant-context"
+import { InvariantViolationError } from "@/lib/production-story-oracle"
 import { assertReadUpToStoryIndexLast, VisibilityInvariantViolation } from "@/lib/visibility-invariant"
 import {
-  fetchChapterScenesWithinProgress,
-  retrieveScenes,
+  retrieveVerifiedAssistantContext,
   type RetrievedScene,
-  type ChapterSceneSnippet,
 } from "@/services/retrieval"
 
 export const maxDuration = 30
@@ -43,9 +37,9 @@ type UserProgressBody = {
 function sceneBodyFromRetrieved(scene: RetrievedScene): string {
   const summary = scene.summary
   if (typeof summary === "string" && summary.trim() !== "") {
-    return escapeXmlText(summary.trim())
+    return escapeXmlTextForPresentation(summary.trim())
   }
-  return escapeXmlText("（检索结果仅含场景标识与标题。）")
+  return escapeXmlTextForPresentation("（检索结果仅含场景标识与标题。）")
 }
 
 function buildContextXml(results: RetrievedScene[]): string {
@@ -226,39 +220,34 @@ export async function POST(req: NextRequest) {
     readUpToStoryIndexLast,
   }
 
-  // Integrating ADR-002: Serial Pipeline with Metadata Pre-filtering
-  let results: RetrievedScene[]
-  let observability: { candidateSetSize: number; retrievalLatency: number }
-  let chapterScenes: ChapterSceneSnippet[]
+  let verified: Awaited<ReturnType<typeof retrieveVerifiedAssistantContext>>
   try {
-    const [out, ch] = await Promise.all([
-      retrieveScenes(query, userProgress),
-      fetchChapterScenesWithinProgress(userProgress, sceneContext.chapter_number),
-    ])
-    const filtered = out.results.filter((r) => r.tsid !== userProgress.sceneTsid)
-    results = filtered
-    observability = out.observability
-    chapterScenes = ch
+    verified = await retrieveVerifiedAssistantContext(
+      query,
+      userProgress,
+      sceneContext.chapter_number
+    )
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "retrieveScenes failed"
+    if (e instanceof InvariantViolationError) {
+      return new Response(
+        JSON.stringify({ code: e.code, message: e.message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      )
+    }
+    const msg = e instanceof Error ? e.message : "retrieveVerifiedAssistantContext failed"
     return new Response(msg, { status: 502 })
   }
 
   console.log(
-    `[RAG] CandidateSet: ${observability.candidateSetSize} | Latency: ${Math.round(observability.retrievalLatency)}ms`
+    `[RAG] requestId=${verified.requestId} CandidateSet: ${verified.observability.candidateSetSize} | Latency: ${Math.round(verified.observability.retrievalLatency)}ms | storyOracleBytes=${verified.storyOracle.byteSize}`
   )
 
-  const currentSnippet = chapterScenes.find((s) => s.tsid === userProgress.sceneTsid)
-  const currentSceneRevealedXml = buildCurrentSceneRevealedXml(
-    currentSnippet?.revealedStorySlides ?? []
-  )
-  const chapterScenesXml = buildChapterScenesXml(chapterScenes)
-  const contextXml = buildContextXml(results)
+  const contextXml = buildContextXml(verified.results)
 
   const system = buildSystemPrompt(
     sceneContext,
-    currentSceneRevealedXml,
-    chapterScenesXml,
+    verified.currentSceneRevealedXml,
+    verified.chapterScenesXml,
     contextXml
   )
 

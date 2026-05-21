@@ -1,3 +1,8 @@
+/**
+ * Legacy RAGAS v1 oracle: sha256(contexts.join("\n")).
+ * NOT production authorization authority — production uses raw caption UTF-8 concat
+ * (see src/lib/production-story-oracle.ts). This module gates eval samples only.
+ */
 import { VISIBILITY_LEAKAGE } from "../constants"
 import type { OracleResult, RareeSingleTurnSample } from "../types"
 import { runIndexDiagnostic } from "./index-diagnostic"
