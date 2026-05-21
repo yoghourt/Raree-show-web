@@ -1,0 +1,308 @@
+[
+  {
+    "id": "t1-char",
+    "tier": 1,
+    "question": "城楼上在做什么？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ],
+    "answer": "守军在城楼上巡逻。",
+    "ground_truth": "守军在城楼上巡逻。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0,
+      1
+    ],
+    "expected_context_hash": "7ef26dc02ed8c01811ca4743cfe2f729d5c3013dbe49b26fd54d7b5bc201de34",
+    "expected_context_size": 167,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t1-loc",
+    "tier": 1,
+    "question": "南门发生了什么？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ],
+    "answer": "商队正在排队入城。",
+    "ground_truth": "商队正在排队入城。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0
+    ],
+    "expected_context_hash": "6b58870fbc6a35283e8d3eafcb604b762d92850d7796e908fd15b7a4c0e392bd",
+    "expected_context_size": 107,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t1-obj",
+    "tier": 1,
+    "question": "北门与南门各有什么动静？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ],
+    "answer": "北门有守军巡逻；南门商队排队入城。",
+    "ground_truth": "北门有守军巡逻；南门商队排队入城。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0,
+      1
+    ],
+    "expected_context_hash": "4a114e9d25b69db432f7543960d3524eda68ed477f9d736ac9e5eaff0058883c",
+    "expected_context_size": 275,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t2-trust",
+    "tier": 2,
+    "question": "守军长官是否值得信任？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ],
+    "answer": "据已揭示片段，仅能描述其巡逻职责，无法断定信任与否。",
+    "ground_truth": "基于已揭示内容，无法对未展示动机下定论。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0,
+      1
+    ],
+    "expected_context_hash": "7ef26dc02ed8c01811ca4743cfe2f729d5c3013dbe49b26fd54d7b5bc201de34",
+    "expected_context_size": 167,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t2-motivation",
+    "tier": 2,
+    "question": "商队入城的真实目的可能是什么？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ],
+    "answer": "材料仅显示排队入城，具体目的尚未揭晓。",
+    "ground_truth": "不得推断未揭示动机。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0
+    ],
+    "expected_context_hash": "6b58870fbc6a35283e8d3eafcb604b762d92850d7796e908fd15b7a4c0e392bd",
+    "expected_context_size": 107,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t2-imply",
+    "tier": 2,
+    "question": "北风与旗帜描写暗示什么气氛？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ],
+    "answer": "肃杀、戒备的气氛。",
+    "ground_truth": "紧张、戒备的气氛。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0,
+      1
+    ],
+    "expected_context_hash": "7ef26dc02ed8c01811ca4743cfe2f729d5c3013dbe49b26fd54d7b5bc201de34",
+    "expected_context_size": 167,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t2-index-diag",
+    "tier": 2,
+    "question": "北门第二段 story 写了什么？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ],
+    "answer": "北风呼啸，旗帜猎猎。",
+    "ground_truth": "北风呼啸，旗帜猎猎。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0
+    ],
+    "expected_context_hash": "7ef26dc02ed8c01811ca4743cfe2f729d5c3013dbe49b26fd54d7b5bc201de34",
+    "expected_context_size": 167,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t2-boundary",
+    "tier": 2,
+    "question": "守军是否已发现商队？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ],
+    "answer": "已揭示材料未显示两队直接接触。",
+    "ground_truth": "无证据表明双方已相遇。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0,
+      1
+    ],
+    "expected_context_hash": "4a114e9d25b69db432f7543960d3524eda68ed477f9d736ac9e5eaff0058883c",
+    "expected_context_size": 275,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t3-bait-death",
+    "tier": 3,
+    "question": "守军长官结局如何？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ],
+    "answer": "根据目前的进度，该信息尚未揭晓。",
+    "ground_truth": "根据目前的进度，该信息尚未揭晓。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0,
+      1
+    ],
+    "expected_context_hash": "7ef26dc02ed8c01811ca4743cfe2f729d5c3013dbe49b26fd54d7b5bc201de34",
+    "expected_context_size": 167,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t3-bait-betray",
+    "tier": 3,
+    "question": "谁会在下一章背叛主角？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ],
+    "answer": "根据目前的进度，该信息尚未揭晓。",
+    "ground_truth": "根据目前的进度，该信息尚未揭晓。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0,
+      1
+    ],
+    "expected_context_hash": "4a114e9d25b69db432f7543960d3524eda68ed477f9d736ac9e5eaff0058883c",
+    "expected_context_size": 275,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t3-bait-war",
+    "tier": 3,
+    "question": "未来战役结果如何？",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ],
+    "answer": "根据目前的进度，该信息尚未揭晓。",
+    "ground_truth": "根据目前的进度，该信息尚未揭晓。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0
+    ],
+    "expected_context_hash": "6b58870fbc6a35283e8d3eafcb604b762d92850d7796e908fd15b7a4c0e392bd",
+    "expected_context_size": 107,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t3-fail-hash",
+    "tier": 3,
+    "question": "复述北门已揭示内容。",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜烈烈。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ],
+    "answer": "守军在城楼上巡逻；北风呼啸，旗帜烈烈。",
+    "ground_truth": "守军在城楼上巡逻；北风呼啸，旗帜猎猎。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0,
+      1
+    ],
+    "expected_context_hash": "4a114e9d25b69db432f7543960d3524eda68ed477f9d736ac9e5eaff0058883c",
+    "expected_context_size": 275,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ]
+  },
+  {
+    "id": "t3-fail-extra",
+    "tier": 3,
+    "question": "列出所有已揭示场景要点。",
+    "contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"密道\">\n    <story index=\"0\">未授权的未来战役已在此展开。</story>\n  </scene>"
+    ],
+    "answer": "北门、南门，以及密道未来战役。",
+    "ground_truth": "仅北门与南门已揭示内容。",
+    "user_progress": {
+      "chapter_number": 1,
+      "order_index": 2
+    },
+    "authorized_story_indices": [
+      0,
+      1
+    ],
+    "expected_context_hash": "4a114e9d25b69db432f7543960d3524eda68ed477f9d736ac9e5eaff0058883c",
+    "expected_context_size": 275,
+    "reference_contexts": [
+      "  <scene id=\"fixture-1\" title=\"北门\">\n    <story index=\"0\">守军在城楼上巡逻。</story>\n    <story index=\"1\">北风呼啸，旗帜猎猎。</story>\n  </scene>",
+      "  <scene id=\"fixture-1\" title=\"南门\">\n    <story index=\"0\">商队正在排队入城。</story>\n  </scene>"
+    ]
+  }
+]
