@@ -17,6 +17,7 @@
     "smoke-retrieval": "tsx scripts/smoke-test-retrieval.ts",
     "verify-story-truncation": "tsx scripts/verify-story-truncation.ts",
     "stress-rag-boundary": "tsx scripts/stress-test-rag-boundary.ts",
+    "test:production-oracle": "tsx scripts/test-production-story-oracle.ts",
     "eval:ragas": "tsx eval/ragas/runner/evaluate-suite.ts",
     "eval:ragas:build-hash": "tsx eval/ragas/dataset/build-expected-hash.ts",
     "eval:ragas:oracle": "EVAL_ORACLE_ONLY=1 tsx eval/ragas/runner/evaluate-suite.ts"

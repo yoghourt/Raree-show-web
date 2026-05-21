@@ -8,34 +8,39 @@ export function escapeXmlAttr(s: string): string {
     .replace(/>/g, "&gt;")
 }
 
-export function escapeXmlText(s: string): string {
+/** Presentation layer only — not part of production semantic oracle. */
+export function escapeXmlTextForPresentation(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+}
+
+/** @deprecated Use escapeXmlTextForPresentation */
+export function escapeXmlText(s: string): string {
+  return escapeXmlTextForPresentation(s)
 }
 
 const EMPTY_REVEALED_PLACEHOLDER = "（无已揭示 story）"
 const EMPTY_CAPTION_PLACEHOLDER = "（无 caption）"
 
 export function emptyRevealedStoryPlaceholderText(): string {
-  return escapeXmlText(EMPTY_REVEALED_PLACEHOLDER)
+  return escapeXmlTextForPresentation(EMPTY_REVEALED_PLACEHOLDER)
 }
 
+/** Presentation: raw caption escaped without trim; empty caption → fixed placeholder. */
+export function presentationStoryCaptionText(caption: string): string {
+  return caption.length > 0
+    ? escapeXmlTextForPresentation(caption)
+    : escapeXmlTextForPresentation(EMPTY_CAPTION_PLACEHOLDER)
+}
+
+/** @deprecated Use presentationStoryCaptionText */
 export function escapedStoryCaptionText(caption: string): string {
-  return caption.trim() !== ""
-    ? escapeXmlText(caption.trim())
-    : escapeXmlText(EMPTY_CAPTION_PLACEHOLDER)
+  return presentationStoryCaptionText(caption)
 }
 
-export function storyPayloadBytesFromSlides(slides: { caption: string }[]): number {
-  if (slides.length === 0) {
-    return Buffer.byteLength(emptyRevealedStoryPlaceholderText(), "utf8")
-  }
-  let sum = 0
-  for (const sl of slides) {
-    sum += Buffer.byteLength(escapedStoryCaptionText(sl.caption), "utf8")
-  }
-  return sum
-}
-
+/**
+ * Deterministic non-semantic XML shell from authorized chapterScenes snapshot.
+ * Must run only after verifyProductionStoryOracle; no new story bytes in wrappers.
+ */
 export function buildChapterScenesXml(scenes: ChapterSceneSnippet[]): string {
   if (scenes.length === 0) {
     return "<chapterScenesInProgress></chapterScenesInProgress>"
@@ -48,7 +53,7 @@ export function buildChapterScenesXml(scenes: ChapterSceneSnippet[]): string {
     }
     const storyLines = s.revealedStorySlides
       .map((sl, idx) => {
-        const cap = escapedStoryCaptionText(sl.caption)
+        const cap = presentationStoryCaptionText(sl.caption)
         return `    <story index="${idx}">${cap}</story>`
       })
       .join("\n")
@@ -63,22 +68,9 @@ export function buildCurrentSceneRevealedXml(slides: { caption: string }[]): str
   }
   const inner = slides
     .map((sl, idx) => {
-      const cap = escapedStoryCaptionText(sl.caption)
+      const cap = presentationStoryCaptionText(sl.caption)
       return `  <story index="${idx}">${cap}</story>`
     })
     .join("\n")
   return `<currentSceneRevealedStories>\n${inner}\n</currentSceneRevealedStories>`
-}
-
-/** Σ(authorized_story_content) aligned with model-visible story XML payloads. */
-export function measureRetrievedStoryContextBytes(
-  chapterScenes: ChapterSceneSnippet[],
-  sceneTsid: string
-): number {
-  const current = chapterScenes.find((s) => s.tsid === sceneTsid)
-  let sum = storyPayloadBytesFromSlides(current?.revealedStorySlides ?? [])
-  for (const s of chapterScenes) {
-    sum += storyPayloadBytesFromSlides(s.revealedStorySlides)
-  }
-  return sum
 }
