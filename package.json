@@ -6,6 +6,8 @@
     "bootstrap": "node scripts/governance/bootstrap.mjs",
     "check:governance": "node scripts/governance/check-governance.mjs",
     "sync:governance": "node scripts/governance/sync-governance.mjs",
+    "open:pr": "bash scripts/open-pr.sh",
+    "validate:pr-body": "node scripts/governance/validate-pr-body.mjs",
     "predev": "npm run bootstrap",
     "dev": "next dev",
     "build": "next build",
