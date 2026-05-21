@@ -1,0 +1,75 @@
+name: PR governance
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-governance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bootstrap governance
+        run: npm run bootstrap
+
+      - name: Transport integrity (check:governance)
+        run: npm run check:governance
+
+      - name: Resolve PR type from labels
+        id: pr_type
+        env:
+          LABELS_JSON: ${{ toJSON(github.event.pull_request.labels) }}
+        run: |
+          set -euo pipefail
+          PR_TYPE="default"
+          HAS_GOV_LABEL=0
+          while IFS= read -r label; do
+            case "$label" in
+              governance:pr-type/default)
+                PR_TYPE="default"
+                HAS_GOV_LABEL=1
+                ;;
+              governance:pr-type/adr)
+                PR_TYPE="adr"
+                HAS_GOV_LABEL=1
+                ;;
+              governance:pr-type/spike)
+                PR_TYPE="spike"
+                HAS_GOV_LABEL=1
+                ;;
+              governance:pr-type/debug)
+                PR_TYPE="debug"
+                HAS_GOV_LABEL=1
+                ;;
+            esac
+          done < <(echo "$LABELS_JSON" | jq -r '.[].name // empty')
+          echo "type=$PR_TYPE" >> "$GITHUB_OUTPUT"
+          if [ "$HAS_GOV_LABEL" -eq 0 ]; then
+            echo "::notice::No governance:pr-type/* label; validating default contract only. For adr/spike/debug PRs add the matching label."
+          fi
+
+      - name: Write PR body for validation
+        run: |
+          printf '%s' "$PR_BODY" > /tmp/pr-body.md
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+
+      - name: Structure validation (validate-pr-body)
+        run: node scripts/governance/validate-pr-body.mjs --file /tmp/pr-body.md --type ${{ steps.pr_type.outputs.type }}
