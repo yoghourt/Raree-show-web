@@ -64,7 +64,7 @@ Deep dive: [`docs/runtime-architecture.md`](docs/runtime-architecture.md)
 |-----|-------|--------|
 | [ADR-001](docs/adr/001-pgvector-as-vector-store.md) | pgvector as vector store | Accepted |
 | [ADR-002](docs/adr/002-hybrid-rag-retrieval.md) | Hybrid RAG visibility boundary | Accepted |
-| [ADR-003](docs/adr/003-muti-provider-ai-runtime.md) | Multi-provider AI runtime | **Planned / not deployed** |
+| [ADR-003](docs/adr/003-multi-provider-ai-runtime.md) | Multi-provider AI runtime | **Planned / not deployed** |
 
 ADR-003 describes a future generation-layer failover design. **Current production uses a single Gemini path only.**
 
