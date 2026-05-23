@@ -49,6 +49,55 @@ This is not routing. This is not conditional fallback.
 
 ---
 
+### Scene Assistant ingress topology (deployed)
+
+Scene Assistant ingress is implemented in `retrieveVerifiedAssistantContext` (`src/services/retrieval.ts`). Two I/O paths run **in parallel for latency** via `Promise.all`; they **converge** before the function returns (production oracle + XML builders). This is **not** dual semantic retrieval.
+
+```mermaid
+flowchart TB
+  subgraph ingress [retrieveVerifiedAssistantContext]
+    subgraph parallelIO ["Parallel I/O (latency only — not dual semantic retrieval)"]
+      branchA[SemanticRetrievalBranch]
+      branchB[RevealedSceneIngressBranch]
+    end
+    branchA --> sqlGate[metadataPreFiltering]
+    sqlGate --> embed[embedQuery]
+    embed --> vector[match_scenes]
+    vector --> excludeCurrent[Exclude current sceneTsid]
+    branchB --> sqlRead["SQL SELECT scenes (same chapter)"]
+    sqlRead --> layer2["Layer 2 in-memory truncation"]
+    excludeCurrent --> converge[Convergence]
+    layer2 --> converge
+    converge --> oracle[Production story oracle SHA-256]
+    oracle --> xmlOut[XML builders]
+  end
+  xmlOut --> promptAsm[Prompt assembly in scene-assistant route]
+  promptAsm --> gemini[Gemini streamText]
+```
+
+**Branch A — semantic retrieval** (`retrieveScenesUncached`):
+
+* Serial hybrid path: SQL gate → embed → `match_scenes` vector rerank.
+* Query-dependent.
+* Current scene (`sceneTsid`) is excluded from results before prompt assembly to avoid whole-scene RAG text bypassing story truncation.
+
+**Branch B — deterministic revealed-scene ingress** (`fetchChapterScenesWithinProgress`):
+
+* SQL read from `scenes` (same chapter, within progress bounds) plus Layer 2 in-memory caption truncation.
+* **No** embedding, **no** `match_scenes`, **not** query-dependent.
+* **Not** vector retrieval, **not** a hybrid retrieval branch.
+
+**Trust semantics:**
+
+| Source | Role | Oracle authority | Query-dependent |
+|--------|------|------------------|-----------------|
+| `chapterScenes` (Branch B) | Authoritative revealed-state grounding | Yes — gates LLM ingress | No |
+| `results` after rerank (Branch A, current scene excluded) | Supplementary semantic context in `<context>` | No | Yes |
+
+Prompt assembly in `src/app/api/scene-assistant/route.ts` combines: current-scene revealed XML, same-chapter revealed-scene XML (Branch B), and semantic `<context>` (Branch A).
+
+---
+
 ### Visibility Boundary (Phase 3) — definition
 
 **Visibility Boundary** is the **maximum propagation scope** for narrative and progress information **through the Scene Assistant pipeline**—from retrieval through prompt assembly to the LLM. It is **not** a single “model-visible” ceiling for every stage: Layer 1 governs **retrieval-visible** scope (which scenes may enter hybrid search), while Layer 2 governs **model-visible tokens** for specific narrative units (slide captions) in the current scene. Spoiler isolation is enforced independently of model compliance at each stage.
@@ -80,7 +129,7 @@ The Prompt Visibility Boundary is enforced during **prompt assembly** after retr
 - Token-level spoiler prevention for **narrative atoms** (slide captions from `story_images_v2` in effective story order).
 - Partial visibility for the **current** scene only.
 
-**Retrieval independence:** Layer 2 executes **after** retrieval has produced its candidate set and rankings. Prompt-side truncation **does not** add or remove scenes from the SQL-approved universe, **does not** change vector reranking inputs or scores, and **does not** alter **retrieval recall** of scenes. It only limits which **narrative atom** texts from authorized scene rows become **model-visible tokens**.
+**Retrieval independence:** Layer 2 truncation is applied on the **revealed-scene ingress** path (Branch B). It does **not** change vector rerank inputs, the SQL candidate set, or rankings. Parallel I/O via `Promise.all` does **not** make Branch B a second semantic retrieval pipeline. Prompt-side truncation **does not** add or remove scenes from the SQL-approved universe, **does not** alter **retrieval recall** of scenes. It only limits which **narrative atom** texts from authorized scene rows become **model-visible tokens**.
 
 **Current-scene rule:**
 
@@ -139,7 +188,7 @@ Layer 2 is **downstream prompt construction** over an already authorized retriev
 ### Second retrieval pipeline for current-scene captions
 
 - **Definition:** A separate retrieval branch loads or ranks story chunks instead of truncating at prompt assembly.
-- **Rejection:** This approach does not satisfy the constraint of **a single serial retrieval topology** for scene-level hybrid RAG; Layer 2 is prompt construction over authorized scope, not a parallel retrieval pipeline.
+- **Rejection:** This approach does not satisfy the constraint of **a single serial retrieval topology** for scene-level hybrid RAG; Layer 2 is prompt construction over authorized scope, not a parallel retrieval pipeline. **`Promise.all` parallel I/O must not be documented as dual hybrid retrieval** — Branch B is deterministic revealed-scene ingress, not semantic retrieval.
 
 ---
 
@@ -173,7 +222,8 @@ Layer 2 is **downstream prompt construction** over an already authorized retriev
 
 ## Refs
 
-- Retrieval implementation: `src/services/retrieval.ts` (`metadataPreFiltering`, `retrieveScenes`).
+- Retrieval implementation: `src/services/retrieval.ts` (`metadataPreFiltering`, `retrieveScenes`, `retrieveVerifiedAssistantContext`, `fetchChapterScenesWithinProgress`).
+- Production story oracle: `src/lib/production-story-oracle.ts`.
 - Scene Assistant API: `src/app/api/scene-assistant/route.ts`.
 - Client navigation spec: [W-01: Visibility-Synchronized Navigation](../specs/w-01-visibility-synchronized-navigation.md) (`SceneExperience.tsx`, `useSceneAtomicNavigation.ts`).
 - Story image filtering alignment: `src/lib/story-images-v2.ts`.

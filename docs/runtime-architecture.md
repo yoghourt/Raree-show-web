@@ -108,7 +108,7 @@ SceneAssistant UI (normalized text-delta / error events)
 
 There is **no** multi-provider runtime, **no** OpenRouter integration, **no** transparent failover, and **no** provider-switch telemetry in production.
 
-[ADR-003: Multi-Provider AI Runtime Topology](adr/003-muti-provider-ai-runtime.md) describes a **planned** generation-layer failover design. It is **not deployed**.
+[ADR-003: Multi-Provider AI Runtime Topology](adr/003-multi-provider-ai-runtime.md) describes a **planned** generation-layer failover design. It is **not deployed**.
 
 ---
 
@@ -179,7 +179,7 @@ Spec: [`docs/specs/ragas-evaluation-suite.md`](specs/ragas-evaluation-suite.md).
 
 - [ADR-001: pgvector as vector store](adr/001-pgvector-as-vector-store.md)
 - [ADR-002: Hybrid RAG with Two-Layer Visibility Boundary](adr/002-hybrid-rag-retrieval.md)
-- [ADR-003: Multi-Provider AI Runtime Topology](adr/003-muti-provider-ai-runtime.md) — planned, not deployed
+- [ADR-003: Multi-Provider AI Runtime Topology](adr/003-multi-provider-ai-runtime.md) — planned, not deployed
 
 ### Key source
 
