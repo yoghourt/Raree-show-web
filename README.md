@@ -1,8 +1,8 @@
 # Raree Show
 
-> An AI-powered literary visualization tool — navigate complex works like *A Song of Ice and Fire* through an immersive, map-based scene experience.
+> A narrative visualization and story interaction platform — explore literary works through map-based scene navigation with a visibility-aware AI assistant.
 >
-> 用 AI 驱动的文学可视化工具，通过沉浸式地图场景切片，帮助读者理解复杂的文学作品。
+> 叙事可视化与故事交互平台：地图场景导航 + 防剧透 AI 阅读助手。
 
 **[Live Demo](https://raree-show-web.vercel.app)** · **[Admin CMS](https://raree-show-admin.vercel.app)**
 
@@ -18,107 +18,55 @@
 
 ## Features
 
-- **Scene Slideshow** — Navigate literary scenes through a map-based slideshow interface with animated panning across a Westeros map.
-  地图背景幻灯片，支持平移动画，沉浸式场景切换。
+- **Scene Slideshow** — Navigate literary scenes through a map-based slideshow with animated panning across the story world.
+  地图背景幻灯片，支持平移动画，场景与幻灯切换。
 
-- **Character Bar** — Portrait images of scene characters with staggered entrance animations.
-  顶部人物栏，Cloudinary 托管肖像图 + 进场动效。
+- **Character Bar** — Animated character portraits for the current scene.
+  当前场景人物肖像栏，带进场动效。
 
-- **Event Cards** — Each scene includes chapter info, summary, and categorized tags.
-  事件卡片展示章节信息、场景摘要与标签。
+- **Scene Caption Panel** — Slide captions, chapter title, and scene progress in the central reader panel.
+  中央阅读面板：幻灯 caption、章节标题与场景进度。
 
-- **AI Scene Assistant** — Floating chat widget powered by Gemini API with streaming output. Ask anything about the current scene.
-  Gemini API 驱动的悬浮 AI 问答组件，流式输出，随时提问当前场景。
+- **Visibility-aware Scene Assistant** — Progress-bound, streaming Q&A about the current scene. Retrieval and prompts respect what the reader has actually reached.
+  随阅读进度约束的悬浮 AI 助手，流式输出；检索与提示均遵循已读边界，避免剧透。
 
 - **Admin CMS** — Separate admin panel for managing works, scenes, characters, and locations with Supabase as the shared data layer.
   独立 Admin 后台管理作品、场景、角色、地点，数据实时同步到主站。
 
 ---
 
-## Tech Stack
+## Runtime Architecture
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 14 App Router |
-| Language | TypeScript |
-| Styling | Tailwind CSS |
-| AI | Google Gemini API (streaming) |
-| Database | Supabase (PostgreSQL) |
-| Image hosting | Cloudinary |
-| Deployment | Vercel |
+The Scene Assistant runtime enforces spoiler boundaries in the pipeline — not only in prompts.
 
----
-
-## Architecture
-
-```
-Browser
-   │
-   ▼
-Vercel · Next.js 14 App Router
-   ├── Server Components      (SSR, data fetch)
-   ├── Client Components      (animations, interactions)
-   └── API Routes
-          ├──▶ Gemini API       (scene Q&A, streaming)
-          └──▶ Cloudinary       (portrait images, CDN)
-
-Supabase (PostgreSQL)
-   ├── works                  (作品)
-   ├── scenes                 (场景，关联 work_id)
-   ├── characters             (角色，关联 work_id)
-   └── locations              (地点 + 地图坐标，关联 work_id)
-
-Raree Show Admin              (Content CMS · raree-show-admin.vercel.app)
-   └── Supabase Auth          (登录保护，单管理员)
+```text
+Client Progress
+    → SQL Visibility Gate
+    → Vector Rerank
+    → Visibility Verification (SHA-256)
+    → Gemini Generation
 ```
 
----
+- **SQL visibility authorization** — Reading progress constrains which scenes may enter retrieval.
+- **Bounded semantic reranking** — pgvector reranks only within the SQL-approved candidate set.
+- **SHA-256 visibility verification** — Authorized semantic bytes are verified before any LLM call.
+- **Governance submodule CI checks** — `npm run dev` and CI bootstrap verify the governance mount is present and readable.
 
-## Data
+An offline RAGAS harness (`npm run eval:ragas`) supports local evaluation of retrieval governance.
 
-| Dataset | Count | Storage | Source |
-|---|---|---|---|
-| Works | 2 | Supabase | Admin CMS |
-| Scenes | growing | Supabase | Admin CMS |
-| Characters | 136 | JSON → Supabase (in progress) | MediaWiki scraper |
-| Locations | 256 | JSON → Supabase (in progress) | MediaWiki scraper |
-| Portrait images | 74 | Cloudinary | Scraped + uploaded via Admin |
-
-> 场景数据通过 Admin CMS 持续录入，随原著阅读进度增长。
+Deep dive: [`docs/runtime-architecture.md`](docs/runtime-architecture.md)
 
 ---
 
-## ADR — Architectural Decision Records
+## ADR Index
 
-### ADR-001 · Next.js App Router over Pages Router
+| ADR | Topic | Status |
+|-----|-------|--------|
+| [ADR-001](docs/adr/001-pgvector-as-vector-store.md) | pgvector as vector store | Accepted |
+| [ADR-002](docs/adr/002-hybrid-rag-retrieval.md) | Hybrid RAG visibility boundary | Accepted |
+| [ADR-003](docs/adr/003-muti-provider-ai-runtime.md) | Multi-provider AI runtime | **Planned / not deployed** |
 
-**Decision**: Use Next.js 14 App Router.
-
-**Reasoning**: Server Components enable data fetching without client-side waterfalls. API Routes allow hiding the Gemini API key server-side. Seamless Vercel deployment with zero configuration.
-
-### ADR-002 · Supabase as the data layer
-
-**Decision**: Use Supabase (PostgreSQL) for works, scenes, characters, and locations.
-
-**Reasoning**: Vercel is stateless — JSON file writes are impossible in production. Supabase provides a persistent PostgreSQL backend with a generous free tier. The Admin CMS writes to Supabase; the main app reads from it. This closes the content pipeline loop.
-
-### ADR-003 · Cloudinary for image hosting
-
-**Decision**: Host all portrait images on Cloudinary instead of committing them to the repository.
-
-**Reasoning**: GitHub has a per-push size limit. 74 portrait images would bloat the repository and slow CI. Cloudinary provides a free 25 GB tier with global CDN. Admin CMS supports direct upload via unsigned preset.
-
-### ADR-004 · Proxy only in local development
-
-**Decision**: `HTTPS_PROXY` is set locally only, not on Vercel.
-
-**Reasoning**: Vercel servers are deployed outside mainland China and connect to Google APIs directly. The proxy is only needed in the local development environment.
-
-### ADR-005 · map_focus coordinates belong to locations, not scenes
-
-**Decision**: Store `map_focus_x` and `map_focus_y` on the `locations` table, not `scenes`.
-
-**Reasoning**: Map coordinates describe where a location sits on the Westeros map — a fixed geographic property. Multiple scenes can reference the same location, and the map focus should be consistent regardless of which scene is active.
+ADR-003 describes a future generation-layer failover design. **Current production uses a single Gemini path only.**
 
 ---
 
@@ -139,11 +87,14 @@ cp .env.example .env.local
 # NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 # NEXT_PUBLIC_SUPABASE_URL
 # NEXT_PUBLIC_SUPABASE_ANON_KEY
-# If in mainland China, also set: HTTPS_PROXY
+# SUPABASE_SERVICE_ROLE_KEY   # server-only; Scene Assistant retrieval
+# HTTPS_PROXY                 # optional; mainland China local dev
 
 # 4. Run dev server
 npm run dev
 ```
+
+`npm run dev` runs bootstrap first (syncs the `governance/` submodule). First clone requires network access.
 
 Open [http://localhost:3000](http://localhost:3000).
 
@@ -151,34 +102,33 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Project Structure
 
-```
-src/
-├── app/
-│   ├── page.tsx                        # Works list (homepage)
-│   ├── works/[workId]/
-│   │   ├── page.tsx                    # Work detail page
-│   │   └── scenes/[sceneId]/
-│   │       └── page.tsx                # Scene slideshow (Server Component)
-│   └── api/
-│       └── scene-assistant/
-│           └── route.ts                # Gemini API Route Handler
-├── components/raree/
-│   ├── SceneExperience.tsx             # Scene client component (animations)
-│   └── SceneAssistant.tsx             # AI chat floating widget
-└── lib/
-    ├── types.ts                        # TypeScript type definitions
-    ├── supabase.ts                     # Supabase client
-    └── data.ts                         # Data access layer
+```text
+src/                 # Next.js app, Scene Experience, Scene Assistant API
+docs/                # ADRs, specs, runtime-architecture.md
+eval/                # Offline RAGAS evaluation harness
+scripts/governance/  # Governance bootstrap & CI checks
+governance/          # Shared governance submodule (synced at dev/CI)
 ```
 
 ---
 
 ## Roadmap
 
-- [x] Scene slideshow with map panning
-- [x] AI scene assistant (Gemini API, streaming)
-- [x] Admin CMS (raree-show-admin)
-- [x] Supabase data layer (works + scenes)
+### Current Runtime
+
+- [x] Scene slideshow + map navigation
+- [x] Visibility-aware Scene Assistant (Hybrid RAG)
+- [x] SQL visibility gate + bounded vector rerank
+- [x] SHA-256 visibility verification
+- [x] Admin CMS + Supabase data layer
+- [x] Governance CI checks (`check:governance`)
+- [x] Offline RAGAS harness (`npm run eval:ragas`)
+
+### Planned
+
+- [ ] Provider abstraction & transparent failover (ADR-003)
+- [ ] Runtime telemetry / provider-switch observability
+- [ ] Evaluation automation (CI integration — not current)
 - [ ] Migrate characters and locations to Supabase
 - [ ] Expand scene coverage (ongoing with reading)
 
