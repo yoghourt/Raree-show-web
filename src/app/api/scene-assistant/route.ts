@@ -1,7 +1,5 @@
-import { streamText, type ModelMessage } from "ai"
-import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { NextRequest } from "next/server"
-import { getFetchForGoogleGenerativeAI } from "@/lib/gemini-proxy-fetch"
+import { createGeminiProvider, executeVerifiedGeneration } from "@/runtime"
 import { escapeXmlAttr, escapeXmlTextForPresentation } from "@/lib/scene-assistant-context"
 import { InvariantViolationError } from "@/lib/production-story-oracle"
 import { assertReadUpToStoryIndexLast, VisibilityInvariantViolation } from "@/lib/visibility-invariant"
@@ -251,26 +249,15 @@ export async function POST(req: NextRequest) {
     contextXml
   )
 
-  const modelMessages: ModelMessage[] = messages.map((m) => ({
-    role: m.role,
-    content: m.content,
-  }))
+  const provider = createGeminiProvider({ apiKey })
 
-  const google = createGoogleGenerativeAI({
-    apiKey,
-    fetch: getFetchForGoogleGenerativeAI(),
-  })
-
-  try {
-    const result = streamText({
-      model: google("gemini-3-flash-preview"),
+  return executeVerifiedGeneration({
+    context: {
+      requestId: verified.requestId,
       system,
-      messages: modelMessages,
-      timeout: 60_000,
-    })
-    return result.toUIMessageStreamResponse()
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "streamText failed"
-    return new Response(msg, { status: 502 })
-  }
+      messages,
+    },
+    primary: provider,
+    fallbackProviders: [],
+  })
 }
