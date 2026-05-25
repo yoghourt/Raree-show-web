@@ -1,10 +1,12 @@
 import {
   buildProviderFallbackMetadata,
+  logFallbackActivated,
   logProviderAttemptStart,
   logProviderExecutionFailure,
   logProviderFallbackMetadata,
 } from "@/runtime/provider-observability"
 import { wrapResponseWithSemanticStreamGuard } from "@/runtime/semantic-stream-guard"
+import { orchestrateProviderStream } from "@/runtime/stream-orchestrator"
 import type { AIModelProvider, ProviderRuntimeError, VerifiedGenerationContext } from "@/runtime/types"
 
 const DEFAULT_STREAM_TIMEOUT_MS = 60_000
@@ -48,14 +50,18 @@ async function attemptStream(
     attemptIndex,
   })
 
-  const handle = await provider.streamText({
-    system: context.system,
-    messages: context.messages,
-    timeoutMs: DEFAULT_STREAM_TIMEOUT_MS,
-  })
+  // ADR-003 Phase 2: orchestrateProviderStream owns the pre-lock buffer phase.
+  // It throws on any transport failure that occurs before the first text-delta,
+  // allowing the coordinator loop below to attempt the next provider.
+  // After semantic lock, it returns the client-visible Response; the guard then
+  // wraps it for continued downstream observation.
+  const lockedResponse = await orchestrateProviderStream(
+    provider,
+    context,
+    DEFAULT_STREAM_TIMEOUT_MS
+  )
 
-  const raw = handle.toUIMessageStreamResponse()
-  return wrapResponseWithSemanticStreamGuard(raw, {
+  return wrapResponseWithSemanticStreamGuard(lockedResponse, {
     requestId: context.requestId,
     providerId: provider.providerId,
   })
@@ -99,6 +105,12 @@ export async function executeVerifiedGeneration(
             downgradeReason: normalized.code,
             originalErrorMessage: normalized.message,
           })
+        )
+        logFallbackActivated(
+          context.requestId,
+          provider.providerId,
+          next.providerId,
+          normalized.code
         )
         continue
       }

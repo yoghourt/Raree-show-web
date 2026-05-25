@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server"
 import { createGeminiProvider, executeVerifiedGeneration } from "@/runtime"
+import { createOpenRouterProvider } from "@/runtime/providers/openrouter-provider"
+import type { AIModelProvider } from "@/runtime/types"
 import { escapeXmlAttr, escapeXmlTextForPresentation } from "@/lib/scene-assistant-context"
 import { InvariantViolationError } from "@/lib/production-story-oracle"
 import { assertReadUpToStoryIndexLast, VisibilityInvariantViolation } from "@/lib/visibility-invariant"
@@ -251,6 +253,14 @@ export async function POST(req: NextRequest) {
 
   const provider = createGeminiProvider({ apiKey })
 
+  // ADR-003 Phase 2: wire OpenRouter as deterministic pre-lock fallback.
+  // OPENROUTER_API_KEY is optional; absent key disables fallback silently.
+  const fallbackProviders: AIModelProvider[] = []
+  const openrouterApiKey = process.env.OPENROUTER_API_KEY
+  if (openrouterApiKey) {
+    fallbackProviders.push(createOpenRouterProvider({ apiKey: openrouterApiKey }))
+  }
+
   return executeVerifiedGeneration({
     context: {
       requestId: verified.requestId,
@@ -258,6 +268,6 @@ export async function POST(req: NextRequest) {
       messages,
     },
     primary: provider,
-    fallbackProviders: [],
+    fallbackProviders,
   })
 }
