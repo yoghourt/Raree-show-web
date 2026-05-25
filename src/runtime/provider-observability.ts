@@ -5,6 +5,41 @@ import type {
 
 const LOG_PREFIX = "[scene-assistant-runtime]"
 
+// ---------------------------------------------------------------------------
+// ADR-003 Phase 2 mandatory log formats
+// @see docs/specs/adr-003-phase-2-fallback.md §10 Observability Contract
+// ---------------------------------------------------------------------------
+
+/**
+ * Emits: [FALLBACK] Primary provider failed. Switched to OpenRouter. RequestId: ${requestId}
+ */
+export function logFallbackActivated(
+  requestId: string,
+  primaryProvider: string,
+  fallbackProvider: string,
+  reason: string
+): void {
+  const label = fallbackProvider === "openrouter" ? "OpenRouter" : fallbackProvider
+  console.error(
+    `[FALLBACK] Primary provider failed. Switched to ${label}. RequestId: ${requestId}`,
+    JSON.stringify({ primaryProvider, fallbackProvider, reason })
+  )
+}
+
+/**
+ * Emits: [SEMANTIC_LOCK] Stream ownership locked. RequestId: ${requestId}
+ */
+export function logSemanticLockAcquired(requestId: string): void {
+  console.error(`[SEMANTIC_LOCK] Stream ownership locked. RequestId: ${requestId}`)
+}
+
+/**
+ * Emits: [STREAM_OWNER] Provider locked: gemini/openrouter
+ */
+export function logStreamOwnerLocked(providerId: string): void {
+  console.error(`[STREAM_OWNER] Provider locked: ${providerId}`)
+}
+
 type ProviderAttemptStartFields = {
   requestId: string
   providerId: string

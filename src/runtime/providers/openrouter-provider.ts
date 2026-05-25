@@ -1,6 +1,15 @@
+/**
+ * ADR-003 Phase 2 — OpenRouter fallback provider adapter.
+ *
+ * Additive integration only; no provider normalization layer.
+ * Implements the narrow `AIModelProvider` contract exclusively.
+ *
+ * @see docs/specs/adr-003-phase-2-fallback.md §9 OpenRouter Integration Scope
+ * @see docs/specs/adr-003-implementation-plan.md §3 AIModelProvider Contract
+ */
+
+import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { generateText, streamText } from "ai"
-import { createGoogleGenerativeAI } from "@ai-sdk/google"
-import { getFetchForGoogleGenerativeAI } from "@/lib/gemini-proxy-fetch"
 import type {
   AIModelProvider,
   GenerateTextRequest,
@@ -11,12 +20,15 @@ import type {
   TextStreamHandle,
 } from "@/runtime/types"
 
-const DEFAULT_MODEL_ID = "gemini-3-flash-preview"
+// Default model routed through OpenRouter.  Must be overridden via env or
+// options for production tuning; this value is intentionally conservative.
+// Override with OPENROUTER_MODEL_ID env var or options.modelId.
+const DEFAULT_MODEL_ID =
+  process.env.OPENROUTER_MODEL_ID ?? "openai/gpt-oss-120b:free"
 
-export type CreateGeminiProviderOptions = {
+export type CreateOpenRouterProviderOptions = {
   apiKey: string
   modelId?: string
-  fetch?: typeof fetch
 }
 
 function errorMessage(error: unknown): string {
@@ -51,7 +63,7 @@ function classifyByMessage(message: string): ProviderRuntimeErrorCode | null {
   return null
 }
 
-export function mapGeminiRuntimeError(error: unknown): ProviderRuntimeError {
+export function mapOpenRouterRuntimeError(error: unknown): ProviderRuntimeError {
   const message = errorMessage(error)
   const status = errorStatusCode(error)
   const code =
@@ -61,29 +73,21 @@ export function mapGeminiRuntimeError(error: unknown): ProviderRuntimeError {
   return { code, message, cause: error }
 }
 
-export function createGeminiProvider(options: CreateGeminiProviderOptions): AIModelProvider {
+export function createOpenRouterProvider(
+  options: CreateOpenRouterProviderOptions
+): AIModelProvider {
   const modelId = options.modelId ?? DEFAULT_MODEL_ID
-  const fetchImpl = options.fetch ?? getFetchForGoogleGenerativeAI()
-  const google = createGoogleGenerativeAI({
-    apiKey: options.apiKey,
-    fetch: fetchImpl,
-  })
-  const model = google(modelId)
+  const client = createOpenRouter({ apiKey: options.apiKey })
+  const model = client(modelId)
 
   return {
-    providerId: "gemini",
+    providerId: "openrouter",
 
     async generateText(request: GenerateTextRequest): Promise<GenerateTextResult> {
       const { text } = await generateText({
         model,
         system: request.system,
         messages: request.messages,
-        // maxRetries: 0 — runtime ownership reclamation (ADR-003 §14.4).
-        // AI SDK retry semantics ("retry is good") conflict with ADR-003
-        // ownership semantics ("fail fast before semantic lock").
-        // Coordinator owns all retry/fallback policy; provider adapters must
-        // not apply their own retry layer.
-        maxRetries: 0,
         ...(request.timeoutMs !== undefined ? { timeout: request.timeoutMs } : {}),
       })
       return { text }
@@ -94,11 +98,6 @@ export function createGeminiProvider(options: CreateGeminiProviderOptions): AIMo
         model,
         system: request.system,
         messages: request.messages,
-        // maxRetries: 0 — same ownership reclamation as generateText above.
-        // Production observation: Gemini 429 quota exhaustion surfaces as
-        // AI_RetryError thrown from BOOTSTRAP phase (not SSE error events);
-        // each default retry wastes ~10s before coordinator can fallback.
-        maxRetries: 0,
         timeout: request.timeoutMs ?? 60_000,
       })
       return {
@@ -107,7 +106,7 @@ export function createGeminiProvider(options: CreateGeminiProviderOptions): AIMo
     },
 
     normalizeError(error: unknown): ProviderRuntimeError {
-      return mapGeminiRuntimeError(error)
+      return mapOpenRouterRuntimeError(error)
     },
   }
 }
