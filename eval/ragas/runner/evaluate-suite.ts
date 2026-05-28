@@ -49,7 +49,7 @@ async function main(): Promise<void> {
     console.log("EVAL_ORACLE_ONLY=1 — semantic layer skipped")
   }
 
-  const datasetPath = path.resolve(__dirname, "../dataset/seed-v1.json")
+  const datasetPath = path.resolve(__dirname, "../dataset/seed-v2.json")
   const raw = fs.readFileSync(datasetPath, "utf8")
   const samples = JSON.parse(raw) as RareeSingleTurnSample[]
 

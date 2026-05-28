@@ -12,7 +12,7 @@ function toJudgeInput(sample: RareeSingleTurnSample): SemanticJudgeInput {
   return {
     question: sample.question,
     answer: sample.answer,
-    contexts: sample.contexts,
+    contexts: sample.reference_contexts,
     ground_truth: sample.ground_truth,
   }
 }
