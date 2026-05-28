@@ -1,14 +1,14 @@
 import type { RareeSingleTurnSample } from "../types"
 
-/** Context precision authority: deterministic reference-context containment. */
+/** Context precision: proportion of retrieved captions found in canonical reference_captions. */
 export function computeContextPrecision(sample: RareeSingleTurnSample): number {
-  const { contexts, reference_contexts } = sample
-  if (contexts.length === 0) return 0
+  const { captions, reference_captions } = sample
+  if (captions.length === 0) return 0
 
-  const refSet = new Set(reference_contexts)
+  const refSet = new Set(reference_captions)
   let relevant = 0
-  for (const chunk of contexts) {
-    if (refSet.has(chunk)) relevant++
+  for (const caption of captions) {
+    if (refSet.has(caption)) relevant++
   }
-  return relevant / contexts.length
+  return relevant / captions.length
 }

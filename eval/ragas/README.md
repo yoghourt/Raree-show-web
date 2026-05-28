@@ -1,4 +1,4 @@
-# RAGAS Governance Evaluation Suite (v1)
+# RAGAS Governance Evaluation Suite (v2)
 
 Specification-first offline evaluation for Scene Assistant retrieval governance and semantic quality.
 
@@ -35,15 +35,15 @@ Partial results resume from `reports/latest.json` unless `EVAL_NO_RESUME=1`.
 
 ## Production vs eval authority
 
-- **Production** (Scene Assistant): `sha256(concat(raw caption UTF-8))` from `chapterScenes[].revealedStorySlides` only — see `src/lib/production-story-oracle.ts`. This gates LLM ingress.
-- **Eval v1 (this suite)**: `sha256(contexts.join("\n"))` on dataset fixture chunks — **legacy serialization** for `seed-v1.json`; not interchangeable with production hashes.
+- **Production** (Scene Assistant): `sha256(Buffer.concat(raw caption UTF-8))` from `chapterScenes[].revealedStorySlides` only — see `src/lib/production-story-oracle.ts#hashRawCaptions`. This gates LLM ingress.
+- **Eval v2 (this suite)**: `sha256(Buffer.concat(captions.map(c => Buffer.from(c, "utf8"))))` on `sample.captions` — **production-authoritative** semantics, no separator, no XML. Directly reuses `hashRawCaptions` from the production oracle.
 
 ## Topology
 
 1. **Content-hash Oracle** (deterministic, runs first; **eval authority only**)
-   - `sha256(normalized(contexts)) === expected_context_hash`
+   - `sha256(Buffer.concat(raw caption UTF-8)) === expected_context_hash`
    - `expected_context_size` is telemetry only
-   - `authorized_story_indices` → index diagnostics only (never fails Oracle)
+   - `authorized_story_indices` — metadata only (not used in oracle computation)
 2. On Oracle **FAIL**: classify `Visibility Leakage`, `spoiler_violation_rate = 1.0`, skip semantic metrics
 3. On Oracle **PASS**: Faithfulness + Answer Relevancy (LLM via `SemanticJudgeAdapter`), Context Precision (reference containment)
 
@@ -54,16 +54,34 @@ Partial results resume from `reports/latest.json` unless `EVAL_NO_RESUME=1`.
 | spoiler_violation_rate | Content-hash Oracle |
 | faithfulness | SemanticJudgeAdapter |
 | answer_relevancy | SemanticJudgeAdapter |
-| context_precision | Reference-context containment |
+| context_precision | Reference-caption containment (`captions ∩ reference_captions`) |
 
 ## Dataset
 
-`dataset/seed-v1.json` — 13 samples (Tier 1–3), including hash-collision and extra-chunk FAIL cases.
+`dataset/seed-v2.json` — 13 samples (Tier 1–3), including hash-mismatch and extra-caption FAIL cases.
 
-Regenerate hash fields after editing contexts:
+Fields per sample:
+
+| Field | Purpose |
+|-------|---------|
+| `captions` | Retrieved raw caption strings — oracle hash input |
+| `reference_captions` | Canonical ground-truth captions — hash source for `expected_context_hash`; used for context precision |
+| `reference_contexts` | XML-formatted strings — LLM semantic judge input only |
+| `expected_context_hash` | `sha256(Buffer.concat(reference_captions as UTF-8))` |
+| `expected_context_size` | Byte size of concat (telemetry) |
+
+Regenerate hash fields after editing `reference_captions`:
 
 ```bash
-npx tsx eval/ragas/dataset/build-expected-hash.ts
+npm run regen:ragas-fixtures
+```
+
+Then review with `git diff eval/ragas/dataset/seed-v2.json` before committing.
+
+Single-hash helper (ad hoc):
+
+```bash
+npx tsx eval/ragas/dataset/build-expected-hash.ts "caption A" "caption B"
 ```
 
 ## Report
@@ -73,8 +91,9 @@ npx tsx eval/ragas/dataset/build-expected-hash.ts
 - `evaluation_version`, `oracle_version`, `dataset_version`
 - Per-sample deterministic fields only (no LLM judge reasons)
 
-## Non-goals (v1)
+## Non-goals (v2)
 
 - CI gating, dashboards, trending
 - `--hydrate` / live Supabase retrieval
 - Context recall optimization
+- Automatic fixture self-healing

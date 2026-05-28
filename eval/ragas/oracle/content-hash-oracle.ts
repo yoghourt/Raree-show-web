@@ -1,17 +1,14 @@
 /**
- * Legacy RAGAS v1 oracle: sha256(contexts.join("\n")).
- * NOT production authorization authority — production uses raw caption UTF-8 concat
- * (see src/lib/production-story-oracle.ts). This module gates eval samples only.
+ * RAGAS v2 oracle: sha256(Buffer.concat(raw caption UTF-8 bytes)).
+ * Production authority: src/lib/production-story-oracle.ts#hashRawCaptions
  */
 import { VISIBILITY_LEAKAGE } from "../constants"
 import type { OracleResult, RareeSingleTurnSample } from "../types"
 import { runIndexDiagnostic } from "./index-diagnostic"
-import { contextByteSize, contextHash, normalizedRetrievedContext } from "./normalize-context"
+import { captionHash } from "./normalize-context"
 
 export function runContentHashOracle(sample: RareeSingleTurnSample): OracleResult {
-  const normalized = normalizedRetrievedContext(sample.contexts)
-  const retrievedHash = contextHash(normalized)
-  const retrievedSize = contextByteSize(normalized)
+  const { hash: retrievedHash, size: retrievedSize } = captionHash(sample.captions)
   const diagnostics = runIndexDiagnostic(sample)
 
   const pass = retrievedHash === sample.expected_context_hash

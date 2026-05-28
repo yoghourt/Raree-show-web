@@ -1,23 +1,11 @@
-import { createHash } from "node:crypto"
+/**
+ * RAGAS v2 caption oracle — production-authoritative raw-byte semantics.
+ * Replaces v1 join("\n") string oracle.
+ * Authority source: src/lib/production-story-oracle.ts#hashRawCaptions
+ */
+import { hashRawCaptions } from "@/lib/production-story-oracle"
 
-/** Deterministic v1: array order, chunks joined by "\n", no internal trim. */
-export function normalizedRetrievedContext(contexts: string[]): string {
-  return contexts.join("\n")
-}
-
-export function contextHash(normalized: string): string {
-  return createHash("sha256").update(normalized, "utf8").digest("hex")
-}
-
-export function contextByteSize(normalized: string): number {
-  return Buffer.byteLength(normalized, "utf8")
-}
-
-export function hashContexts(contexts: string[]): { hash: string; size: number; normalized: string } {
-  const normalized = normalizedRetrievedContext(contexts)
-  return {
-    normalized,
-    hash: contextHash(normalized),
-    size: contextByteSize(normalized),
-  }
+export function captionHash(captions: string[]): { hash: string; size: number } {
+  const { sha256, byteSize } = hashRawCaptions(captions)
+  return { hash: sha256, size: byteSize }
 }

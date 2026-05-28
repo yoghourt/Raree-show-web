@@ -20,7 +20,8 @@
     "test:production-oracle": "tsx scripts/test-production-story-oracle.ts",
     "eval:ragas": "tsx eval/ragas/runner/evaluate-suite.ts",
     "eval:ragas:build-hash": "tsx eval/ragas/dataset/build-expected-hash.ts",
-    "eval:ragas:oracle": "EVAL_ORACLE_ONLY=1 tsx eval/ragas/runner/evaluate-suite.ts"
+    "eval:ragas:oracle": "EVAL_ORACLE_ONLY=1 tsx eval/ragas/runner/evaluate-suite.ts",
+    "regen:ragas-fixtures": "tsx scripts/regen-ragas-fixtures.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.71",

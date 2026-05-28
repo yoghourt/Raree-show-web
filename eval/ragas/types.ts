@@ -14,14 +14,18 @@ export type RareeSingleTurnSample = {
   id: string
   tier: 1 | 2 | 3
   question: string
-  contexts: string[]
+  /** v2: raw caption strings — oracle hash input (no XML, no separators) */
+  captions: string[]
   answer: string
   ground_truth: string
   user_progress: { chapter_number: number; order_index: number }
   authorized_story_indices: number[]
   expected_context_hash: string
   expected_context_size: number
+  /** XML-formatted strings for LLM semantic judge (faithfulness, answer_relevancy) */
   reference_contexts: string[]
+  /** Canonical ground-truth captions — equals captions for non-fail samples; differs for intentional-fail samples */
+  reference_captions: string[]
 }
 
 export type IndexDiagnostics = {

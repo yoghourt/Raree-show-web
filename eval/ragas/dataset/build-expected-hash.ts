@@ -1,15 +1,15 @@
 /**
- * Offline helper: compute expected_context_hash + expected_context_size for contexts.
- * Run: npx tsx eval/ragas/dataset/build-expected-hash.ts
+ * Offline helper: compute expected_context_hash + expected_context_size for raw captions.
+ * v2: uses production-authoritative raw-byte semantics (no join separator).
+ * Run: npx tsx eval/ragas/dataset/build-expected-hash.ts "caption A" "caption B" ...
  */
-import { hashContexts } from "../oracle/normalize-context"
+import { captionHash } from "../oracle/normalize-context"
 
-const contexts = process.argv.slice(2)
-if (contexts.length === 0) {
-  console.error("Usage: npx tsx eval/ragas/dataset/build-expected-hash.ts <context-file>...")
-  console.error("  Or pipe JSON array of context strings via stdin")
+const captions = process.argv.slice(2)
+if (captions.length === 0) {
+  console.error("Usage: npx tsx eval/ragas/dataset/build-expected-hash.ts <caption1> <caption2> ...")
   process.exit(1)
 }
 
-const { hash, size } = hashContexts(contexts)
+const { hash, size } = captionHash(captions)
 console.log(JSON.stringify({ expected_context_hash: hash, expected_context_size: size }, null, 2))

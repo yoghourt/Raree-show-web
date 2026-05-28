@@ -163,3 +163,12 @@ export function legacyRagasJoinHashForTelemetry(contexts: string[]): {
     size: Buffer.byteLength(normalized, "utf8"),
   }
 }
+
+/**
+ * RAGAS v2 eval oracle helper — mirrors collectAuthorizedSemanticBytes hash boundary.
+ * Input: raw caption strings in scene/slide order (no separators, no trim).
+ */
+export function hashRawCaptions(captions: string[]): { sha256: string; byteSize: number } {
+  const buf = Buffer.concat(captions.map((c) => Buffer.from(c, "utf8")))
+  return { sha256: createHash("sha256").update(buf).digest("hex"), byteSize: buf.length }
+}
