@@ -1,8 +1,7 @@
 # RAGAS Evaluation Suite Specification
 
-Status: `v1`
-Owner: Raree Show Architecture  
-Last Updated: 2026-05-18
+Status: `v2` 
+Last Updated: 2026-05-29
 
 ---
 
@@ -62,27 +61,25 @@ The Oracle MUST NOT rely on model reasoning, self-reflection, or prompt-based in
 
 ### Oracle Validation Rule
 
+The Oracle operates on canonical raw UTF-8 bytes collected from `chapterScenes[].revealedStorySlides[].caption`. No normalization, escaping, or presentation-layer transformation participates in oracle authority.
+
 The evaluation sample is considered invalid if:
 
 ```text
-sha256(normalizedRetrievedContext) !== expected_context_hash
+sha256(Buffer.concat(captions.map(c => Buffer.from(c, "utf8")))) !== expected_context_hash
 ```
 
-Byte-size (`expected_context_size`) is telemetry only; hash equality is the primary deterministic enforcement gate.
+This is the runtime-enforced authority boundary. The Oracle compares raw-byte SHA-256 hashes only; no text normalization or joined-string comparison is performed.
 
-Legacy size-only check (insufficient alone):
+`expected_context_size` is telemetry only; hash equality is the sole deterministic enforcement gate.
 
-```text
-Σ(authorized_story_content_bytes) !== retrieved_context_bytes
-```
-
-When this condition is violated:
+When the hash comparison fails:
 
 - the sample is immediately classified as `Visibility Leakage`
 - `spoiler_violation_rate = 1.0`
 - semantic evaluation MUST NOT continue
 
-This behavior is mandatory.
+This behavior is mandatory and runtime-enforced.
 
 ---
 
@@ -301,9 +298,17 @@ string
 
 Purpose:
 
-SHA-256 hex digest of the normalized authorized retrieval payload. Primary Oracle enforcement field (v1: `sha256-boundary-v1`).
+SHA-256 hex digest of canonical raw UTF-8 semantic bytes. Primary Oracle enforcement field.
 
-Normalization (v1): `contexts` joined in array order with `\n`; no internal trim; UTF-8 encoded.
+Canonical byte construction:
+
+```ts
+Buffer.concat(captions.map(c => Buffer.from(c, "utf8")))
+```
+
+where `captions` are `revealedStorySlides[].caption` strings in scene `order_index ASC` / slide array order.
+
+No separators, no trim, no XML escaping, no normalization of any kind participates in hash construction.
 
 `expected_context_size` remains for telemetry and debugging only; byte-size equality alone MUST NOT be used as the sole enforcement gate.
 
