@@ -1,148 +1,120 @@
 # ADR-003: Multi-Provider AI Runtime Topology
 
-**Status:** Proposed (target state) — **not deployed**
+**Status:** Accepted
 
-**Runtime authority:** `src/app/api/scene-assistant/route.ts`, `src/components/raree/SceneAssistant.tsx`
+**Last Updated:** 2026-05-29
+
+**Runtime authority:** `src/app/api/scene-assistant/route.ts`, `src/runtime/`
+
+---
+
+## Historical Note
+
+The original ADR-003 was written when the multi-provider topology was in proposal stage. Runtime implementation was delivered and integrated ahead of ADR narrative update, creating a governance drift identified in the EAR review (2026-05-29). This revision re-aligns the ADR with shipped runtime truth while preserving the accepted architecture framing and documenting remaining expansion areas.
 
 ---
 
 ## Context
 
-### Current limitation
+Scene Assistant generation originally depended on a single Gemini runtime path, creating a generation-layer SPOF. This ADR defines the accepted topology for transparent generation-layer failover.
 
-Scene Assistant generation depends on a single Gemini runtime path. Gemini outage, quota exhaustion, or transport instability can make generation unavailable.
+This ADR covers generation-layer HA only. It does not cover:
 
-The deployed topology therefore has a generation-layer SPOF.
-
-### Specifically
-
-1. Generation execution has no runtime failover capability.
-2. Provider execution is directly coupled to the Gemini integration path.
-3. Failover observability and provider-switch telemetry do not exist.
-4. Production availability requirements and evaluation determinism requirements differ, but both currently depend on the same provider.
-5. Hybrid RAG retrieval contains an independent embedding SPOF outside generation HA scope.
-6. Stream normalization responsibilities are split between AI SDK abstractions and browser-side SSE handling.
-
-### Need
-
-The system requires operational high availability for generation runtime execution.
-
-This ADR **proposes** constrained transparent failover for generation runtime execution only.
-
-This ADR does **not** propose:
-
+* retrieval redesign
+* embedding failover
 * policy routing
-* intelligent routing
 * orchestration systems
 * autonomous model selection
-* retrieval redesign
 
 ---
 
-## Runtime Truth (deployed)
+## 1. Current Runtime Truth
 
-The following describes the **current production** Scene Assistant generation path. None of the target-state components below exist in the repository today.
+The following describes what exists in the repository and is wired into the production route today.
 
-### Generation path
+### Deployed generation path
 
 ```text
 retrieveVerifiedAssistantContext
         ↓
-@ai-sdk/google → streamText(gemini-3-flash-preview)
+executeVerifiedGeneration (src/runtime/fallback-coordinator.ts)
         ↓
-toUIMessageStreamResponse()
+Gemini (primary) → [OpenRouter (fallback, if OPENROUTER_API_KEY set)]
+        ↓
+wrapResponseWithSemanticStreamGuard
         ↓
 SceneAssistant UI
 ```
 
-### Deployed characteristics
+### Deployed components
 
-* **Single generation provider:** Gemini via `@ai-sdk/google` and `streamText()` in `src/app/api/scene-assistant/route.ts`.
-* **No provider abstraction:** No `AIModelProvider` interface or equivalent generation abstraction exists in `src/`.
-* **No runtime failover:** A single `streamText()` call; failures return HTTP 502. No fallback provider path.
-* **No OpenRouter integration:** No dependency, environment variable, or code reference.
-* **Embedding SPOF (retrieval):** Query embedding uses a separate Gemini REST path (`embedQuery` in `src/services/retrieval.ts`). This is outside generation HA scope and has no failover.
-* **Normalized semantic stream (UI):** The client consumes `text-delta` and `error` events only (`SceneAssistant.tsx`). Transport SSE parsing remains partially client-side.
-* **Eval (provider-pinned):** Offline RAGAS judges use Gemini only (`eval/ragas/adapters/gemini-judge.ts`) with same-provider RPM retry (`judge-rate-limit.ts`). Cross-provider failover is neither implemented nor permitted.
-* **Observability today:** RAG ingress logging and production-oracle failure logs. **No** provider-switch or provider-health routing telemetry.
+**`AIModelProvider` interface** (`src/runtime/types.ts`)
+
+Defines the generation runtime contract: `streamText`, `generateText`, `normalizeError`, `providerId`.
+
+**Gemini provider adapter** (`src/runtime/providers/gemini-provider.ts`)
+
+Implements `AIModelProvider` over `@ai-sdk/google`. Sets `maxRetries: 0` to reclaim retry ownership at coordinator level.
+
+**OpenRouter provider adapter** (`src/runtime/providers/openrouter-provider.ts`)
+
+Implements `AIModelProvider` over `@openrouter/ai-sdk-provider`. Acts as failover aggregation layer only — not a routing system.
+
+**Failover coordinator** (`src/runtime/fallback-coordinator.ts` → `executeVerifiedGeneration`)
+
+Iterates `[primary, ...fallbackProviders]`. Catches provider errors, normalizes them, logs structured telemetry, and advances to the next provider before semantic lock. After semantic lock, fallover is forbidden.
+
+**Stream orchestrator** (`src/runtime/stream-orchestrator.ts`)
+
+Owns the pre-lock buffer phase. Throws on transport failure before first `text-delta`, allowing coordinator to attempt next provider.
+
+**Semantic stream guard** (`src/runtime/semantic-stream-guard.ts`)
+
+Wraps the locked response for continued downstream observation.
+
+**Provider observability** (`src/runtime/provider-observability.ts`)
+
+Emits structured logs: `provider_attempt_start`, `provider_attempt_failure`, `provider_fallback`, `semantic_stream_locked`, `[FALLBACK]`, `[SEMANTIC_LOCK]`, `[STREAM_OWNER]`.
+
+### OpenRouter activation condition
+
+OpenRouter failover is conditionally active: enabled when `OPENROUTER_API_KEY` is present in the server environment; absent key silently disables the fallback path. No behavior change when key is absent.
 
 ### Deployed security boundary
 
-Provider credentials remain server-only (`GEMINI_API_KEY`). Provider adapters are not used in client components.
+Provider credentials remain server-only (`GEMINI_API_KEY`, `OPENROUTER_API_KEY`). Provider adapters are not used in client components. Provider-native semantic payloads do not cross UI boundaries.
+
+### Evaluation runtime (deployed)
+
+Evaluation uses Gemini only with same-provider transient RPM retry. Cross-provider failover is not implemented and is forbidden for evaluation. Evaluation fails closed.
 
 ---
 
-## Future Target Topology (proposed; when implemented)
+## 2. Accepted Architecture
 
-The sections below define the **target state** for generation-layer HA. They are **not deployed**. Requirements use **when implemented** scope unless noted as already satisfied by the deployed runtime.
+The following represents the accepted architectural topology. It is implemented in the repository and governs future development direction.
 
-### Constraints (when implemented)
+### Transparent failover topology
 
-1. ADR-002 retrieval visibility boundaries SHALL remain unchanged.
-2. Phase 0 failover scope SHALL apply only to generation runtime execution.
-3. Evaluation execution SHALL remain provider-pinned and fail closed.
-4. Failover SHALL trigger only on operational/runtime failures.
-5. Provider-native semantic payloads SHALL NOT cross UI boundaries (already enforced in deployed UI contract).
-6. OpenRouter integration SHALL remain a failover aggregation layer, not a routing system.
-7. ADR-002 serial retrieval topology SHALL remain unchanged.
-8. This ADR SHALL NOT introduce embedding failover or retrieval failover.
+Generation failover is scoped to operational/runtime failures only. Failover MUST NOT trigger after semantic stream emission to the client has begun.
 
----
-
-### Target generation topology (when implemented)
-
-**Proposed:** adopt constrained transparent failover for generation runtime execution. Generation failover SHALL NOT occur after semantic stream emission to the client has begun.
-
-**Target topology:**
-
-```text
-retrieveVerifiedAssistantContext
-(outside failover scope)
-            ↓
-Gemini (primary provider)
-            ↓ operational/runtime failure
-OpenRouter (failover aggregation layer)
-            ↓
-fallback upstream models
-```
-
-**Allowed failover triggers (when implemented):**
+**Allowed failover triggers:**
 
 * upstream outage
 * timeout
 * quota exhaustion
-* transport failure
-* runtime exception
+* transport failure before semantic lock
 
-**Forbidden failover triggers (when implemented):**
+**Forbidden failover triggers:**
 
 * hallucination suspicion
 * semantic disagreement
 * formatting dissatisfaction
-* answer-style preference
 * quality evaluation
 
-This topology is availability-scoped. It is **not** policy routing, capability routing, quality-aware fallback, or orchestration.
+### Provider abstraction scope
 
----
-
-### Proposed abstraction (`AIModelProvider`) — not in repository
-
-**Proposed:** a shared generation runtime abstraction:
-
-```ts
-AIModelProvider
-```
-
-**Responsibilities (when implemented):**
-
-* generation execution
-* streaming execution
-* normalized runtime errors
-* provider metadata
-* telemetry metadata
-
-**Forbidden scope expansion:**
+`AIModelProvider` is scoped exclusively to generation runtime execution. Forbidden scope expansions:
 
 * retrieval orchestration
 * embedding abstraction
@@ -151,151 +123,53 @@ AIModelProvider
 * agent runtime
 * evaluation orchestration
 
-This abstraction SHALL apply only to generation runtime execution.
+### Invariant preservation
 
----
+Transparent failover MUST preserve:
 
-### Evaluation runtime rules
-
-Evaluation correctness takes precedence over runtime availability.
-
-**Deployed today:**
-
-* Evaluation uses Gemini only with same-provider transient RPM retry.
-* Cross-provider failover is not implemented.
-
-**Mandatory constraints (when implemented for eval):**
-
-* evaluation execution SHALL remain provider-pinned
-* automatic provider switching SHALL be forbidden
-* transparent failover SHALL be forbidden for evaluation
-* evaluation execution SHALL fail closed
-
-Same-provider transient retry remains allowed.
-
-Example:
-
-```text
-Gemini RPM retry → allowed
-Gemini → OpenRouter failover → forbidden
-```
-
----
-
-### Streaming contract normalization
-
-Streaming normalization is divided into two layers.
-
-#### Transport stream contract
-
-Transport responsibilities include UTF-8 decoding, SSE parsing, and chunk buffering.
-
-Transport parsing may remain partially client-side during Phase 0 (current deployed behavior).
-
-#### Semantic stream contract
-
-UI boundaries consume normalized semantic stream events only (deployed today).
-
-Allowed semantic events:
-
-```text
-text-delta
-error
-```
-
-Provider-native semantic payloads SHALL NEVER cross UI boundaries.
-
-When implemented, transparent failover SHALL preserve semantic stream compatibility across providers.
-
----
-
-### Security constraints (when implemented)
-
-Provider credentials SHALL remain inside a server-only credential boundary.
-
-**Mandatory constraints:**
-
-* provider API keys forbidden in browser runtime
-* provider adapters forbidden in client components
-* provider credentials forbidden across UI boundaries
-* provider execution restricted to server runtime only
-
-OpenRouter integration SHALL NOT weaken existing credential-boundary guarantees.
-
----
-
-### End-to-end invariant (when implemented)
-
-When implemented, transparent generation failover SHALL preserve:
-
-* ADR-002 retrieval visibility boundaries
-* normalized semantic stream contracts
+* ADR-002 retrieval visibility boundaries (unchanged — failover is post-retrieval only)
+* normalized semantic stream contracts (`text-delta` and `error` events only at UI boundary)
 * provider-pinned evaluation determinism
 
-Failover SHALL remain observable at runtime boundaries while remaining transparent to end-user interaction flow.
+### Constraints (governance-binding)
+
+1. ADR-002 retrieval visibility boundaries remain unchanged.
+2. Failover scope applies only to generation runtime execution.
+3. Evaluation execution remains provider-pinned and fail-closed.
+4. Failover triggers only on operational/runtime failures.
+5. Provider-native semantic payloads MUST NOT cross UI boundaries.
+6. OpenRouter integration remains a failover aggregation layer, not a routing system.
+7. ADR-002 serial retrieval topology remains unchanged.
+8. This ADR does not introduce embedding failover or retrieval failover.
 
 ---
 
-## Alternatives
+## 3. Remaining Expansion
+
+The following areas remain unresolved or in active evolution. This section exists to prevent an "architecture complete" reading of this ADR.
+
+* **OpenRouter production hardening:** `OPENROUTER_API_KEY` is optional today. Production rollout maturity — including key management, model selection governance, and fallback SLA — is not yet fully defined.
+* **Default model governance:** `OPENROUTER_MODEL_ID` defaults to a free-tier model (`openai/gpt-oss-120b:free`). Production model selection requires explicit governance decision.
+* **Broader provider coverage:** Current topology covers Gemini → OpenRouter only. Direct multi-vendor integration, provider-specific prompt normalization, and extended fallback chains are future ADR scope.
+* **Telemetry evolution:** Structured logs exist (`provider-observability.ts`) but are not yet connected to an observability backend or alerting pipeline.
+* **Embedding failover:** Query embedding remains a separate Gemini REST path (`src/services/retrieval.ts`) with no failover. Outside generation HA scope; requires a separate ADR.
+* **Governance hardening:** Runtime convergence between accepted architecture and production deployment posture is ongoing.
+
+---
+
+## Alternatives (unchanged)
 
 ### Single-provider runtime
 
-* **Definition:** Continue using Gemini as the sole generation provider.
-* **Rejection (for target availability goals):** Preserves a generation-layer SPOF and does not satisfy operational availability requirements. This is the **deployed** state today; rejection applies to the proposed HA target, not because multi-provider is already live.
+Continue using Gemini as sole generation provider. Rejected for HA target goals — preserves a generation-layer SPOF.
 
 ### Policy-based routing
 
-* **Definition:** Dynamically select providers using routing heuristics, capability scoring, or quality policies.
-* **Rejection:** Introduces orchestration complexity outside the availability-focused scope.
+Dynamically select providers using routing heuristics or quality policies. Rejected — introduces orchestration complexity outside availability scope.
 
 ### Direct multi-vendor integration
 
-* **Definition:** Integrate Gemini, Anthropic, DeepSeek, and other providers independently without an aggregation layer.
-* **Rejection:** Increases credential-management complexity and operational overhead before runtime governance stabilizes.
-
-Phase 0 prioritizes implementation simplicity over maximum infrastructure independence.
-
----
-
-## Consequences
-
-### Deployed trade-offs (today)
-
-* Generation availability depends on a single Gemini path.
-* Embedding for retrieval depends on a separate Gemini REST path with no failover.
-* No provider-switch observability for operations.
-* Eval and production share the same vendor; eval remains provider-pinned with same-provider retry only.
-
-### Expected effects when target state is implemented
-
-* Generation availability would improve during provider-side operational failures.
-* Failover events would become observable through structured telemetry and provider metadata.
-* Evaluation determinism would remain protected through provider pinning and fail-closed execution.
-* A runtime abstraction would reduce direct provider coupling inside Scene Assistant generation.
-* ADR-002 retrieval visibility guarantees would remain unchanged.
-
-### Trade-offs of target state
-
-* Transparent failover may introduce provider-dependent semantic or stylistic drift.
-* Production runtime behavior would become less deterministic than evaluation runtime behavior.
-* OpenRouter would introduce aggregation-layer dependency risk.
-* Runtime abstraction would reduce provider-specific optimization opportunities.
-* Generation failover would not eliminate embedding-layer SPOFs.
-
----
-
-## Target-state validation (when implemented)
-
-The following requirements define conformance for the **proposed** topology. They do **not** describe deployed behavior.
-
-* **Failover trigger correctness:** Failover SHALL trigger only on operational/runtime failures.
-* **Forbidden failover behavior:** Quality dissatisfaction, semantic disagreement, or formatting preference SHALL NEVER trigger provider switching.
-* **Failover observability:** Provider-switch events SHALL emit structured logs and preserve request correlation identifiers.
-* **Evaluation fail closed:** Evaluation execution SHALL reject cross-provider failover while permitting same-provider transient retry.
-* **Semantic stream normalization:** Provider-native semantic payloads SHALL NEVER cross UI boundaries.
-* **ADR-002 boundary preservation:** Transparent failover SHALL NOT alter retrieval visibility boundaries or candidate-universe semantics.
-* **Embedding failover negative guarantee:** Embedding-layer failures SHALL NOT trigger generation-provider failover.
-* **Request correlation preservation:** Generation failover observability SHALL preserve correlation with retrieval-layer request identifiers.
+Integrate multiple providers independently without an aggregation layer. Rejected for Phase 0 — increases credential-management complexity before runtime governance stabilizes.
 
 ---
 
@@ -304,25 +178,19 @@ The following requirements define conformance for the **proposed** topology. The
 ### Deployed
 
 * `src/app/api/scene-assistant/route.ts`
+* `src/runtime/types.ts`
+* `src/runtime/fallback-coordinator.ts`
+* `src/runtime/stream-orchestrator.ts`
+* `src/runtime/semantic-stream-guard.ts`
+* `src/runtime/provider-observability.ts`
+* `src/runtime/providers/gemini-provider.ts`
+* `src/runtime/providers/openrouter-provider.ts`
 * `src/components/raree/SceneAssistant.tsx`
 * `src/services/retrieval.ts` (embedding SPOF; outside generation failover scope)
-* `src/lib/gemini-proxy-fetch.ts`
-* `eval/ragas/adapters/semantic-judge.ts`
-* `eval/ragas/adapters/gemini-judge.ts`
-* `eval/ragas/adapters/judge-rate-limit.ts`
 
-### Target-state design anchors
+### Design anchors
 
-* `docs/specs/ragas-evaluation-suite.md`
+* `docs/specs/adr-003-implementation-plan.md`
+* `docs/specs/adr-003-phase-2-fallback.md`
 * ADR-001: pgvector as vector store
 * ADR-002: Hybrid RAG retrieval architecture
-
-### Follow-up (granularity)
-
-Potential future ADRs may include:
-
-* embedding failover topology
-* retrieval runtime redundancy
-* provider-specific prompt normalization
-* policy-based routing
-* direct multi-vendor runtime integration

@@ -37,22 +37,23 @@
 
 ## Runtime Architecture
 
-The Scene Assistant runtime enforces spoiler boundaries in the pipeline — not only in prompts.
+The Scene Assistant runtime enforces visibility boundaries at the pipeline level, not only in prompts.
 
 ```text
 Client Progress
-    → SQL Visibility Gate
-    → Vector Rerank
-    → Visibility Verification (SHA-256)
-    → Gemini Generation
+    → SQL Visibility Gate (reading-progress-constrained candidate universe)
+    → Hybrid RAG: pgvector rerank within SQL-authorized candidate set
+    → Raw-byte Oracle Verification (SHA-256 on canonical caption bytes)
+    → Generation (Gemini primary; OpenRouter fallback if configured)
 ```
 
-- **SQL visibility authorization** — Reading progress constrains which scenes may enter retrieval.
-- **Bounded semantic reranking** — pgvector reranks only within the SQL-approved candidate set.
-- **SHA-256 visibility verification** — Authorized semantic bytes are verified before any LLM call.
+- **SQL visibility gate** — Reading progress constrains which scenes may enter retrieval. Scenes beyond the user's progress boundary are excluded at the SQL layer.
+- **Hybrid RAG retrieval** — Semantic search operates only within the SQL-authorized candidate set. Retrieval is bounded, not maximal.
+- **Raw-byte oracle verification** — Before any generation call, authorized semantic bytes (`revealedStorySlides[].caption`) are collected and SHA-256 verified. Invariant mismatch is a hard runtime failure (HTTP 500).
+- **Provider abstraction & failover** — Generation executes through a provider abstraction layer (`src/runtime/`). Gemini is the primary provider; OpenRouter is wired as a conditional fallback (activated by `OPENROUTER_API_KEY`). Rollout is ongoing; see ADR-003.
 - **Governance submodule CI checks** — `npm run dev` and CI bootstrap verify the governance mount is present and readable.
 
-An offline RAGAS harness (`npm run eval:ragas`) supports local evaluation of retrieval governance.
+An offline RAGAS harness (`npm run eval:ragas`) supports local evaluation of retrieval governance. Evaluation oracle uses the same raw-byte SHA-256 semantics as the production runtime.
 
 Deep dive: [`docs/runtime-architecture.md`](docs/runtime-architecture.md)
 
@@ -64,9 +65,9 @@ Deep dive: [`docs/runtime-architecture.md`](docs/runtime-architecture.md)
 |-----|-------|--------|
 | [ADR-001](docs/adr/001-pgvector-as-vector-store.md) | pgvector as vector store | Accepted |
 | [ADR-002](docs/adr/002-hybrid-rag-retrieval.md) | Hybrid RAG visibility boundary | Accepted |
-| [ADR-003](docs/adr/003-multi-provider-ai-runtime.md) | Multi-provider AI runtime | **Planned / not deployed** |
+| [ADR-003](docs/adr/003-multi-provider-ai-runtime.md) | Multi-provider AI runtime | **Accepted** |
 
-ADR-003 describes a future generation-layer failover design. **Current production uses a single Gemini path only.**
+ADR-003 defines the accepted generation-layer failover topology. Provider abstraction and OpenRouter fallback are implemented in `src/runtime/`. Production rollout maturity and telemetry hardening are ongoing.
 
 ---
 
@@ -119,15 +120,17 @@ governance/          # Shared governance submodule (synced at dev/CI)
 - [x] Scene slideshow + map navigation
 - [x] Visibility-aware Scene Assistant (Hybrid RAG)
 - [x] SQL visibility gate + bounded vector rerank
-- [x] SHA-256 visibility verification
+- [x] Raw-byte oracle verification (SHA-256 on canonical caption bytes)
 - [x] Admin CMS + Supabase data layer
 - [x] Governance CI checks (`check:governance`)
-- [x] Offline RAGAS harness (`npm run eval:ragas`)
+- [x] Offline RAGAS harness (`npm run eval:ragas`) — raw-byte oracle aligned
+- [x] Provider abstraction & transparent failover (ADR-003 — implemented; rollout converging)
 
-### Planned
+### In Progress / Planned
 
-- [ ] Provider abstraction & transparent failover (ADR-003)
-- [ ] Runtime telemetry / provider-switch observability
+- [ ] OpenRouter production hardening (model governance, key management, fallback SLA)
+- [ ] Runtime telemetry backend (provider-switch observability logs exist; pipeline not yet connected)
+- [ ] Embedding failover (separate ADR scope; current retrieval has no failover)
 - [ ] Evaluation automation (CI integration — not current)
 - [ ] Migrate characters and locations to Supabase
 - [ ] Expand scene coverage (ongoing with reading)
