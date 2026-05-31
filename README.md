@@ -53,7 +53,7 @@ Client Progress
 - **Provider abstraction & failover** — Generation executes through a provider abstraction layer (`src/runtime/`). Gemini is the primary provider; OpenRouter is wired as a conditional fallback (activated by `OPENROUTER_API_KEY`). Rollout is ongoing; see ADR-003.
 - **Governance submodule CI checks** — `npm run dev` and CI bootstrap verify the governance mount is present and readable.
 
-An offline RAGAS harness (`npm run eval:ragas`) supports local evaluation of retrieval governance. Evaluation oracle uses the same raw-byte SHA-256 semantics as the production runtime.
+An offline RAGAS harness (`npm run eval:ragas`) supports local evaluation of retrieval governance. Evaluation oracle uses the same raw-byte SHA-256 semantics as the production runtime. Baseline evidence: [`docs/evaluations/ragas-baseline-v1.md`](docs/evaluations/ragas-baseline-v1.md)
 
 Deep dive: [`docs/runtime-architecture.md`](docs/runtime-architecture.md)
 
