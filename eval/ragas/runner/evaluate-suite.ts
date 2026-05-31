@@ -1,9 +1,18 @@
 import fs from "node:fs"
 import path from "node:path"
 import { config } from "dotenv"
+import { createGeminiJudgeAdapter } from "../adapters/gemini-judge"
+import { createOpenRouterJudgeAdapter } from "../adapters/openrouter-judge"
+import type { SemanticJudgeAdapter } from "../adapters/semantic-judge"
 import { evaluateSample } from "./evaluate-sample"
 import { buildSuiteReport, printSuiteSummary } from "./report"
 import type { RareeSingleTurnSample, SampleReport, SuiteReport } from "../types"
+
+function createJudge(): SemanticJudgeAdapter {
+  const provider = process.env.EVAL_JUDGE_PROVIDER?.trim() ?? "gemini"
+  if (provider === "openrouter") return createOpenRouterJudgeAdapter()
+  return createGeminiJudgeAdapter()
+}
 
 config({ path: path.resolve(process.cwd(), ".env.local") })
 
@@ -47,6 +56,9 @@ async function main(): Promise<void> {
   const oracleOnly = process.env.EVAL_ORACLE_ONLY === "1"
   if (oracleOnly) {
     console.log("EVAL_ORACLE_ONLY=1 — semantic layer skipped")
+  } else {
+    const provider = process.env.EVAL_JUDGE_PROVIDER?.trim() ?? "gemini"
+    console.log(`judge provider: ${provider}`)
   }
 
   const datasetPath = path.resolve(__dirname, "../dataset/seed-v2.json")
@@ -55,6 +67,7 @@ async function main(): Promise<void> {
 
   const resumeMap = oracleOnly ? new Map() : loadResumeMap()
   const reports: SampleReport[] = []
+  const judge = oracleOnly ? undefined : createJudge()
 
   for (const sample of samples) {
     const cached = resumeMap.get(sample.id)
@@ -65,7 +78,7 @@ async function main(): Promise<void> {
     }
 
     console.log(`evaluating ${sample.id} (tier ${sample.tier})...`)
-    const { report } = await evaluateSample(sample, undefined, { oracleOnly })
+    const { report } = await evaluateSample(sample, judge, { oracleOnly })
     reports.push(report)
 
     if (!report.oracle_pass) {
