@@ -1,5 +1,9 @@
 # ADR-002: Hybrid RAG with Two-Layer Visibility Boundary
 
+> **Vocabulary Notice:** This document uses implementation symbols (`Scene`, `sceneTsid`, `story_images_v2`,
+> `caption`, `order_index`). Normative Runtime vocabulary is `Reading Route` (impl: Scene) and
+> `Reading Frame` (impl: Story Images). See `governance/vocabulary/runtime-lexicon.md` in `raree-show-admin`.
+
 ## Context
 
 ### Current limitation

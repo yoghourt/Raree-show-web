@@ -1,5 +1,10 @@
 # W-01: Visibility-Synchronized Navigation (Client State Machine)
 
+> **Vocabulary Notice:** This document uses implementation symbols (`Scene`, `sceneTsid`,
+> `story_images_v2`, `readUpToStoryIndexLast`). Normative Runtime vocabulary is `Reading Route`
+> (impl: Scene) and `Reading Frame` (impl: Story Images). See `governance/vocabulary/runtime-lexicon.md`
+> in `raree-show-admin`.
+
 This document specifies **reader client** runtime orchestration for scene and story-slide navigation. It implements the end-to-end requirement that the Scene Assistant observe **committed visibility boundary state** (see [ADR-002: Hybrid RAG with Two-Layer Visibility Boundary](../adr/002-hybrid-rag-retrieval.md)).
 
 ADR-002 defines **topology**, **visibility boundaries**, and **invariants** for retrieval and prompt assembly. W-01 defines **how** the client commits progress and **refreshes assistant retrieval context** so each assistant request carries `userProgress` consistent with ADR-002 Layer 1 and Layer 2.
