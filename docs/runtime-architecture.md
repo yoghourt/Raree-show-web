@@ -1,5 +1,10 @@
 # Scene Assistant Runtime Architecture
 
+> **Vocabulary Notice:** This document uses implementation symbols (`Scene`, `story_images_v2`, `caption`).
+> Normative Runtime vocabulary is `Reading Route` (impl: Scene), `Reading Frame` (impl: Story Images), and
+> `Frame Narrative` (impl: caption). See [`governance/vocabulary/runtime-lexicon.md`](https://github.com/raree-show-admin/governance/vocabulary/runtime-lexicon.md)
+> in `raree-show-admin` for the authoritative Runtime vocabulary reference.
+
 Raree Show is a narrative visualization and story interaction platform. The Scene Assistant is an AI-assisted scene runtime that answers questions about the reader's current position in a work — with **system-enforced spoiler boundaries**, not prompt-only instructions.
 
 This document describes the **current deployed runtime**. For product-facing overview, see the [README](../README.md).

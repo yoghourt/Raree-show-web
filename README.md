@@ -57,6 +57,10 @@ An offline RAGAS harness (`npm run eval:ragas`) supports local evaluation of ret
 
 Deep dive: [`docs/runtime-architecture.md`](docs/runtime-architecture.md)
 
+> **Vocabulary notice:** "Scene" and "Story Images" in this README are implementation symbols.
+> Normative Runtime vocabulary is `Reading Route` and `Reading Frame`.
+> See `governance/vocabulary/runtime-lexicon.md` (via submodule).
+
 ---
 
 ## ADR Index
