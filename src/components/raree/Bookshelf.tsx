@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 import type { Work } from "@/lib/types"
+import { messages as locale } from "@/lib/locale"
 
 interface BookshelfProps {
   works: Work[]
@@ -41,7 +42,7 @@ export default function Bookshelf({ works }: BookshelfProps) {
                 <div
                   role="button"
                   tabIndex={0}
-                  aria-label={`Open ${work.title}`}
+                  aria-label={locale.bookshelf.openWorkAria(work.title)}
                   onClick={() => setOpenWork(work)}
                   onMouseEnter={() => setHoveredId(work.id)}
                   onMouseLeave={() => setHoveredId(null)}
@@ -187,7 +188,7 @@ export default function Bookshelf({ works }: BookshelfProps) {
           >
             <button
               type="button"
-              aria-label="Close dialog"
+              aria-label={locale.bookshelf.closeDialogAria}
               onClick={close}
               style={{
                 position: "absolute",

@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
+import { messages as locale } from "@/lib/locale"
 
-export interface SceneAssistantContext {
+export interface ReadingRouteAssistantContext {
   /** Business scene id (`scenes.tsid`); must match `userProgress.sceneTsid`. */
   tsid: string
   /** Raree 作品展示名，供模型把握语气与世界观边界；勿写死某一 IP。 */
@@ -17,7 +18,7 @@ export interface SceneAssistantContext {
 }
 
 /** Mirrors ProgressConfig in retrieval (client-safe shape, no server imports). */
-export interface SceneAssistantUserProgress {
+export interface ReadingRouteAssistantUserProgress {
   workTsid: string
   readUpToChapter: number
   readUpToOrderIndex: number
@@ -29,9 +30,9 @@ export interface SceneAssistantUserProgress {
   readUpToStoryIndexLast: number
 }
 
-interface SceneAssistantProps {
-  sceneContext: SceneAssistantContext
-  userProgress: SceneAssistantUserProgress
+interface ReadingRouteAssistantProps {
+  sceneContext: ReadingRouteAssistantContext
+  userProgress: ReadingRouteAssistantUserProgress
 }
 
 type ChatMessage = {
@@ -67,7 +68,7 @@ function parseUiMessageSseEvent(rawEvent: string): { delta?: string; error?: str
   return {}
 }
 
-export default function SceneAssistant({ sceneContext, userProgress }: SceneAssistantProps) {
+export default function ReadingRouteAssistant({ sceneContext, userProgress }: ReadingRouteAssistantProps) {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -115,11 +116,11 @@ export default function SceneAssistant({ sceneContext, userProgress }: SceneAssi
 
       if (!res.ok) {
         const errText = await res.text().catch(() => res.statusText)
-        throw new Error(errText || `Request failed (${res.status})`)
+        throw new Error(errText || locale.assistant.errorRequestFailed(res.status))
       }
 
       const reader = res.body?.getReader()
-      if (!reader) throw new Error("No response body")
+      if (!reader) throw new Error(locale.assistant.errorNoBody)
 
       const decoder = new TextDecoder()
       let acc = ""
@@ -188,7 +189,7 @@ export default function SceneAssistant({ sceneContext, userProgress }: SceneAssi
         return next
       })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Something went wrong"
+      const msg = e instanceof Error ? e.message : locale.assistant.errorGeneric
       setError(msg)
       setMessages((m) => {
         const next = [...m]
@@ -222,13 +223,13 @@ export default function SceneAssistant({ sceneContext, userProgress }: SceneAssi
         >
           <div className="flex shrink-0 items-center justify-between border-b border-[#c8b89a]/60 px-3 py-2">
             <h2 className="text-[11px] font-medium uppercase tracking-widest text-[#8b1a1a]">
-              Ask about this scene
+              {locale.assistant.panelTitle}
             </h2>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="rounded p-1 text-sm text-[#6b4c35] hover:bg-[#c8b89a]/40 hover:text-[#2c1810]"
-              aria-label="Close"
+              aria-label={locale.assistant.closeAria}
             >
               ×
             </button>
@@ -241,7 +242,7 @@ export default function SceneAssistant({ sceneContext, userProgress }: SceneAssi
             <div className="flex min-h-full flex-col justify-end gap-2">
               {messages.length === 0 && (
                 <p className="text-center text-xs text-[#6b4c35]">
-                  Ask a question about this scene, characters, or the story.
+                  {locale.assistant.emptyState}
                 </p>
               )}
               {messages.map((msg, i) => (
@@ -287,7 +288,7 @@ export default function SceneAssistant({ sceneContext, userProgress }: SceneAssi
                   void send()
                 }
               }}
-              placeholder="Ask a question…"
+              placeholder={locale.assistant.inputPlaceholder}
               disabled={streaming}
               className="min-w-0 flex-1 rounded-md border border-[#c8b89a] bg-[#f5f0e8]/80 px-3 py-2 text-sm text-[#2c1810] placeholder:text-[#6b4c35]/70 outline-none focus:border-[#8b1a1a]"
             />
@@ -297,7 +298,7 @@ export default function SceneAssistant({ sceneContext, userProgress }: SceneAssi
               disabled={streaming || !input.trim()}
               className="shrink-0 rounded-md border border-[#8b1a1a] bg-[#8b1a1a] px-3 py-2 text-sm text-[#f5f0e8] hover:bg-[#6b1414] disabled:opacity-50"
             >
-              Send
+              {locale.assistant.send}
             </button>
           </div>
         </div>
@@ -310,7 +311,7 @@ export default function SceneAssistant({ sceneContext, userProgress }: SceneAssi
         style={{
           background: "#8b1a1a",
         }}
-        aria-label="Open scene assistant"
+        aria-label={locale.assistant.openFabAria}
       >
         ✦
       </button>

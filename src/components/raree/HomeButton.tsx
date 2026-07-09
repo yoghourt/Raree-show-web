@@ -1,14 +1,15 @@
 "use client"
 
 import Link from "next/link"
+import { messages as locale } from "@/lib/locale"
 
 export default function HomeButton() {
   return (
-    <Link href="/" className="home-btn" aria-label="Back to home">
+    <Link href="/" className="home-btn" aria-label={locale.navigation.backToHomeAria}>
       <span className="home-btn-arrow" aria-hidden>
         ←
       </span>
-      <span className="home-btn-text">HOME</span>
+      <span className="home-btn-text">{locale.navigation.homeLabel}</span>
       <span className="rivet tl" aria-hidden />
       <span className="rivet tr" aria-hidden />
 

@@ -1,5 +1,6 @@
 import { getAllWorks } from "@/lib/data"
 import Bookshelf from "@/components/raree/Bookshelf"
+import { messages } from "@/lib/locale"
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +44,7 @@ export default async function HomePage() {
             Raree Show
           </h1>
           <p className="mt-3 text-lg text-[#c4a574]/95 sm:text-xl">
-            Step inside complex worlds, one scene at a time.
+            {messages.home.tagline}
           </p>
         </header>
 
@@ -51,7 +52,7 @@ export default async function HomePage() {
           {works.length > 0 ? (
             <Bookshelf works={works} />
           ) : (
-            <p className="text-center text-[#a08060]">No works yet.</p>
+            <p className="text-center text-[#a08060]">{messages.home.noWorks}</p>
           )}
         </div>
       </div>

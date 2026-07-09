@@ -30,9 +30,9 @@ import {
   verifyProductionStoryOracle,
 } from "@/lib/production-story-oracle"
 import {
-  effectiveStorySlidesFromV2,
-  sliceRevealedStorySlides,
-} from "@/lib/story-images-v2"
+  effectiveReadingFramesFromV2,
+  sliceRevealedReadingFrames,
+} from "@/lib/reading-frames"
 import { assertReadUpToStoryIndexLast } from "@/lib/visibility-invariant"
 
 /** Gemini embedding dimension locked with pgvector / backfill (ADR-001). */
@@ -219,7 +219,7 @@ export async function fetchChapterScenesWithinProgress(
   for (const row of data ?? []) {
     if (!row || typeof row.tsid !== "string") continue
     const orderIdx = typeof row.order_index === "number" ? row.order_index : 0
-    const slides = effectiveStorySlidesFromV2(row.story_images_v2)
+    const slides = effectiveReadingFramesFromV2(row.story_images_v2)
     let revealedRaw: typeof slides
 
     if (orderIdx < ordTarget) {
@@ -227,7 +227,7 @@ export async function fetchChapterScenesWithinProgress(
     } else if (row.tsid === sceneTsid) {
       const maxLast = slides.length > 0 ? slides.length - 1 : -1
       const clampedLast = Math.min(Math.max(rawLast, -1), maxLast)
-      revealedRaw = sliceRevealedStorySlides(slides, clampedLast)
+      revealedRaw = sliceRevealedReadingFrames(slides, clampedLast)
     } else {
       // `lte` query tip row that is not the declared current scene — do not inject captions.
       revealedRaw = []

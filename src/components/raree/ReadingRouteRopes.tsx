@@ -1,16 +1,17 @@
 "use client"
 
 import { useCallback, useState } from "react"
+import { messages as locale } from "@/lib/locale"
 
 const PLAQUE_W = 48
 
-export interface SceneRopesProps {
+export interface ReadingRouteRopesProps {
   onPrev: () => void
   onNext: () => void
   disabled?: boolean
 }
 
-export default function SceneRopes({ onPrev, onNext, disabled = false }: SceneRopesProps) {
+export default function ReadingRouteRopes({ onPrev, onNext, disabled = false }: ReadingRouteRopesProps) {
   const [pullLeft, setPullLeft] = useState(false)
   const [pullRight, setPullRight] = useState(false)
 
@@ -35,7 +36,7 @@ export default function SceneRopes({ onPrev, onNext, disabled = false }: SceneRo
         <button
           type="button"
           className={`scene-rope-hit ${pullLeft ? "scene-rope-pulling" : ""}`}
-          aria-label="Previous story image"
+          aria-label={locale.readingFrame.prevAria}
           disabled={disabled}
           onClick={() => runPull("left", onPrev)}
         >
@@ -81,7 +82,7 @@ export default function SceneRopes({ onPrev, onNext, disabled = false }: SceneRo
         <button
           type="button"
           className={`scene-rope-hit ${pullRight ? "scene-rope-pulling" : ""}`}
-          aria-label="Next story image"
+          aria-label={locale.readingFrame.nextAria}
           disabled={disabled}
           onClick={() => runPull("right", onNext)}
         >

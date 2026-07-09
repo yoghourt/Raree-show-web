@@ -1,16 +1,17 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { Scene } from "@/lib/types"
+import type { ReadingRoute } from "@/lib/types"
+import { messages as locale } from "@/lib/locale"
 
-function resolveCaption(scene: Scene, imageIndex: number): string {
-  const perImage = scene.story_images_v2?.[imageIndex]?.caption
+function resolveCaption(readingRoute: ReadingRoute, imageIndex: number): string {
+  const perImage = readingRoute.story_images_v2?.[imageIndex]?.caption
   if (perImage && perImage.trim().length > 0) return perImage
-  return scene.summary ?? ""
+  return readingRoute.summary ?? ""
 }
 
 export interface CaptionDisplayProps {
-  scene: Scene
+  scene: ReadingRoute
   currentImageIndex: number
   sceneIndex: number
   totalScenes: number
@@ -144,7 +145,7 @@ export default function CaptionDisplay({
           )}
           <CompassRoseIcon />
           <p className="caption-scene-progress">
-            Scene {sceneIndex} / {totalScenes}
+            {locale.readingRoute.routeProgress(sceneIndex, totalScenes)}
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
+import { messages } from "@/lib/locale"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Raree Show",
-  description: "Step inside complex worlds, one scene at a time.",
+  title: messages.meta.title,
+  description: messages.meta.description,
 }
 
 export default function RootLayout({

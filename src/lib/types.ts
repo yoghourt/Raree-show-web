@@ -24,12 +24,12 @@ export interface Location {
   map_focus_y?: number | null
 }
 
-export type StoryImage = {
+export type ReadingFrame = {
   url: string
   caption: string
 }
 
-export interface Scene {
+export interface ReadingRoute {
   id: string
   tsid: string
   title: string
@@ -50,7 +50,7 @@ export interface Scene {
     y: number
   }
   work_id?: string
-  story_images_v2: StoryImage[] | null
+  story_images_v2: ReadingFrame[] | null
 }
 
 export interface Work {

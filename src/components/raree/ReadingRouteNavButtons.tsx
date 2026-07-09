@@ -1,20 +1,21 @@
 "use client"
 
 import { useCallback, useState } from "react"
+import { messages as locale } from "@/lib/locale"
 
-interface SceneNavButtonsProps {
+interface ReadingRouteNavButtonsProps {
   onPrev: () => void
   onNext: () => void
   prevDisabled: boolean
   nextDisabled: boolean
 }
 
-export default function SceneNavButtons({
+export default function ReadingRouteNavButtons({
   onPrev,
   onNext,
   prevDisabled,
   nextDisabled,
-}: SceneNavButtonsProps) {
+}: ReadingRouteNavButtonsProps) {
   const [pressed, setPressed] = useState<"left" | "right" | null>(null)
 
   const handlePress = useCallback((side: "left" | "right", cb: () => void, disabled: boolean) => {
@@ -32,7 +33,7 @@ export default function SceneNavButtons({
         className={`scene-nav-btn ${pressed === "left" ? "pressed" : ""}`}
         onClick={() => handlePress("left", onPrev, prevDisabled)}
         disabled={prevDisabled}
-        aria-label="Previous scene"
+        aria-label={locale.readingRoute.prevAria}
       >
         <span className="scene-nav-rivet" aria-hidden />
         <span className="scene-nav-glyph" aria-hidden>◀</span>
@@ -42,7 +43,7 @@ export default function SceneNavButtons({
         className={`scene-nav-btn ${pressed === "right" ? "pressed" : ""}`}
         onClick={() => handlePress("right", onNext, nextDisabled)}
         disabled={nextDisabled}
-        aria-label="Next scene"
+        aria-label={locale.readingRoute.nextAria}
       >
         <span className="scene-nav-rivet" aria-hidden />
         <span className="scene-nav-glyph" aria-hidden>▶</span>

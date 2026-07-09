@@ -5,7 +5,7 @@ import {
   getScenesByWork,
   getWorkById,
 } from "@/lib/data"
-import SceneExperience from "../../../../../components/raree/SceneExperience"
+import ReadingRouteExperience from "../../../../../components/raree/ReadingRouteExperience"
 
 export const dynamic = 'force-dynamic'
 
@@ -33,9 +33,9 @@ export default async function ScenePage({ params }: Props) {
   ])
 
   return (
-    <SceneExperience
-      currentScene={currentScene}
-      allScenes={scenes}
+    <ReadingRouteExperience
+      currentReadingRoute={currentScene}
+      allReadingRoutes={scenes}
       characters={characters}
       locations={locations}
       workId={work.id}
