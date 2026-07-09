@@ -1,4 +1,8 @@
 import type { ChapterSceneSnippet } from "@/services/retrieval"
+import { messages } from "@/lib/locale"
+
+const EMPTY_REVEALED_PLACEHOLDER = messages.assistantPrompt.emptyRevealedStory
+const EMPTY_CAPTION_PLACEHOLDER = messages.assistantPrompt.emptyCaption
 
 export function escapeXmlAttr(s: string): string {
   return s
@@ -17,9 +21,6 @@ export function escapeXmlTextForPresentation(s: string): string {
 export function escapeXmlText(s: string): string {
   return escapeXmlTextForPresentation(s)
 }
-
-const EMPTY_REVEALED_PLACEHOLDER = "（无已揭示 story）"
-const EMPTY_CAPTION_PLACEHOLDER = "（无 caption）"
 
 export function emptyRevealedStoryPlaceholderText(): string {
   return escapeXmlTextForPresentation(EMPTY_REVEALED_PLACEHOLDER)

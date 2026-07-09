@@ -229,8 +229,8 @@ Layer 2 is **downstream prompt construction** over an already authorized retriev
 - Retrieval implementation: `src/services/retrieval.ts` (`metadataPreFiltering`, `retrieveScenes`, `retrieveVerifiedAssistantContext`, `fetchChapterScenesWithinProgress`).
 - Production story oracle: `src/lib/production-story-oracle.ts`.
 - Scene Assistant API: `src/app/api/scene-assistant/route.ts`.
-- Client navigation spec: [W-01: Visibility-Synchronized Navigation](../specs/w-01-visibility-synchronized-navigation.md) (`SceneExperience.tsx`, `useSceneAtomicNavigation.ts`).
-- Story image filtering alignment: `src/lib/story-images-v2.ts`.
+- Client navigation spec: [W-01: Visibility-Synchronized Navigation](../specs/w-01-visibility-synchronized-navigation.md) (`ReadingRouteExperience.tsx`, `useReadingRouteNavigation.ts`).
+- Reading frame filtering alignment: `src/lib/reading-frames.ts`.
 
 ### Follow-up (granularity)
 

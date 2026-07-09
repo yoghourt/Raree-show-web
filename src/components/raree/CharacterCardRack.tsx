@@ -1,6 +1,7 @@
 "use client"
 import { motion } from "framer-motion"
 import { useEffect, useRef, useState } from "react"
+import { messages as locale } from "@/lib/locale"
 
 type CharacterRackItem = {
   id: string
@@ -74,7 +75,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
                 key={`${sceneId}-${character.id}`}
                 role="button"
                 tabIndex={0}
-                aria-label={`${character.name}，查看详情`}
+                aria-label={locale.character.viewDetailsAria(character.name)}
                 className="character-card"
                 title={character.name}
                 style={{
@@ -129,7 +130,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
               <button
                 type="button"
                 className="character-detail-close"
-                aria-label="关闭"
+                aria-label={locale.character.closeAria}
                 onClick={() => dialogRef.current?.close()}
               >
                 ×
@@ -148,7 +149,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
                 </div>
               )}
               <p className="character-detail-desc">
-                {selected.description?.trim() ? selected.description.trim() : "暂无介绍。"}
+                {selected.description?.trim() ? selected.description.trim() : locale.character.noDescription}
               </p>
             </div>
           </div>

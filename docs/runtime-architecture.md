@@ -194,8 +194,8 @@ Spec: [`docs/specs/ragas-evaluation-suite.md`](specs/ragas-evaluation-suite.md).
 | `src/lib/production-story-oracle.ts` | SHA-256 production oracle |
 | `src/lib/visibility-invariant.ts` | Progress field invariants |
 | `src/app/api/scene-assistant/route.ts` | API route, Gemini streaming |
-| `src/components/raree/SceneExperience.tsx` | Client navigation + progress commit |
-| `src/components/raree/SceneAssistant.tsx` | Streaming UI |
+| `src/components/raree/ReadingRouteExperience.tsx` | Client navigation + progress commit |
+| `src/components/raree/ReadingRouteAssistant.tsx` | Streaming UI |
 
 ### Specs
 

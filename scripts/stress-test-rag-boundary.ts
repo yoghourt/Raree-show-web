@@ -11,7 +11,7 @@
 import path from "path"
 import { config } from "dotenv"
 import { createClient } from "@supabase/supabase-js"
-import { effectiveStorySlidesFromV2 } from "../src/lib/story-images-v2"
+import { effectiveReadingFramesFromV2 } from "../src/lib/reading-frames"
 import { collectAuthorizedSemanticBytes } from "../src/lib/production-story-oracle"
 import {
   assertProductionStoryOracle,
@@ -142,7 +142,7 @@ async function resolveSceneFixture(workTsid: string): Promise<SceneFixture> {
       .maybeSingle()
     assert(!error, error?.message ?? "scene query error")
     assert(row?.tsid, `Unknown STRESS_TEST_SCENE_TSID: ${fromEnv}`)
-    const slides = effectiveStorySlidesFromV2(row.story_images_v2)
+    const slides = effectiveReadingFramesFromV2(row.story_images_v2)
     return {
       tsid: row.tsid,
       chapter_number: row.chapter_number as number,
@@ -164,7 +164,7 @@ async function resolveSceneFixture(workTsid: string): Promise<SceneFixture> {
 
   for (const row of rows ?? []) {
     if (!row || typeof row.tsid !== "string") continue
-    const slides = effectiveStorySlidesFromV2(row.story_images_v2)
+    const slides = effectiveReadingFramesFromV2(row.story_images_v2)
     if (slides.length >= 2) {
       return {
         tsid: row.tsid,

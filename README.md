@@ -144,3 +144,9 @@ governance/          # Shared governance submodule (synced at dev/CI)
 ## License
 
 MIT
+
+---
+
+> **Vocabulary Notice:** This repository uses implementation symbols (`Scene`, `StoryImage`, `story_images_v2`).
+> Normative Runtime vocabulary is `Reading Route`, `Reading Frame`, and `Frame Narrative`. See
+> `governance/vocabulary/runtime-lexicon.md` in `raree-show-admin`.

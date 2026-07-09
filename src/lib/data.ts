@@ -1,4 +1,4 @@
-import type { Character, Location, Scene, StoryImage, Work } from "./types"
+import type { Character, Location, ReadingFrame, ReadingRoute, Work } from "./types"
 import { supabase } from "./supabase"
 
 export const WESTEROS_MAP_URL = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/v1/raree-show/maps/westeros`
@@ -122,9 +122,9 @@ type SceneRow = {
   story_images_v2?: unknown
 }
 
-function storyImagesV2FromRow(raw: unknown): StoryImage[] | null {
+function readingFramesFromRow(raw: unknown): ReadingFrame[] | null {
   if (!Array.isArray(raw) || raw.length === 0) return null
-  const out: StoryImage[] = []
+  const out: ReadingFrame[] = []
   for (const item of raw) {
     if (item !== null && typeof item === "object" && "url" in item) {
       const rec = item as { url: unknown; caption?: unknown }
@@ -139,7 +139,7 @@ function storyImagesV2FromRow(raw: unknown): StoryImage[] | null {
   return out.length > 0 ? out : null
 }
 
-function sceneFromRow(row: SceneRow): Scene {
+function readingRouteFromRow(row: SceneRow): ReadingRoute {
   return {
     id: row.tsid,
     tsid: row.tsid,
@@ -161,11 +161,11 @@ function sceneFromRow(row: SceneRow): Scene {
         ? { x: row.map_focus_x, y: row.map_focus_y }
         : undefined,
     work_id: row.work_id ?? undefined,
-    story_images_v2: storyImagesV2FromRow(row.story_images_v2),
+    story_images_v2: readingFramesFromRow(row.story_images_v2),
   }
 }
 
-export async function getAllScenes(): Promise<Scene[]> {
+export async function getAllScenes(): Promise<ReadingRoute[]> {
   const { data, error } = await supabase
     .from("scenes")
     .select("*")
@@ -173,10 +173,10 @@ export async function getAllScenes(): Promise<Scene[]> {
 
   if (error) throw error
 
-  return (data as SceneRow[]).map(sceneFromRow)
+  return (data as SceneRow[]).map(readingRouteFromRow)
 }
 
-export async function getSceneById(id: string): Promise<Scene | undefined> {
+export async function getSceneById(id: string): Promise<ReadingRoute | undefined> {
   const { data, error } = await supabase
     .from("scenes")
     .select("*")
@@ -185,10 +185,10 @@ export async function getSceneById(id: string): Promise<Scene | undefined> {
 
   if (error || !data) return undefined
 
-  return sceneFromRow(data as SceneRow)
+  return readingRouteFromRow(data as SceneRow)
 }
 
-export async function getScenesByWork(workTsid: string): Promise<Scene[]> {
+export async function getScenesByWork(workTsid: string): Promise<ReadingRoute[]> {
   const { data: work, error: workError } = await supabase
     .from("works")
     .select("id")
@@ -205,7 +205,7 @@ export async function getScenesByWork(workTsid: string): Promise<Scene[]> {
     .order("order_index", { ascending: true })
 
   if (error) return []
-  return (data as SceneRow[]).map(sceneFromRow)
+  return (data as SceneRow[]).map(readingRouteFromRow)
 }
 
 // --- works (Supabase) ---

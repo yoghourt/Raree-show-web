@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 
-interface SceneTimeCardProps {
+interface ReadingRouteTimeCardProps {
   workTitle: string
   scene: {
     id: string
@@ -13,11 +13,11 @@ interface SceneTimeCardProps {
 
 // Temporary display contract: chapter title only. scene_time was removed as a fallback while
 // that field remains unreliable; widen again once data/API guarantees are clear.
-function getChapterTitleText(scene: SceneTimeCardProps["scene"]): string {
+function getChapterTitleText(scene: ReadingRouteTimeCardProps["scene"]): string {
   return String(scene.chapter_title ?? scene.chapterTitle ?? "").trim()
 }
 
-export default function SceneTimeCard({ workTitle, scene }: SceneTimeCardProps) {
+export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteTimeCardProps) {
   const sceneId = scene.id
   const chapterTitleText = getChapterTitleText(scene)
   const prevSceneIdRef = useRef(sceneId)

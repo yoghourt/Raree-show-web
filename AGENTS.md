@@ -43,5 +43,5 @@ This is NOT the Next.js you know. This version has breaking changes — APIs, co
 - CSS tokens: `--rs-wood-dark`, `--rs-wood-mid`, `--rs-gold`, `--rs-gold-dim`, `--rs-text`, `--rs-text-dim`
 - `scenes.tsid` is the business ID for WHERE clauses (not `scenes.id`)
 - `story_images_v2` jsonb shape: `[{url, caption}]`
-- `SceneExperience` must NOT use `key={scene.id}`
+- `ReadingRouteExperience` must NOT use `key={readingRoute.id}`
 - Repo specs/ADRs under `docs/specs/` and `docs/adr/` supplement governance for this codebase; on conflict with `/governance/*`, governance wins unless architecture explicitly updates ADR/Spec

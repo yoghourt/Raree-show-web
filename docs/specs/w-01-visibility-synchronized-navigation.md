@@ -57,8 +57,8 @@ progress mutation → scene presentation → assistant retrieval
 
 The following describes the **current codebase** for discoverability only. Conformant clients may differ as long as **CommitProgress**, **PresentScene**, and **assistant retrieval context refresh** semantics are preserved.
 
-- `src/components/raree/useSceneAtomicNavigation.ts` — reducer holding `visualScene` and `imageIndex` so cross-scene updates are a single state transition.
-- `src/components/raree/SceneExperience.tsx` — ropes / reel boundary handling, URL `replaceState`.
+- `src/components/raree/useReadingRouteNavigation.ts` — reducer holding `visualReadingRoute` and `imageIndex` so cross-route updates are a single state transition.
+- `src/components/raree/ReadingRouteExperience.tsx` — ropes / reel boundary handling, URL `replaceState`.
 
 **Example (non-normative):** remounting the assistant subtree when `sceneTsid` changes (e.g. React `key={visualScene.tsid}`) is one way to avoid stale client state affecting the next request; clearing chat history is a **UX** consequence of that pattern, not a separate architectural requirement. Other patterns (explicit cache invalidation, request-scoped stores) are valid if retrieval context refresh is guaranteed.
 
