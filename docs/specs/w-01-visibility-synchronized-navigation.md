@@ -1,75 +1,142 @@
-# W-01: Visibility-Synchronized Navigation (Client State Machine)
+# W-01 — Browser Runtime Specification: Visibility-Synchronized Navigation
 
-> **Vocabulary Notice:** This document uses implementation symbols (`Scene`, `sceneTsid`,
-> `story_images_v2`, `readUpToStoryIndexLast`). Normative Runtime vocabulary is `Reading Route`
-> (impl: Scene) and `Reading Frame` (impl: Story Images). See `governance/vocabulary/runtime-lexicon.md`
-> in `raree-show-admin`.
+## Metadata
 
-This document specifies **reader client** runtime orchestration for scene and story-slide navigation. It implements the end-to-end requirement that the Scene Assistant observe **committed visibility boundary state** (see [ADR-002: Hybrid RAG with Two-Layer Visibility Boundary](../adr/002-hybrid-rag-retrieval.md)).
+| Field        | Value                                                                 |
+| ------------ | --------------------------------------------------------------------- |
+| Title        | Browser Runtime Specification — Visibility-Synchronized Navigation    |
+| Status       | **Accepted**                                                          |
+| Version      | v2.1                                                                  |
+| Owner        | Architect                                                             |
+| Last Updated | 2026-07-11                                                            |
+| Repository   | raree-show-web                                                        |
+| Related      | ADR-002, SPEC-RDX-001 (raree-show-admin)                              |
 
-ADR-002 defines **topology**, **visibility boundaries**, and **invariants** for retrieval and prompt assembly. W-01 defines **how** the client commits progress and **refreshes assistant retrieval context** so each assistant request carries `userProgress` consistent with ADR-002 Layer 1 and Layer 2.
+> **Vocabulary Notice:** This document uses **implementation symbols** only (`Scene`, `sceneTsid`,
+> `story_images_v2`, `readUpToStoryIndexLast`). Normative Runtime vocabulary lives in
+> `governance/vocabulary/runtime-lexicon.md` (`raree-show-admin`). Runtime Reading semantics live in
+> **SPEC-RDX-001** — not in W-01.
 
----
-
-## Goals
-
-- Cross-scene and cross-slide navigation updates `readUpToChapter`, `readUpToOrderIndex`, `sceneTsid`, and `readUpToStoryIndexLast` in lockstep with the presented scene and reel index.
-- No **retrieval** step for the next question runs against stale committed boundary state after a navigation the user considers committed.
-- Edge behavior at the first/last scene and slide does not mutate progress, does not change scene, and does not force an unnecessary **retrieval context refresh** (optional UX feedback such as vibration remains allowed).
-
----
-
-## Visibility-Synchronized Navigation State Machine
-
-Scene transitions are **not** committed until visibility-related state is synchronized with the Retrieval and Prompt boundaries defined in ADR-002.
-
-### Mandatory transition order
-
-1. **CommitProgress** — Atomically update committed progress fields (`readUpToChapter`, `readUpToOrderIndex`, `sceneTsid`, `readUpToStoryIndexLast`) for the target reading state. No updated scene presentation may run before this commit completes in the client state model.
-2. **PresentScene** — Update the presented reading UI (scene chrome, story reel, captions) to match the committed scene and slide index; align what the user sees with the Prompt Visibility Boundary fields the next request will send.
-3. **Assistant retrieval context refresh** — After the committed boundary changes, the client must not reuse **retrieval-relevant** state from the previous boundary when assembling the next Scene Assistant request (e.g. cached scope, stale `userProgress`, or client-held retrieval artifacts keyed on the old scene). The next retrieval lifecycle must observe **only** the newly committed progress and `sceneTsid`.
-
-**Normative scope of step 3:** correctness of **retrieval inputs and boundary observability**. **Chat transcript continuity, panel open/closed state, and other pure UX session choices** are product decisions; they neither replace retrieval context refresh nor satisfy it unless retrieval would still be correct without refresh.
-
-### Forbidden sequence
+**Division of authority:**
 
 ```text
-scene presentation → assistant retrieval → progress mutation
+SPEC-RDX-001  →  defines Runtime Reading semantics
+W-01          →  defines browser client orchestration only
 ```
 
-### Required sequence
+W-01 is a **Browser Runtime Specification**. It MUST NOT define Runtime Reading capability, lifecycle, invariants, or ownership. For all Runtime Reading semantics, see **SPEC-RDX-001** (`raree-show-admin`).
+
+---
+
+## 1. Governance Prerequisite
 
 ```text
-progress mutation → scene presentation → assistant retrieval
+raree-show-admin:  Constitution → ADR → SPEC-RDX-001
+raree-show-web:    W-01 → runtime-architecture.md → Implementation
+```
+
+W-01 MUST NOT redefine anything governed by SPEC-RDX-001. See SPEC-RDX-001 §1.2 (one-way authority).
+
+---
+
+## 2. W-01 Scope — Browser Concerns Only
+
+W-01 owns **client-side orchestration** in the browser:
+
+| In scope | Out of scope (see SPEC-RDX-001 or runtime-architecture.md) |
+| -------- | ----------------------------------------------------------- |
+| URL / History (`replaceState`) | Runtime Reading lifecycle definition |
+| Client reducer state (`visualReadingRoute`, `imageIndex`) | Capability ownership |
+| **Commit ordering** (CommitProgress → Present → refresh) | Editorial / projection semantics |
+| **Visibility synchronization** with ADR-002 boundaries | Rendering policy, animation, layout |
+| **Retrieval context refresh** after commit | Server retrieval, oracle, generation |
+| Edge overflow at route/frame bounds | Database, API design |
+
+Navigation is **browser orchestration** — not a Runtime Reading capability. Navigation **implements** commit ordering and visibility rules defined here; Runtime meaning is defined upstream.
+
+---
+
+## 3. Goals
+
+- Committed client fields (`readUpToChapter`, `readUpToOrderIndex`, `sceneTsid`, `readUpToStoryIndexLast`) stay in lockstep with the presented route and frame index after navigation.
+- No Assistant **retrieval** runs against stale committed boundary state after a user-committed navigation ([ADR-002](../adr/002-hybrid-rag-retrieval.md)).
+- Edge overflow at the first/last route and frame does not mutate committed fields or force a spurious retrieval refresh (optional UX feedback such as vibration remains allowed).
+
+**Conformance:** Client orchestration MUST remain consistent with SPEC-RDX-001. W-01 does not restate RDX lifecycle or phase definitions — see SPEC-RDX-001 §2.
+
+---
+
+## 4. Visibility-Synchronized Navigation State Machine
+
+Route transitions are **not** committed until visibility-related state is synchronized with ADR-002 Retrieval and Prompt boundaries.
+
+### 4.1 Mandatory transition order
+
+1. **CommitProgress** — Atomically update committed client fields for the target route + frame index. No updated presentation may run before this commit completes in the client state model.
+2. **PresentScene** — Update presented UI (route chrome, frame reel, captions) to match committed route and frame index; align visible state with Prompt Visibility Boundary fields the next request will send.
+3. **Retrieval context refresh** — After committed boundary changes, the client MUST NOT reuse retrieval-relevant state from the previous boundary when assembling the next Assistant request.
+
+**Normative scope of step 3:** retrieval inputs and boundary observability only. Chat transcript continuity, panel open/closed state, and other UX session choices are product decisions.
+
+### 4.2 Forbidden sequence
+
+```text
+presentation → assistant retrieval → progress mutation
+```
+
+### 4.3 Required sequence
+
+```text
+progress mutation → presentation → assistant retrieval
 ```
 
 ---
 
-## Edge overflow
+## 5. Edge Overflow
 
-- At the **first** scene and **first** slide, “previous story slide” does not mutate progress and does not change scene.
-- At the **last** scene and **last** slide, “next story slide” does not mutate progress and does not change scene.
-- Product may provide tactile or visual feedback on overflow (e.g. `navigator.vibrate`); behavior is optional; boundary preservation is mandatory.
-
----
-
-## Reference implementation (non-normative)
-
-The following describes the **current codebase** for discoverability only. Conformant clients may differ as long as **CommitProgress**, **PresentScene**, and **assistant retrieval context refresh** semantics are preserved.
-
-- `src/components/raree/useReadingRouteNavigation.ts` — reducer holding `visualReadingRoute` and `imageIndex` so cross-route updates are a single state transition.
-- `src/components/raree/ReadingRouteExperience.tsx` — ropes / reel boundary handling, URL `replaceState`.
-
-**Example (non-normative):** remounting the assistant subtree when `sceneTsid` changes (e.g. React `key={visualScene.tsid}`) is one way to avoid stale client state affecting the next request; clearing chat history is a **UX** consequence of that pattern, not a separate architectural requirement. Other patterns (explicit cache invalidation, request-scoped stores) are valid if retrieval context refresh is guaranteed.
-
-**`readUpToStoryIndexLast` (client, normative):** Must remain `effectiveSlideCount === 0 ? -1 : imageIndex` with the same effective story list as the server (non-empty `url` in `story_images_v2` order). Do not relax this formula in the scene component.
-
-**Framework note (non-normative):** In React, deriving `userProgress` from the same render as the committed `visualScene` / `imageIndex` after `CommitProgress` + `PresentScene` (e.g. one reducer dispatch for scene + slide) satisfies coherency for the next request props.
+- At the **first** route and **first** frame, “previous frame” does not mutate committed fields and does not change route.
+- At the **last** route and **last** frame, “next frame” does not mutate committed fields and does not change route.
+- Optional tactile or visual feedback on overflow is permitted; boundary preservation is mandatory.
 
 ---
 
-## Validation (client)
+## 6. Out of Scope
 
-- After navigating to the next/previous scene via story reel boundaries, the next POST to `/api/scene-assistant` includes `userProgress` (including `sceneTsid` and `readUpToStoryIndexLast`) matching the on-screen scene and slide.
-- Overflow at the ends of the work does not change `userProgress` and does not incorrectly refresh retrieval context as if a boundary transition occurred.
-- **Retrieval context:** No assistant request after a committed boundary change uses client-held retrieval inputs that still assume the previous `sceneTsid` or prior progress snapshot.
+| Topic | Owner |
+| ----- | ----- |
+| Rendering, animation, visual composition, media layout | Implementation / Presentation |
+| Runtime Reading semantics | SPEC-RDX-001 |
+| Editorial / projection vocabulary and rules | ADR-005, SPEC-ROL-* (admin) |
+| Server retrieval, oracle, LLM | runtime-architecture.md |
+
+---
+
+## 7. Reference Implementation (Non-Normative)
+
+- `src/components/raree/useReadingRouteNavigation.ts` — reducer: `visualReadingRoute`, `imageIndex`; single dispatch for cross-route updates.
+- `src/components/raree/ReadingRouteExperience.tsx` — reel boundary handling, URL `replaceState`.
+
+**Example (non-normative):** remounting the assistant subtree when `sceneTsid` changes (e.g. React `key={visualScene.tsid}`) is one valid retrieval refresh pattern.
+
+**`readUpToStoryIndexLast` (client, normative):** `effectiveSlideCount === 0 ? -1 : imageIndex`, using the same effective frame list as the server (non-empty `url` in `story_images_v2` order).
+
+**Framework note (non-normative):** Deriving `userProgress` from the same render as committed `visualScene` / `imageIndex` after CommitProgress + PresentScene satisfies coherency for the next request props.
+
+---
+
+## 8. Validation (Client)
+
+- After cross-route navigation via reel boundaries, the next POST to `/api/scene-assistant` sends `userProgress` (`sceneTsid`, `readUpToStoryIndexLast`, etc.) matching the on-screen route and frame.
+- End-of-work overflow does not change `userProgress` or trigger a spurious retrieval refresh.
+- No Assistant request after a committed boundary change uses client-held retrieval inputs from the previous boundary.
+
+---
+
+## 9. Refs
+
+```text
+raree-show-admin/docs/specs/spec-rdx-001-runtime-reading-experience.md   Runtime Reading authority
+docs/adr/002-hybrid-rag-retrieval.md                                   Visibility boundary
+docs/runtime-architecture.md                                           Server + repo implementation
+governance/vocabulary/runtime-lexicon.md                               Runtime vocabulary (admin)
+```
