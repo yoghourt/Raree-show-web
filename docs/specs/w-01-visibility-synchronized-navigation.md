@@ -10,7 +10,7 @@
 | Owner        | Architect                                                             |
 | Last Updated | 2026-07-11                                                            |
 | Repository   | raree-show-web                                                        |
-| Related      | ADR-002, SPEC-RDX-001 (raree-show-admin)                              |
+| Related      | ADR-002, SPEC-RDX-001, Runtime Reading Governance RC1 (raree-show-admin) |
 
 > **Vocabulary Notice:** This document uses **implementation symbols** only (`Scene`, `sceneTsid`,
 > `story_images_v2`, `readUpToStoryIndexLast`). Normative Runtime vocabulary lives in
@@ -31,7 +31,7 @@ W-01 is a **Browser Runtime Specification**. It MUST NOT define Runtime Reading 
 ## 1. Governance Prerequisite
 
 ```text
-raree-show-admin:  Constitution → ADR → SPEC-RDX-001
+raree-show-admin:  Constitution → ADR → SPEC-RDX-001 → Runtime Reading Governance RC1
 raree-show-web:    W-01 → runtime-architecture.md → Implementation
 ```
 
@@ -136,6 +136,7 @@ progress mutation → presentation → assistant retrieval
 
 ```text
 raree-show-admin/docs/specs/spec-rdx-001-runtime-reading-experience.md   Runtime Reading authority
+raree-show-admin/docs/specs/runtime-reading-governance-rc1.md          Governance RC1 baseline
 docs/adr/002-hybrid-rag-retrieval.md                                   Visibility boundary
 docs/runtime-architecture.md                                           Server + repo implementation
 governance/vocabulary/runtime-lexicon.md                               Runtime vocabulary (admin)

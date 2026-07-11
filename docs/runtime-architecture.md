@@ -8,6 +8,7 @@
 | Version      | v2.1                                                                  |
 | Last Updated | 2026-07-11                                                            |
 | Authority    | How this repository realizes Runtime Reading — not what it is         |
+| Baseline     | Runtime Reading Governance RC1 (`raree-show-admin`)                   |
 
 > **Vocabulary Notice:** Implementation symbols (`Scene`, `story_images_v2`, `caption`) appear throughout
 > `src/`. Normative Runtime vocabulary: `governance/vocabulary/runtime-lexicon.md` (`raree-show-admin`).
@@ -56,6 +57,8 @@ It does **not** answer what Runtime Reading Experience is. That authority is **S
 
 ```text
 SPEC-RDX-001  (admin — capability; cite only)
+     ↓
+Runtime Reading Governance RC1  (admin — release baseline)
      ↓
 W-01          (browser orchestration)
      ↓
@@ -247,6 +250,7 @@ RAGAS harness: [`docs/specs/ragas-evaluation-suite.md`](specs/ragas-evaluation-s
 ### Admin (authority — cite, do not duplicate)
 
 - [SPEC-RDX-001 — Runtime Reading Experience](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/spec-rdx-001-runtime-reading-experience.md)
+- [Runtime Reading Governance RC1](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/runtime-reading-governance-rc1.md)
 - [SPEC-ROL-001](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/spec-rol-001-governed-projection.md) · [SPEC-ROL-002](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/spec-rol-002-projection-semantics.md)
 
 ### Web
