@@ -102,6 +102,8 @@ export async function getLocationById(id: string): Promise<Location | undefined>
 }
 
 // --- scenes (Supabase) ---
+// Runtime Representation only (Reading Route / Reading Frame).
+// Projection associations / story_units / SceneProjectionLink are NOT read here (RC1 deferred).
 
 type SceneRow = {
   tsid: string

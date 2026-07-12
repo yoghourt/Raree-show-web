@@ -1,3 +1,13 @@
+/**
+ * Reading Route page — Runtime Representation entry for Reader Experience.
+ *
+ * Authority: SPEC-RDX-001 / Runtime Reading Governance RC1 (raree-show-admin).
+ * Projection Complete is an upstream precondition (SPEC-ROL-001 / SPEC-ROL-002).
+ * This page consumes Runtime artifacts only (`scenes` + `story_images_v2`).
+ * SceneProjectionLink / Rollout metadata reads are deferred (RC1) — not performed here.
+ *
+ * Lifecycle: route URL load → RDX-1 Reading Session Start (realized in ReadingRouteExperience).
+ */
 import { notFound } from "next/navigation"
 import {
   getAllCharacters,

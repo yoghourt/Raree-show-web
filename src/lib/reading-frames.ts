@@ -1,6 +1,12 @@
 /**
  * Canonical parsing of `story_images_v2` for Reading Route Assistant + retrieval.
  * Must stay aligned with ReadingRouteExperience `readingFrames` (non-empty url, order preserved).
+ *
+ * Runtime Representation (ADR-004 / SPEC-CORE-001): Reading Frame persistence shape.
+ * Runtime Reading capability (SPEC-RDX-001) consumes these frames as Reader Step backing —
+ * this module does not redefine Reader Step or Frame Narrative policy.
+ *
+ * Owner: Implementation (Persistence / Representation helpers).
  */
 
 export type EffectiveReadingFrame = {

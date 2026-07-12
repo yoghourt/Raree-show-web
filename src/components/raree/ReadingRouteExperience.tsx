@@ -1,9 +1,27 @@
 "use client"
+/**
+ * Reading Route Experience — browser realization of Runtime Reading (RC1).
+ *
+ * Authority chain (read-only; do not redefine capability here):
+ *   SPEC-RDX-001 → Runtime Reading Governance RC1 → W-01 → this component
+ *
+ * Lifecycle mapping (comments only):
+ *   Route entry / FULL_SYNC              → RDX-1 Reading Session Start
+ *   Frame reel + caption presentation    → RDX-2 Reader Step Consumption
+ *   STEP_* / COMMIT_READING_ROUTE        → RDX-3 Progress Update
+ *   Last-frame / route-boundary handlers → RDX-4 Route Completion
+ *   Exit / cross-route handoff           → RDX-5 Session Complete
+ *
+ * Projection boundary: consumes Reading Route + Reading Frames only.
+ * SceneProjectionLink / Rollout association reads deferred (RC1).
+ * Owner: W-01 (orchestration) + Implementation (presentation).
+ */
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { Character, Location, ReadingRoute } from "@/lib/types"
 import { messages as locale } from "@/lib/locale"
 import { WESTEROS_MAP_URL } from "@/lib/data"
 import { effectiveReadingFramesFromV2 } from "@/lib/reading-frames"
+import { readUpToStoryIndexLastFromStep } from "@/lib/reader-step"
 import CaptionDisplay from "@/components/raree/CaptionDisplay"
 import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
 import ReadingRouteRopes from "@/components/raree/ReadingRouteRopes"
@@ -56,6 +74,7 @@ export default function ReadingRouteExperience({
   workTitle,
 }: ReadingRouteExperienceProps) {
   // W-01: Visibility-Synchronized Navigation — docs/specs/w-01-visibility-synchronized-navigation.md
+  // imageIndex implements Reader Step index within effective frames (SPEC-RDX-001).
   const { visualReadingRoute, imageIndex, dispatch } = useReadingRouteNavigation(currentReadingRoute)
 
   const displayedTimeline = workTitle.toUpperCase()
@@ -139,13 +158,14 @@ export default function ReadingRouteExperience({
     [visualReadingRoute, currentLocation, presentCharacters, workTitle]
   )
 
+  // RDX-3 Progress Update — committed boundary for Assistant retrieval (W-01 / ADR-002).
   const sceneAssistantUserProgress = useMemo(
     () => ({
       workTsid: workId,
       readUpToChapter: visualReadingRoute.chapter_number,
       readUpToOrderIndex: visualReadingRoute.order_index ?? visualReadingRoute.order,
       sceneTsid: visualReadingRoute.tsid,
-      readUpToStoryIndexLast: storyImages.length === 0 ? -1 : imageIndex,
+      readUpToStoryIndexLast: readUpToStoryIndexLastFromStep(storyImages.length, imageIndex),
     }),
     [
       workId,
