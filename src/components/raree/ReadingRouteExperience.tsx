@@ -20,7 +20,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import type { Character, Location, ReadingRoute } from "@/lib/types"
 import { messages as locale } from "@/lib/locale"
 import { WESTEROS_MAP_URL } from "@/lib/data"
-import { effectiveReadingFramesFromV2 } from "@/lib/reading-frames"
+import { effectiveReadingFramesFromV2, resolvePresentedCaption } from "@/lib/reading-frames"
 import { readUpToStoryIndexLastFromStep } from "@/lib/reader-step"
 import CaptionDisplay from "@/components/raree/CaptionDisplay"
 import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
@@ -328,6 +328,10 @@ export default function ReadingRouteExperience({
           <CaptionDisplay
             key={`${visualReadingRoute.id}-${imageIndex}`}
             scene={visualReadingRoute}
+            caption={resolvePresentedCaption(
+              visualReadingRoute.story_images_v2,
+              imageIndex
+            )}
             currentImageIndex={imageIndex}
             sceneIndex={routeIndex >= 0 ? routeIndex + 1 : 1}
             totalScenes={allReadingRoutes.length}
@@ -346,6 +350,7 @@ export default function ReadingRouteExperience({
         workTitle={displayedTimeline}
         scene={{
           id: visualReadingRoute.id,
+          title: visualReadingRoute.title,
           chapter_title: visualReadingRoute.chapter_title,
         }}
       />
