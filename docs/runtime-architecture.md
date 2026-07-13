@@ -1,17 +1,151 @@
-# Scene Assistant Runtime Architecture
+# Raree Show Web — Runtime Implementation Architecture
 
-> **Vocabulary Notice:** This document uses implementation symbols (`Scene`, `story_images_v2`, `caption`).
-> Normative Runtime vocabulary is `Reading Route` (impl: Scene), `Reading Frame` (impl: Story Images), and
-> `Frame Narrative` (impl: caption). See [`governance/vocabulary/runtime-lexicon.md`](https://github.com/raree-show-admin/governance/vocabulary/runtime-lexicon.md)
-> in `raree-show-admin` for the authoritative Runtime vocabulary reference.
+## Metadata
 
-Raree Show is a narrative visualization and story interaction platform. The Scene Assistant is an AI-assisted scene runtime that answers questions about the reader's current position in a work — with **system-enforced spoiler boundaries**, not prompt-only instructions.
+| Field        | Value                                                                 |
+| ------------ | --------------------------------------------------------------------- |
+| Status       | **Accepted**                                                          |
+| Version      | v2.1                                                                  |
+| Last Updated | 2026-07-11                                                            |
+| Authority    | How this repository realizes Runtime Reading — not what it is         |
+| Baseline     | Runtime Reading Governance RC1 (`raree-show-admin`)                   |
 
-This document describes the **current deployed runtime**. For product-facing overview, see the [README](../README.md).
+> **Vocabulary Notice:** Implementation symbols (`Scene`, `story_images_v2`, `caption`) appear throughout
+> `src/`. Normative Runtime vocabulary: `governance/vocabulary/runtime-lexicon.md` (`raree-show-admin`).
+
+This document answers:
+
+> **How does raree-show-web implement the reader runtime?**
+
+It does **not** answer what Runtime Reading Experience is. That authority is **SPEC-RDX-001** (`raree-show-admin`). Browser client orchestration is **W-01**.
 
 ---
 
-## End-to-end pipeline
+## 1. Repository Authority Boundary
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  raree-show-admin                                               │
+│  Architecture Authority                                         │
+├─────────────────────────────────────────────────────────────────┤
+│  Constitution                                                   │
+│       ↓                                                         │
+│  ADR (004, 005, 007, 009, …)                                    │
+│       ↓                                                         │
+│  SPEC (ROL-001, ROL-002, RDX-001, …)                            │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │  one-way reference (no reverse edits)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  raree-show-web                                                 │
+│  Realization & Implementation                                   │
+├─────────────────────────────────────────────────────────────────┤
+│  W-01                    Browser client orchestration           │
+│       ↓                                                         │
+│  runtime-architecture.md  This document — server + repo layout  │
+│       ↓                                                         │
+│  Implementation (src/)   React, API routes, services            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Rule:** Admin defines architecture and capability. Web realizes and implements. Web docs MUST NOT become a second source of Runtime Reading semantics.
+
+---
+
+## 2. In-Repository Dependency
+
+```text
+SPEC-RDX-001  (admin — capability; cite only)
+     ↓
+Runtime Reading Governance RC1  (admin — release baseline)
+     ↓
+W-01          (browser orchestration)
+     ↓
+runtime-architecture.md  (this document)
+     ↓
+src/
+```
+
+Implementation MUST NOT amend SPEC-RDX-001 from this repository. Semantic changes require admin SPEC revision.
+
+---
+
+## 3. Implementation Layers (This Repository)
+
+```text
+┌─────────────────────────────────────────┐
+│  Presentation                           │  React UI, layout, animation
+│  Owner: Implementation (src/components) │
+└────────────────────┬────────────────────┘
+                     │
+┌────────────────────▼────────────────────┐
+│  Runtime Services                       │  API routes, retrieval, oracle,
+│  Owner: Implementation (src/services,   │  visibility gates
+│          src/app/api)                   │
+└────────────────────┬────────────────────┘
+                     │
+┌────────────────────▼────────────────────┐
+│  Browser Orchestration                  │  Commit order, reducer, URL
+│  Owner: W-01 (src/components/raree/*)   │
+└────────────────────┬────────────────────┘
+                     │
+┌────────────────────▼────────────────────┐
+│  Persistence                            │  Supabase client, pgvector
+│  Owner: Implementation                  │
+└─────────────────────────────────────────┘
+```
+
+Runtime Reading **capability** sits in admin SPEC-RDX-001 — not in this stack. This stack shows **how web code is organized** to realize it.
+
+---
+
+## 4. Representation Consumed by This Repository
+
+Persistence topology and capability semantics: **SPEC-RDX-001** and **ADR-004** (`raree-show-admin`).
+
+This repository **reads** Runtime Representation (`scenes`, `story_images_v2`, etc.) and **implements** against it. Do not restate topology or capability definitions here.
+
+**Implementation constraint:** Do not introduce module names that imply Editorial authority (e.g. `StoryNavigator`, `SceneManager` as editorial owners). See SPEC-RDX-001 §3 and ADR-005.
+
+---
+
+## 5. Realization Map (Implementation Only)
+
+What this repository **does** — mapped to admin authority by reference, not redefinition:
+
+| This repository | Realization | Authority for semantics |
+| --------------- | ----------- | ----------------------- |
+| Route URL load, session init | Browser entry | SPEC-RDX-001 §2 (cite) |
+| `ReadingRouteExperience` frame reel | Browser presentation + W-01 commit order | W-01 |
+| `CommitProgress` / reducer dispatch | Client field commit | W-01 |
+| `userProgress` payload | Client committed snapshot | W-01 + ADR-002 |
+| `/api/scene-assistant` | Server request handler | Implementation |
+| `retrieval.ts` hybrid RAG | SQL gate → vector rerank | ADR-002 + Implementation |
+| `production-story-oracle.ts` | SHA-256 before LLM | Implementation |
+
+For lifecycle phase names and capability ownership, see **SPEC-RDX-001** §2 and §3 — not this table.
+
+---
+
+## 6. Module Ownership
+
+| Module / path | Owner |
+| ------------- | ----- |
+| `src/components/raree/useReadingRouteNavigation.ts` | **W-01** |
+| `src/components/raree/ReadingRouteExperience.tsx` | **W-01** |
+| `src/components/raree/ReadingRouteAssistant.tsx` | **Implementation** |
+| `src/services/retrieval.ts` | **Implementation** |
+| `src/lib/production-story-oracle.ts` | **Implementation** |
+| `src/lib/visibility-invariant.ts` | **Implementation** |
+| `src/app/api/scene-assistant/route.ts` | **Implementation** |
+| Runtime Reading semantics (any) | **SPEC-RDX-001** (admin) |
+
+---
+
+## 7. Scene Assistant Pipeline (Deployed)
+
+The Scene Assistant answers questions about the reader's current position with **system-enforced spoiler boundaries** (ADR-002).
 
 ```mermaid
 flowchart LR
@@ -22,182 +156,106 @@ flowchart LR
   shaOracle --> geminiGen[GeminiGeneration]
 ```
 
-Each Scene Assistant request carries committed reader progress (`userProgress`). The server treats that payload as authoritative for visibility boundaries on that turn.
+| Stage | Owner | Role |
+| ----- | ----- | ---- |
+| Client commit + refresh | **W-01** | Committed `userProgress` before retrieval |
+| SQL visibility gate | **Implementation** | Route candidate filter |
+| Vector rerank | **Implementation** | Semantic rank within SQL set |
+| Prompt assembly | **Implementation** | Truncate captions to revealed frames |
+| SHA-256 verification | **Implementation** | Fail-closed before LLM |
+| Gemini streaming | **Implementation** | `@ai-sdk/google` |
 
-| Stage | Responsibility |
-|-------|----------------|
-| Client progress | Commits `readUpToChapter`, `readUpToOrderIndex`, `sceneTsid`, `readUpToStoryIndexLast` before retrieval (see [W-01](specs/w-01-visibility-synchronized-navigation.md)) |
-| SQL visibility gate | Builds the candidate scene set the reader may retrieve against |
-| Vector rerank | Semantic ranking **only** within SQL-approved candidates |
-| Prompt assembly | Truncates current-scene story captions to revealed slides |
-| SHA-256 verification | Confirms authorized semantic bytes before any LLM call |
-| Gemini generation | Single-provider streaming response via `@ai-sdk/google` |
+Client commit ordering: [W-01](specs/w-01-visibility-synchronized-navigation.md).
 
 ---
 
-## Serial Hybrid RAG topology
-
-Hybrid RAG is a **mandatory two-stage serial pipeline**. There is no routing, no conditional fallback, and no path that runs vector search without SQL first.
+## 8. Serial Hybrid RAG (ADR-002)
 
 ```text
 metadataPreFiltering (SQL) → match_scenes (vector rerank)
 ```
 
-**SQL gate (`metadataPreFiltering`)** filters scenes by work and reading progress using lexicographic "read up to" semantics (`readUpToChapter`, `readUpToOrderIndex`). Only scenes at or before the reader's committed position enter the candidate set.
+- **SQL gate:** `workTsid`, `readUpToChapter`, `readUpToOrderIndex`
+- **Vector rerank:** pgvector on SQL-approved tsids only
 
-**Vector rerank (`match_scenes`)** runs pgvector similarity search **only** on tsids produced by the SQL gate. Vector retrieval cannot expand visibility beyond the SQL-approved set.
-
-Implementation: [`src/services/retrieval.ts`](../src/services/retrieval.ts) (`metadataPreFiltering`, `retrieveScenes`).
-
-Decision record: [ADR-002: Hybrid RAG with Two-Layer Visibility Boundary](adr/002-hybrid-rag-retrieval.md).
-
-Vector store: [ADR-001: pgvector as vector store](adr/001-pgvector-as-vector-store.md).
+Implementation: [`src/services/retrieval.ts`](../src/services/retrieval.ts).
 
 ---
 
-## Two-layer visibility boundary
+## 9. Two-Layer Visibility Boundary
 
-Spoiler isolation is enforced **independently of model compliance** — boundaries are system guarantees, not instructions asking the model to behave.
+### Layer 1 — Retrieval (SQL)
 
-### Layer 1 — Retrieval visibility (SQL gate)
+Which routes enter hybrid search.
 
-Constrains **which scenes** may enter hybrid search. Governed by `workTsid`, `readUpToChapter`, `readUpToOrderIndex`.
+### Layer 2 — Prompt (in-memory)
 
-### Layer 2 — Prompt visibility (in-memory truncation)
+Which frame captions are model-visible for the current route (`sceneTsid`, `readUpToStoryIndexLast`).
 
-Constrains **which narrative atoms** (slide captions from `story_images_v2`) become model-visible tokens for the **current scene**. Governed by `sceneTsid`, `readUpToStoryIndexLast`.
-
-Layer 2 runs **after** retrieval completes. Prompt-side truncation does not add or remove scenes from the SQL-approved universe; it only limits caption text sent to the LLM.
-
-Client sequencing that keeps `userProgress` aligned with the reader's position is specified in [W-01: Visibility-Synchronized Navigation](specs/w-01-visibility-synchronized-navigation.md).
+Layer 2 runs after retrieval. W-01 governs client sequencing so `userProgress` matches committed UI state.
 
 ---
 
-## SHA-256 production oracle
+## 10. SHA-256 Production Oracle
 
-Before any LLM invocation, the runtime verifies that the authorized semantic payload matches expectations.
+[`src/lib/production-story-oracle.ts`](../src/lib/production-story-oracle.ts): `sha256` over raw caption UTF-8 from revealed slides; ascending route order, array frame order. Mismatch → `InvariantViolationError`, no LLM call.
 
-**Production oracle** ([`src/lib/production-story-oracle.ts`](../src/lib/production-story-oracle.ts)):
-
-- Collects raw UTF-8 caption bytes from `chapterScenes[].revealedStorySlides` only
-- Scenes processed in ascending `order_index`; slides in array order
-- Computes `sha256(authorizedSemanticBytes)` and verifies against the expected digest
-- On mismatch: fails closed with `InvariantViolationError` — no LLM call
-
-This gate ensures the bytes about to reach the model match the visibility boundary the server constructed.
-
-### Production vs eval oracle serialization
-
-The offline RAGAS harness uses a **different serialization** for dataset fixtures (`sha256(contexts.join("\n"))` on normalized context chunks). Production and eval hashes are **not interchangeable**.
-
-| Context | Oracle authority | Serialization |
-|---------|------------------|---------------|
-| Production (Scene Assistant) | Gates LLM ingress | `sha256(concat raw caption UTF-8)` from revealed story slides |
-| Eval v1 (`eval/ragas/`) | Offline dataset checks only | `sha256(normalized(contexts))` on fixture chunks |
-
-See [`eval/ragas/README.md`](../eval/ragas/README.md) for eval topology and non-goals.
+Eval harness uses different serialization — not interchangeable ([`eval/ragas/README.md`](../eval/ragas/README.md)).
 
 ---
 
-## Generation runtime (current truth)
-
-**Deployed today:** a single Gemini path.
+## 11. Generation Runtime (Deployed)
 
 ```text
-retrieveVerifiedAssistantContext
-        ↓
-streamText() via @ai-sdk/google
-        ↓
-SceneAssistant UI (normalized text-delta / error events)
+retrieveVerifiedAssistantContext → streamText() → SceneAssistant UI
 ```
 
-There is **no** multi-provider runtime, **no** OpenRouter integration, **no** transparent failover, and **no** provider-switch telemetry in production.
-
-[ADR-003: Multi-Provider AI Runtime Topology](adr/003-multi-provider-ai-runtime.md) describes a **planned** generation-layer failover design. It is **not deployed**.
+[ADR-003](adr/003-multi-provider-ai-runtime.md) — planned, not deployed.
 
 ---
 
-## Governance enforcement
-
-Governance documents live in the `governance/` submodule (shared across repos). Local dev and CI ensure the mount is present and readable.
+## 12. Governance CI
 
 | Mechanism | Purpose |
-|-----------|---------|
-| `npm run bootstrap` | Initializes `governance/` submodule and syncs to latest |
-| `npm run check:governance` | Verifies required governance entrypoints are accessible |
-| `npm run dev` | Runs bootstrap via `predev` hook |
-| PR workflow (`.github/workflows/pr-governance.yml`) | Bootstrap + governance check on pull requests |
+| --------- | ------- |
+| `npm run bootstrap` | `governance/` submodule sync |
+| `npm run check:governance` | Entrypoint verification |
+| PR workflow | Bootstrap + check on PRs |
 
-Scripts: [`scripts/governance/`](../scripts/governance/).
-
-This is **CI transport integrity** — not a runtime governance engine inside the Scene Assistant request path.
+CI verifies governance mount — not in-request governance engine.
 
 ---
 
-## Offline evaluation
+## 13. Offline Evaluation
 
-The RAGAS harness under `eval/ragas/` provides specification-first **offline** evaluation of retrieval governance and semantic quality.
-
-```bash
-npm run eval:ragas          # full suite (requires GEMINI_API_KEY for semantic metrics)
-npm run eval:ragas:oracle   # oracle-only, no LLM
-```
-
-**What it covers:**
-
-- Content-hash oracle (spoiler violation detection)
-- Faithfulness, answer relevancy, context precision (LLM judge, when API key present)
-
-**Explicit non-goals (v1):**
-
-- CI gating or merge blocking
-- Live Supabase hydration during eval
-- Dashboards or trending
-
-Spec: [`docs/specs/ragas-evaluation-suite.md`](specs/ragas-evaluation-suite.md).
+RAGAS harness: [`docs/specs/ragas-evaluation-suite.md`](specs/ragas-evaluation-suite.md). Manual / local only.
 
 ---
 
-## Runtime truth vs planned
+## 14. Deployed vs Planned
 
-| Capability | Status |
-|------------|--------|
-| Hybrid RAG serial retrieval (SQL → vector) | **Deployed** |
-| SQL visibility gate | **Deployed** |
-| Bounded vector rerank on SQL output | **Deployed** |
-| SHA-256 visibility verification before LLM | **Deployed** |
-| Prompt-level story caption truncation | **Deployed** |
-| Single-provider Gemini generation | **Deployed** |
-| Governance CI checks (submodule mount) | **Deployed** |
-| Offline RAGAS harness | **Deployed** (manual / local) |
-| Provider abstraction | **Planned** (ADR-003) |
-| Transparent generation failover | **Planned** (ADR-003, not deployed) |
-| Runtime provider-switch telemetry | **Planned** |
-| Evaluation CI automation / gating | **Planned** |
-| Intelligent model routing | **Out of scope** |
+| Item | Status | Owner |
+| ---- | ------ | ----- |
+| W-01 visibility-synchronized navigation | **Deployed** | W-01 |
+| Hybrid RAG (SQL → vector) | **Deployed** | Implementation |
+| Visibility gates + SHA-256 oracle | **Deployed** | Implementation |
+| Gemini generation | **Deployed** | Implementation |
+| Frame UI rendering | **Deployed** | Implementation |
+| Provider failover | **Planned** | ADR-003 |
 
 ---
 
-## References
+## 15. Refs
 
-### ADRs
+### Admin (authority — cite, do not duplicate)
 
-- [ADR-001: pgvector as vector store](adr/001-pgvector-as-vector-store.md)
-- [ADR-002: Hybrid RAG with Two-Layer Visibility Boundary](adr/002-hybrid-rag-retrieval.md)
-- [ADR-003: Multi-Provider AI Runtime Topology](adr/003-multi-provider-ai-runtime.md) — planned, not deployed
+- [SPEC-RDX-001 — Runtime Reading Experience](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/spec-rdx-001-runtime-reading-experience.md)
+- [Runtime Reading Governance RC1](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/runtime-reading-governance-rc1.md)
+- [SPEC-ROL-001](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/spec-rol-001-governed-projection.md) · [SPEC-ROL-002](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/spec-rol-002-projection-semantics.md)
 
-### Key source
+### Web
 
-| Path | Role |
-|------|------|
-| `src/services/retrieval.ts` | Serial retrieval, oracle ingress |
-| `src/lib/production-story-oracle.ts` | SHA-256 production oracle |
-| `src/lib/visibility-invariant.ts` | Progress field invariants |
-| `src/app/api/scene-assistant/route.ts` | API route, Gemini streaming |
-| `src/components/raree/ReadingRouteExperience.tsx` | Client navigation + progress commit |
-| `src/components/raree/ReadingRouteAssistant.tsx` | Streaming UI |
-
-### Specs
-
-- [W-01: Visibility-Synchronized Navigation](specs/w-01-visibility-synchronized-navigation.md)
-- [RAGAS Evaluation Suite](specs/ragas-evaluation-suite.md)
+- [W-01 — Browser Runtime Specification](specs/w-01-visibility-synchronized-navigation.md)
+- [ADR-002: Hybrid RAG](adr/002-hybrid-rag-retrieval.md)
+- [ADR-003: Multi-Provider AI](adr/003-multi-provider-ai-runtime.md) — planned
+- [RDX Governance Compatibility Report](specs/rdx-governance-compatibility-report.md) — frozen historical record

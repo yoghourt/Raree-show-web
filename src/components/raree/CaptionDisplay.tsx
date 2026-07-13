@@ -4,14 +4,10 @@ import { useEffect, useState } from "react"
 import type { ReadingRoute } from "@/lib/types"
 import { messages as locale } from "@/lib/locale"
 
-function resolveCaption(readingRoute: ReadingRoute, imageIndex: number): string {
-  const perImage = readingRoute.story_images_v2?.[imageIndex]?.caption
-  if (perImage && perImage.trim().length > 0) return perImage
-  return readingRoute.summary ?? ""
-}
-
 export interface CaptionDisplayProps {
   scene: ReadingRoute
+  /** Caption aligned with ImageReel / effective frame index — never route.summary */
+  caption: string
   currentImageIndex: number
   sceneIndex: number
   totalScenes: number
@@ -70,21 +66,14 @@ function CompassRoseIcon() {
 
 export default function CaptionDisplay({
   scene,
+  caption,
   currentImageIndex,
   sceneIndex,
   totalScenes,
 }: CaptionDisplayProps) {
   const [visibleLength, setVisibleLength] = useState(0)
-  const resolvedCaption = resolveCaption(scene, currentImageIndex)
-  const v2Slide = scene.story_images_v2?.[currentImageIndex]
-  const captionSource: "v2" | "fallback" =
-    v2Slide != null && String(v2Slide.caption ?? "").trim().length > 0 ? "v2" : "fallback"
-
-  console.log({
-    imageIndex: currentImageIndex,
-    resolvedCaption,
-    source: captionSource,
-  })
+  const resolvedCaption = caption.trim()
+  const chapterTitle = scene.chapter_title?.trim() || ""
 
   useEffect(() => {
     const resetId = window.setTimeout(() => setVisibleLength(0), 0)
@@ -99,19 +88,23 @@ export default function CaptionDisplay({
       if (i >= resolvedCaption.length) {
         window.clearInterval(id)
       }
-    }, 30)
+    }, 18)
 
     return () => {
       window.clearTimeout(resetId)
       window.clearInterval(id)
     }
-  }, [resolvedCaption, currentImageIndex])
+  }, [resolvedCaption, currentImageIndex, scene.id])
 
-  const displayed = resolvedCaption.slice(0, visibleLength)
+  const displayed =
+    resolvedCaption.length === 0
+      ? locale.assistantPrompt.emptyCaption
+      : resolvedCaption.slice(0, visibleLength)
   const typingComplete =
     resolvedCaption.length === 0 || visibleLength >= resolvedCaption.length
+
   const imageRoman = toRomanNumeral(currentImageIndex + 1)
-  const chapterRoman = toRomanNumeral(scene.chapter_number ?? 1)
+  const chapterRoman = toRomanNumeral(sceneIndex)
 
   return (
     <div className="caption-display-root">
@@ -138,11 +131,9 @@ export default function CaptionDisplay({
 
         <div className="caption-section-bottom">
           <p className="caption-chapter-roman">{chapterRoman}</p>
-          {scene.chapter_title ? (
-            <p className="caption-chapter-title">{scene.chapter_title}</p>
-          ) : (
-            <p className="caption-chapter-title caption-chapter-title-empty">—</p>
-          )}
+          {chapterTitle ? (
+            <p className="caption-chapter-title">{chapterTitle}</p>
+          ) : null}
           <CompassRoseIcon />
           <p className="caption-scene-progress">
             {locale.readingRoute.routeProgress(sceneIndex, totalScenes)}
@@ -197,151 +188,142 @@ export default function CaptionDisplay({
           height: 10px;
           border-radius: 50%;
           background: radial-gradient(
-            circle at 30% 30%,
-            #e5c88a 0%,
-            #c8a96e 40%,
-            #6b4e2a 100%
+            circle at 35% 35%,
+            #e8d5a3 0%,
+            #c8a96e 45%,
+            #8a6a30 100%
           );
-          box-shadow:
-            inset 0 1px 2px rgba(0, 0, 0, 0.4),
-            0 1px 2px rgba(0, 0, 0, 0.6);
-          z-index: 5;
-          pointer-events: none;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+          z-index: 3;
         }
-
         .rivet.tl {
-          top: 14px;
-          left: 14px;
+          top: 8px;
+          left: 8px;
         }
-
         .rivet.tr {
-          top: 14px;
-          right: 14px;
+          top: 8px;
+          right: 8px;
         }
-
         .rivet.bl {
-          bottom: 14px;
-          left: 14px;
+          bottom: 8px;
+          left: 8px;
         }
-
         .rivet.br {
-          bottom: 14px;
-          right: 14px;
+          bottom: 8px;
+          right: 8px;
         }
 
         .caption-section-top {
-          flex: 0 1 35%;
+          flex: 1;
           min-height: 0;
           display: flex;
           flex-direction: column;
+          gap: 10px;
           overflow: auto;
         }
 
         .caption-section-mid {
-          flex: 0 0 auto;
+          flex-shrink: 0;
           padding: 12px 0;
         }
 
         .caption-section-bottom {
-          flex: 0 1 50%;
-          min-height: 0;
+          flex-shrink: 0;
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: flex-start;
-          text-align: center;
+          gap: 6px;
+          padding-top: 4px;
         }
 
         .caption-display-rule {
           height: 1px;
-          width: 100%;
-          background: var(--rs-gold-dim);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(200, 169, 110, 0.45),
+            transparent
+          );
         }
-
         .caption-display-rule-top {
-          margin-bottom: 10px;
+          margin-bottom: 8px;
         }
-
         .caption-display-rule-bottom {
-          margin-top: 10px;
+          margin-top: 8px;
         }
-
         .caption-display-ornament {
-          margin: 0;
           text-align: center;
-          font-size: 10px;
-          line-height: 1;
-          color: var(--rs-gold-dim);
+          color: var(--rs-gold);
+          font-size: 12px;
+          letter-spacing: 0.2em;
         }
 
         .caption-display-roman {
-          margin: 0 0 12px 0;
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 13px;
-          letter-spacing: 3px;
-          color: var(--rs-gold);
-          opacity: 0.7;
-          font-weight: 600;
+          font-size: 11px;
+          letter-spacing: 0.28em;
+          color: var(--rs-gold-dim);
+          margin: 0;
         }
 
         .caption-display-text {
-          margin: 0;
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 14px;
-          line-height: 1.9;
-          color: var(--rs-text);
+          font-size: 15px;
+          line-height: 1.65;
+          color: rgba(245, 230, 200, 0.92);
+          margin: 0;
+          white-space: pre-wrap;
         }
 
         .caption-chapter-roman {
-          margin: 0 0 8px 0;
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 64px;
-          line-height: 1;
-          color: var(--rs-gold);
-          font-weight: 400;
+          font-size: 10px;
+          letter-spacing: 0.28em;
+          color: var(--rs-gold-dim);
+          margin: 0;
         }
 
         .caption-chapter-title {
-          margin: 0 0 12px 0;
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 11px;
-          font-variant: small-caps;
-          letter-spacing: 2px;
-          color: var(--rs-text-dim);
-          max-width: 100%;
+          font-size: 16px;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          color: var(--rs-gold);
+          margin: 0;
+          text-align: center;
         }
 
         .caption-chapter-title-empty {
-          opacity: 0.35;
+          opacity: 0.5;
+        }
+
+        .caption-chapter-subtitle {
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 12px;
+          letter-spacing: 0.06em;
+          color: var(--rs-gold-dim);
+          margin: 0;
+          text-align: center;
         }
 
         .caption-compass-svg {
-          display: block;
-          margin-bottom: 12px;
-          flex-shrink: 0;
+          margin: 4px 0;
         }
 
         .caption-scene-progress {
-          margin: auto 0 0 0;
-          padding-top: 8px;
           font-family: Georgia, "Times New Roman", serif;
           font-size: 11px;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          color: var(--rs-text-dim);
+          letter-spacing: 0.12em;
+          color: var(--rs-gold-dim);
+          margin: 0;
         }
 
         .caption-cursor {
-          display: inline-block;
           margin-left: 1px;
+          color: var(--rs-gold);
           animation: captionBlink 1s step-end infinite;
         }
-
         @keyframes captionBlink {
-          0%,
-          100% {
-            opacity: 1;
-          }
           50% {
             opacity: 0;
           }

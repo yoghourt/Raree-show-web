@@ -6,20 +6,22 @@ interface ReadingRouteTimeCardProps {
   workTitle: string
   scene: {
     id: string
+    title?: string | null
     chapter_title?: string | null
     chapterTitle?: string | null
   }
 }
 
-// Temporary display contract: chapter title only. scene_time was removed as a fallback while
-// that field remains unreliable; widen again once data/API guarantees are clear.
-function getChapterTitleText(scene: ReadingRouteTimeCardProps["scene"]): string {
+// Primary plaque text = Reading Route title (admin「标题」); chapter_title as secondary fallback.
+function getRouteTitleText(scene: ReadingRouteTimeCardProps["scene"]): string {
+  const title = String(scene.title ?? "").trim()
+  if (title) return title
   return String(scene.chapter_title ?? scene.chapterTitle ?? "").trim()
 }
 
 export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteTimeCardProps) {
   const sceneId = scene.id
-  const chapterTitleText = getChapterTitleText(scene)
+  const chapterTitleText = getRouteTitleText(scene)
   const prevSceneIdRef = useRef(sceneId)
   const [currentText, setCurrentText] = useState(chapterTitleText)
   const [outgoingText, setOutgoingText] = useState<string | null>(null)

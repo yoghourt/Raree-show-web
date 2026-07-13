@@ -1,10 +1,28 @@
 "use client"
 
+/**
+ * W-01 Browser Runtime — Visibility-Synchronized Navigation reducer.
+ *
+ * Authority chain (read-only):
+ *   SPEC-RDX-001 → W-01 → runtime-architecture.md → this module
+ *
+ * Lifecycle mapping (comments only; no phase state machine):
+ *   FULL_SYNC / route entry     → RDX-1 Reading Session Start
+ *   STEP_NEXT / STEP_PREV       → RDX-3 Progress Update (intra-route)
+ *   COMMIT_READING_ROUTE        → RDX-3 Progress Update (cross-route)
+ *
+ * `imageIndex` implements Reader Step index within effective Reading Frames
+ * (SPEC-RDX-001). Field name preserved for Product Freeze — Sprint #1.
+ *
+ * Owner: W-01 (browser orchestration). Does not redefine Reader Step semantics.
+ */
+
 import { useEffect, useReducer } from "react"
 import type { ReadingRoute } from "@/lib/types"
 
 export type ReadingRouteState = {
   visualReadingRoute: ReadingRoute
+  /** Implements Reader Step index within effective frames (SPEC-RDX-001). */
   imageIndex: number
 }
 

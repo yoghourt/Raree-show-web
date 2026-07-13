@@ -157,50 +157,93 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
 
         <div className="image-reel-card">
           <div className="image-reel-img-slot">
-            {!sliding && (
-              <img
-                src={current.url}
-                alt=""
-                className="image-reel-fill"
-                draggable={false}
-              />
-            )}
+            {!sliding &&
+              (current.url ? (
+                <img
+                  src={current.url}
+                  alt=""
+                  className="image-reel-fill"
+                  draggable={false}
+                />
+              ) : (
+                <div className="image-reel-empty-frame">
+                  <span>No image yet</span>
+                </div>
+              ))}
             {sliding && slideDir === "forward" && (
               <>
-                <img
-                  key={`out-f-${imageIndex}`}
-                  src={images[imageIndex].url}
-                  alt=""
-                  className="image-reel-fill image-reel-slide-out-up"
-                  draggable={false}
-                  onAnimationEnd={handleExitAnimationEnd}
-                />
-                <img
-                  key={`in-f-${nextIdx}`}
-                  src={images[nextIdx].url}
-                  alt=""
-                  className="image-reel-fill image-reel-slide-in-bottom"
-                  draggable={false}
-                />
+                {images[imageIndex].url ? (
+                  <img
+                    key={`out-f-${imageIndex}`}
+                    src={images[imageIndex].url}
+                    alt=""
+                    className="image-reel-fill image-reel-slide-out-up"
+                    draggable={false}
+                    onAnimationEnd={handleExitAnimationEnd}
+                  />
+                ) : (
+                  <div
+                    key={`out-f-${imageIndex}`}
+                    className="image-reel-empty-frame image-reel-slide-out-up"
+                    onAnimationEnd={handleExitAnimationEnd}
+                  >
+                    <span>No image yet</span>
+                  </div>
+                )}
+                {images[nextIdx].url ? (
+                  <img
+                    key={`in-f-${nextIdx}`}
+                    src={images[nextIdx].url}
+                    alt=""
+                    className="image-reel-fill image-reel-slide-in-bottom"
+                    draggable={false}
+                  />
+                ) : (
+                  <div
+                    key={`in-f-${nextIdx}`}
+                    className="image-reel-empty-frame image-reel-slide-in-bottom"
+                  >
+                    <span>No image yet</span>
+                  </div>
+                )}
               </>
             )}
             {sliding && slideDir === "backward" && (
               <>
-                <img
-                  key={`out-b-${imageIndex}`}
-                  src={images[imageIndex].url}
-                  alt=""
-                  className="image-reel-fill image-reel-slide-out-down"
-                  draggable={false}
-                  onAnimationEnd={handleExitAnimationEnd}
-                />
-                <img
-                  key={`in-b-${prevIdx}`}
-                  src={images[prevIdx].url}
-                  alt=""
-                  className="image-reel-fill image-reel-slide-in-top"
-                  draggable={false}
-                />
+                {images[imageIndex].url ? (
+                  <img
+                    key={`out-b-${imageIndex}`}
+                    src={images[imageIndex].url}
+                    alt=""
+                    className="image-reel-fill image-reel-slide-out-down"
+                    draggable={false}
+                    onAnimationEnd={handleExitAnimationEnd}
+                  />
+                ) : (
+                  <div
+                    key={`out-b-${imageIndex}`}
+                    className="image-reel-empty-frame image-reel-slide-out-down"
+                    onAnimationEnd={handleExitAnimationEnd}
+                  >
+                    <span>No image yet</span>
+                  </div>
+                )}
+                {images[prevIdx].url ? (
+                  <img
+                    key={`in-b-${prevIdx}`}
+                    src={images[prevIdx].url}
+                    alt=""
+                    className="image-reel-fill image-reel-slide-in-top"
+                    draggable={false}
+                  />
+                ) : (
+                  <div
+                    key={`in-b-${prevIdx}`}
+                    className="image-reel-empty-frame image-reel-slide-in-top"
+                  >
+                    <span>No image yet</span>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -332,6 +375,19 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
           height: 100%;
           object-fit: cover;
           display: block;
+        }
+
+        .image-reel-empty-frame {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--rs-gold-dim);
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 14px;
+          letter-spacing: 1px;
+          background: #0d0705;
         }
 
         .image-reel-slide-out-up {

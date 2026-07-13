@@ -102,6 +102,8 @@ export async function getLocationById(id: string): Promise<Location | undefined>
 }
 
 // --- scenes (Supabase) ---
+// Runtime Representation only (Reading Route / Reading Frame).
+// Projection associations / story_units / SceneProjectionLink are NOT read here (RC1 deferred).
 
 type SceneRow = {
   tsid: string
@@ -128,11 +130,11 @@ function readingFramesFromRow(raw: unknown): ReadingFrame[] | null {
   for (const item of raw) {
     if (item !== null && typeof item === "object" && "url" in item) {
       const rec = item as { url: unknown; caption?: unknown }
-      if (typeof rec.url === "string" && rec.url.trim()) {
-        out.push({
-          url: rec.url.trim(),
-          caption: typeof rec.caption === "string" ? rec.caption : "",
-        })
+      const url = typeof rec.url === "string" ? rec.url.trim() : ""
+      const caption = typeof rec.caption === "string" ? rec.caption : ""
+      // Keep caption-only frames (Discovery write before images are uploaded)
+      if (url || caption.trim()) {
+        out.push({ url, caption })
       }
     }
   }
