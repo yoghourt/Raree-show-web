@@ -1,3 +1,5 @@
+import type { ReaderSceneContext } from "@/lib/scene-context/types"
+
 export interface Character {
   id: string
   name: string
@@ -37,7 +39,14 @@ export interface ReadingRoute {
   chapter_number: number
   chapter_title: string | null
   pov_character: string
+  /**
+   * @deprecated L3-C / L4-B — Route membership is not presentation authority.
+   * Cast / place come from sceneContexts @ Reader Step.
+   */
   location: string
+  /**
+   * @deprecated L3-C / L4-B — Route membership is not presentation authority.
+   */
   characters_present: string[]
   summary: string
   tags: string[]
@@ -51,6 +60,8 @@ export interface ReadingRoute {
   }
   work_id?: string
   story_images_v2: ReadingFrame[] | null
+  /** Scene Context delivery payload (ownership ≠ Route). */
+  sceneContexts: ReaderSceneContext[]
 }
 
 export interface Work {

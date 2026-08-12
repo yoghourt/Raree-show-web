@@ -54,3 +54,6 @@ supabase/
 
 # RAGAS eval artifacts
 eval/ragas/reports/
+
+# TTS spike: large local model weights / vendor binaries (samples stay tracked)
+docs/findings/

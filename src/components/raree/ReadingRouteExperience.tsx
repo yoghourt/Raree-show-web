@@ -12,7 +12,8 @@
  *   Last-frame / route-boundary handlers → RDX-4 Route Completion
  *   Exit / cross-route handoff           → RDX-5 Session Complete
  *
- * Projection boundary: consumes Reading Route + Reading Frames only.
+ * Projection boundary: consumes Reading Route + Reading Frames + Scene Contexts.
+ * Cast / place at Step scope via scene_contexts_v1 (IMPLEMENT-SCC-001-L4-B / RDX-RS-07).
  * SceneProjectionLink / Rollout association reads deferred (RC1).
  * Owner: W-01 (orchestration) + Implementation (presentation).
  */
@@ -22,6 +23,11 @@ import { messages as locale } from "@/lib/locale"
 import { WESTEROS_MAP_URL } from "@/lib/data"
 import { effectiveReadingFramesFromV2, resolvePresentedCaption } from "@/lib/reading-frames"
 import { readUpToStoryIndexLastFromStep } from "@/lib/reader-step"
+import {
+  resolveContextForStep,
+  resolveStepCast,
+  resolveStepPlace,
+} from "@/lib/scene-context"
 import CaptionDisplay from "@/components/raree/CaptionDisplay"
 import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
 import ReadingRouteRopes from "@/components/raree/ReadingRouteRopes"
@@ -42,21 +48,6 @@ interface ReadingRouteExperienceProps {
   locations: Location[]
   workId: string
   workTitle: string
-}
-
-function formatIdToName(raw: string): string {
-  return raw
-    .split("-")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ")
-}
-
-function getInitials(name: string): string {
-  const parts = name.split(" ").filter(Boolean)
-  return (
-    (parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? parts[0]?.[0] ?? "")
-  ).toUpperCase() || "?"
 }
 
 function tactileOverflowHint() {
@@ -99,13 +90,29 @@ export default function ReadingRouteExperience({
   const prevRoute = routeIndex > 0 ? allReadingRoutes[routeIndex - 1] : null
   const nextRoute = routeIndex >= 0 && routeIndex < allReadingRoutes.length - 1 ? allReadingRoutes[routeIndex + 1] : null
 
-  const currentLocation = useMemo(
-    () => locations.find((location) => location.id === visualReadingRoute.location),
-    [locations, visualReadingRoute.location]
+  // L4-B: cast / place from Scene Context at current Reader Step (not Route membership).
+  const stepContext = useMemo(
+    () => resolveContextForStep(visualReadingRoute.sceneContexts, imageIndex),
+    [visualReadingRoute.sceneContexts, imageIndex]
   )
 
-  const mapX = Math.min(1, Math.max(0, currentLocation?.map_focus_x ?? 0.5))
-  const mapY = Math.min(1, Math.max(0, currentLocation?.map_focus_y ?? 0.5))
+  const presentCharacters = useMemo(
+    () => resolveStepCast(stepContext, characters),
+    [stepContext, characters]
+  )
+
+  const stepPlace = useMemo(
+    () =>
+      resolveStepPlace(
+        stepContext,
+        locations,
+        locale.readingRoute.unknownLocationFallback
+      ),
+    [stepContext, locations]
+  )
+
+  const mapX = stepPlace.mapX
+  const mapY = stepPlace.mapY
 
   useEffect(() => {
     const el = mapContainerRef.current
@@ -118,29 +125,6 @@ export default function ReadingRouteExperience({
     return () => observer.disconnect()
   }, [])
 
-  const presentCharacters = useMemo(() => {
-    return visualReadingRoute.characters_present.map((id) => {
-      const matched = characters.find((character) => character.id === id)
-      if (matched) {
-        return {
-          id,
-          name: matched.name,
-          initials: getInitials(matched.name),
-          image_url: matched.image_url?.trim() ?? "",
-          description: matched.description?.trim() ?? "",
-        }
-      }
-      const fallbackName = formatIdToName(id)
-      return {
-        id,
-        name: fallbackName || id,
-        initials: (fallbackName || id).charAt(0).toUpperCase() || "?",
-        image_url: "",
-        description: "",
-      }
-    })
-  }, [visualReadingRoute.characters_present, characters])
-
   const sceneAssistantContext = useMemo(
     () => ({
       tsid: visualReadingRoute.tsid,
@@ -148,14 +132,11 @@ export default function ReadingRouteExperience({
       title: visualReadingRoute.title,
       chapter_number: visualReadingRoute.chapter_number,
       chapter_title: visualReadingRoute.chapter_title,
-      location:
-        currentLocation?.name ||
-        formatIdToName(visualReadingRoute.location) ||
-        locale.readingRoute.unknownLocationFallback,
+      location: stepPlace.displayName,
       characters: presentCharacters.map((p) => p.name),
       summary: visualReadingRoute.summary,
     }),
-    [visualReadingRoute, currentLocation, presentCharacters, workTitle]
+    [visualReadingRoute, stepPlace.displayName, presentCharacters, workTitle]
   )
 
   // RDX-3 Progress Update — committed boundary for Assistant retrieval (W-01 / ADR-002).
@@ -364,11 +345,11 @@ export default function ReadingRouteExperience({
         <div className="rs-scene-right-rail-body">
           <div className="rs-scene-right-rail-rack">
             <CharacterCardRack
-              sceneId={visualReadingRoute.id}
+              sceneId={`${visualReadingRoute.id}:${imageIndex}`}
               characters={presentCharacters.map((item) => ({
                 id: item.id,
                 name: item.name,
-                house: characters.find((c) => c.id === item.id)?.house,
+                house: item.house,
                 image_url: item.image_url,
                 description: item.description,
               }))}
@@ -388,7 +369,11 @@ export default function ReadingRouteExperience({
         mapUrl={mapError ? "/maps/westeros.jpg" : WESTEROS_MAP_URL}
         mapX={mapX}
         mapY={mapY}
-        locationName={currentLocation?.name}
+        locationName={
+          stepPlace.displayName === locale.readingRoute.unknownLocationFallback
+            ? undefined
+            : stepPlace.displayName
+        }
       />
       <HomeButton />
 

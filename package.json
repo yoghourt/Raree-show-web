@@ -16,6 +16,7 @@
     "import-data": "ts-node scripts/import-data.ts",
     "smoke-retrieval": "tsx scripts/smoke-test-retrieval.ts",
     "verify-story-truncation": "tsx scripts/verify-story-truncation.ts",
+    "verify-step-context-cast": "tsx scripts/verify-step-context-cast.ts",
     "stress-rag-boundary": "tsx scripts/stress-test-rag-boundary.ts",
     "test:production-oracle": "tsx scripts/test-production-story-oracle.ts",
     "eval:ragas": "tsx eval/ragas/runner/evaluate-suite.ts",

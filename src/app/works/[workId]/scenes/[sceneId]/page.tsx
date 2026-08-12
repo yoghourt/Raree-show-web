@@ -3,7 +3,8 @@
  *
  * Authority: SPEC-RDX-001 / Runtime Reading Governance RC1 (raree-show-admin).
  * Projection Complete is an upstream precondition (SPEC-ROL-001 / SPEC-ROL-002).
- * This page consumes Runtime artifacts only (`scenes` + `story_images_v2`).
+ * This page consumes Runtime artifacts: `scenes` + `story_images_v2` + `scene_contexts_v1`.
+ * Cast / place at Reader Step come from Scene Context (IMPLEMENT-SCC-001-L4-B).
  * SceneProjectionLink / Rollout metadata reads are deferred (RC1) — not performed here.
  *
  * Lifecycle: route URL load → RDX-1 Reading Session Start (realized in ReadingRouteExperience).
