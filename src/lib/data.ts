@@ -1,4 +1,5 @@
 import type { Character, Location, ReadingFrame, ReadingRoute, Work } from "./types"
+import { parseSceneContextsV1 } from "@/lib/scene-context/parse"
 import { supabase } from "./supabase"
 
 export const WESTEROS_MAP_URL = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/v1/raree-show/maps/westeros`
@@ -102,7 +103,8 @@ export async function getLocationById(id: string): Promise<Location | undefined>
 }
 
 // --- scenes (Supabase) ---
-// Runtime Representation only (Reading Route / Reading Frame).
+// Runtime delivery: Reading Route + Reading Frames + Scene Contexts (hosted on Route row).
+// Cast / place presentation authority = scene_contexts_v1 (ADR-012 / L4-B).
 // Projection associations / story_units / SceneProjectionLink are NOT read here (RC1 deferred).
 
 type SceneRow = {
@@ -112,8 +114,6 @@ type SceneRow = {
   chapter_number: number
   chapter_title: string | null
   pov_character: string
-  location_id: string | null
-  character_ids: string[] | null
   summary: string
   tags: string[] | null
   order_index: number
@@ -122,6 +122,7 @@ type SceneRow = {
   map_focus_x: number | null
   map_focus_y: number | null
   story_images_v2?: unknown
+  scene_contexts_v1?: unknown
 }
 
 function readingFramesFromRow(raw: unknown): ReadingFrame[] | null {
@@ -150,8 +151,9 @@ function readingRouteFromRow(row: SceneRow): ReadingRoute {
     chapter_number: row.chapter_number,
     chapter_title: row.chapter_title ?? null,
     pov_character: row.pov_character,
-    location: row.location_id ?? "",
-    characters_present: row.character_ids ?? [],
+    // L3-C dropped Route membership columns; keep empty stubs for deprecated fields.
+    location: "",
+    characters_present: [],
     summary: row.summary,
     tags: row.tags ?? [],
     order: row.order_index,
@@ -164,6 +166,7 @@ function readingRouteFromRow(row: SceneRow): ReadingRoute {
         : undefined,
     work_id: row.work_id ?? undefined,
     story_images_v2: readingFramesFromRow(row.story_images_v2),
+    sceneContexts: parseSceneContextsV1(row.scene_contexts_v1),
   }
 }
 
