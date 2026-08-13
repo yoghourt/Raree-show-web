@@ -134,7 +134,8 @@ function isFallbackEligibleErrorText(errorText: string): boolean {
 export async function orchestrateProviderStream(
   provider: AIModelProvider,
   context: VerifiedGenerationContext,
-  timeoutMs: number
+  timeoutMs: number,
+  abortSignal?: AbortSignal
 ): Promise<Response> {
   // BOOTSTRAP — provider.streamText() initiates the provider handle.
   //
@@ -151,6 +152,7 @@ export async function orchestrateProviderStream(
     system: context.system,
     messages: context.messages,
     timeoutMs,
+    abortSignal,
   })
 
   // WARMUP — creates the HTTP 200 SSE Response skeleton; transport not yet

@@ -139,9 +139,10 @@ export function wrapResponseWithSemanticStreamGuard(
     lockedLogged: false,
   }
 
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   const guardedBody = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const reader = body.getReader()
+      reader = body.getReader()
       try {
         while (true) {
           const { done, value } = await reader.read()
@@ -162,13 +163,21 @@ export function wrapResponseWithSemanticStreamGuard(
           message,
         })
         if (parserState.semanticStreamStarted) {
-          controller.enqueue(encodeSseErrorEvent(message))
+          try {
+            controller.enqueue(encodeSseErrorEvent(message))
+          } catch {
+            // cancel() may have already closed the controller
+          }
         }
-        controller.close()
+        try {
+          controller.close()
+        } catch {
+          // already closed by cancel()
+        }
       }
     },
     cancel(reason) {
-      return body.cancel(reason)
+      return reader?.cancel(reason)
     },
   })
 
