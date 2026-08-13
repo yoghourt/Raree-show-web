@@ -2,6 +2,16 @@
 
 import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
+import {
+  abortGenerationController,
+  applyAssistantDelta,
+  historyTurnsForRequest,
+  isAbortError,
+  markAssistantTerminal,
+  shouldAcceptAssistantDelta,
+  type AssistantChatMessage,
+  type AssistantGenerationPhase,
+} from "@/lib/assistant-generation-lifecycle"
 import { messages as locale } from "@/lib/locale"
 
 export interface ReadingRouteAssistantContext {
@@ -35,14 +45,6 @@ interface ReadingRouteAssistantProps {
   userProgress: ReadingRouteAssistantUserProgress
 }
 
-type ChatMessage = {
-  role: "user" | "assistant"
-  content: string
-  streaming?: boolean
-}
-
-type ApiChatTurn = { role: "user" | "assistant"; content: string }
-
 function parseUiMessageSseEvent(rawEvent: string): { delta?: string; error?: string } {
   const dataLines = rawEvent
     .split("\n")
@@ -71,38 +73,74 @@ function parseUiMessageSseEvent(rawEvent: string): { delta?: string; error?: str
 export default function ReadingRouteAssistant({ sceneContext, userProgress }: ReadingRouteAssistantProps) {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [streaming, setStreaming] = useState(false)
+  const [messages, setMessages] = useState<AssistantChatMessage[]>([])
+  const [phase, setPhase] = useState<AssistantGenerationPhase>("idle")
   const [error, setError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const sendingRef = useRef(false)
+  const abortRef = useRef<AbortController | null>(null)
+  const phaseRef = useRef<AssistantGenerationPhase>("idle")
+  const generationIdRef = useRef(0)
+
+  const setGenerationPhase = (next: AssistantGenerationPhase) => {
+    phaseRef.current = next
+    setPhase(next)
+  }
 
   useEffect(() => {
     if (!open) return
     const el = scrollRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [messages, open])
+  }, [messages, open, phase])
+
+  useEffect(() => {
+    return () => {
+      abortGenerationController(abortRef.current)
+      abortRef.current = null
+    }
+  }, [])
+
+  function stopActiveGeneration() {
+    if (phaseRef.current !== "streaming") return
+    const generationId = generationIdRef.current
+    setGenerationPhase("cancelled")
+    setError(null)
+    setMessages((m) => markAssistantTerminal(m, generationId, "cancelled", ""))
+    abortGenerationController(abortRef.current)
+  }
+
+  function closePanel() {
+    if (phaseRef.current === "streaming") {
+      stopActiveGeneration()
+    }
+    setOpen(false)
+  }
 
   async function send() {
     const question = input.trim()
-    if (!question || sendingRef.current) return
+    if (!question || sendingRef.current || phaseRef.current === "streaming") return
     sendingRef.current = true
 
-    const prior = messages.filter((m) => !(m.role === "assistant" && m.streaming))
-    const apiMessages: ApiChatTurn[] = [
-      ...prior.map(({ role, content }) => ({ role, content })),
-      { role: "user", content: question },
+    const apiMessages = [
+      ...historyTurnsForRequest(messages),
+      { role: "user" as const, content: question },
     ]
+
+    const controller = new AbortController()
+    abortRef.current = controller
+    const generationId = generationIdRef.current + 1
+    generationIdRef.current = generationId
+    setGenerationPhase("streaming")
 
     setInput("")
     setError(null)
     setMessages((m) => [
-      ...m.filter((x) => !(x.role === "assistant" && x.streaming)),
+      ...m.filter((x) => !(x.role === "assistant" && x.status === "streaming")),
       { role: "user", content: question },
-      { role: "assistant", content: "", streaming: true },
+      { role: "assistant", content: "", status: "streaming", generationId },
     ])
-    setStreaming(true)
 
+    let acc = ""
     try {
       const res = await fetch("/api/scene-assistant", {
         method: "POST",
@@ -112,7 +150,16 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
           sceneContext,
           userProgress,
         }),
+        signal: controller.signal,
       })
+
+      if (!shouldAcceptAssistantDelta({
+        phase: phaseRef.current,
+        activeGenerationId: generationIdRef.current,
+        eventGenerationId: generationId,
+      })) {
+        return
+      }
 
       if (!res.ok) {
         const errText = await res.text().catch(() => res.statusText)
@@ -123,7 +170,6 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
       if (!reader) throw new Error(locale.assistant.errorNoBody)
 
       const decoder = new TextDecoder()
-      let acc = ""
       let lineBuffer = ""
       let eventDataLines: string[] = []
 
@@ -135,16 +181,17 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
         if (parsed.error) {
           throw new Error(parsed.error)
         }
-        if (parsed.delta) {
-          acc += parsed.delta
-          setMessages((m) => {
-            const next = [...m]
-            const last = next[next.length - 1]
-            if (last?.role === "assistant") {
-              next[next.length - 1] = { role: "assistant", content: acc, streaming: true }
-            }
-            return next
+        if (
+          parsed.delta &&
+          shouldAcceptAssistantDelta({
+            phase: phaseRef.current,
+            activeGenerationId: generationIdRef.current,
+            eventGenerationId: generationId,
           })
+        ) {
+          acc += parsed.delta
+          const snapshot = acc
+          setMessages((m) => applyAssistantDelta(m, generationId, snapshot))
         }
       }
 
@@ -165,7 +212,13 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
         }
       }
 
-      while (true) {
+      while (
+        shouldAcceptAssistantDelta({
+          phase: phaseRef.current,
+          activeGenerationId: generationIdRef.current,
+          eventGenerationId: generationId,
+        })
+      ) {
         const { done, value } = await reader.read()
         if (done) {
           processSseChunk(decoder.decode())
@@ -180,30 +233,50 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
         processSseChunk(decoder.decode(value, { stream: true }))
       }
 
-      setMessages((m) => {
-        const next = [...m]
-        const last = next[next.length - 1]
-        if (last?.role === "assistant") {
-          next[next.length - 1] = { role: "assistant", content: acc, streaming: false }
-        }
-        return next
-      })
+      if (phaseRef.current === "cancelled" && generationIdRef.current === generationId) {
+        setMessages((m) => markAssistantTerminal(m, generationId, "cancelled", acc))
+        return
+      }
+
+      if (
+        shouldAcceptAssistantDelta({
+          phase: phaseRef.current,
+          activeGenerationId: generationIdRef.current,
+          eventGenerationId: generationId,
+        })
+      ) {
+        setGenerationPhase("completed")
+        setMessages((m) => markAssistantTerminal(m, generationId, "completed", acc))
+      }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : locale.assistant.errorGeneric
-      setError(msg)
-      setMessages((m) => {
-        const next = [...m]
-        const last = next[next.length - 1]
-        if (last?.role === "assistant" && last.streaming) {
-          next.pop()
+      const aborted =
+        isAbortError(e) ||
+        controller.signal.aborted ||
+        phaseRef.current === "cancelled"
+      if (aborted) {
+        if (phaseRef.current !== "cancelled") {
+          setGenerationPhase("cancelled")
         }
-        return next
-      })
+        setError(null)
+        setMessages((m) => markAssistantTerminal(m, generationId, "cancelled", acc))
+        return
+      }
+      if (generationIdRef.current !== generationId) return
+      const msg = e instanceof Error ? e.message : locale.assistant.errorGeneric
+      setGenerationPhase("failed")
+      setError(msg)
+      setMessages((m) => markAssistantTerminal(m, generationId, "failed", acc))
     } finally {
-      setStreaming(false)
-      sendingRef.current = false
+      if (generationIdRef.current === generationId) {
+        sendingRef.current = false
+        if (abortRef.current === controller) {
+          abortRef.current = null
+        }
+      }
     }
   }
+
+  const streaming = phase === "streaming"
 
   return (
     <>
@@ -227,7 +300,7 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
             </h2>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => closePanel()}
               className="rounded p-1 text-sm text-[#6b4c35] hover:bg-[#c8b89a]/40 hover:text-[#2c1810]"
               aria-label={locale.assistant.closeAria}
             >
@@ -247,7 +320,7 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
               )}
               {messages.map((msg, i) => (
                 <div
-                  key={i}
+                  key={msg.role === "assistant" && msg.generationId != null ? `a-${msg.generationId}` : `m-${i}`}
                   className={`max-w-[92%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
                     msg.role === "user"
                       ? "ml-auto bg-[#8b1a1a] text-[#f5f0e8]"
@@ -257,21 +330,26 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
                   {msg.role === "user" ? (
                     <span className="whitespace-pre-wrap break-words">{msg.content}</span>
                   ) : (
-                    <div
-                      className="break-words [&_strong]:font-semibold [&_b]:font-semibold [&_em]:italic [&_p]:my-0 [&_p+p]:mt-1 [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_code]:rounded [&_code]:bg-[#c8b89a]/40 [&_code]:px-1 [&_code]:text-[0.85em]"
-                    >
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-                  )}
-                  {msg.role === "assistant" && msg.streaming && (
-                    <span
-                      className="ml-0.5 inline-block h-[1em] w-0.5 animate-pulse bg-[#2c1810] align-[-0.15em]"
-                      aria-hidden
-                    />
+                    <>
+                      <div
+                        className="break-words [&_strong]:font-semibold [&_b]:font-semibold [&_em]:italic [&_p]:my-0 [&_p+p]:mt-1 [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_code]:rounded [&_code]:bg-[#c8b89a]/40 [&_code]:px-1 [&_code]:text-[0.85em]"
+                      >
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                      {msg.status === "streaming" && (
+                        <span
+                          className="ml-0.5 inline-block h-[1em] w-0.5 animate-pulse bg-[#2c1810] align-[-0.15em]"
+                          aria-hidden
+                        />
+                      )}
+                      {msg.status === "cancelled" && (
+                        <p className="mt-1 text-[11px] text-[#6b4c35]">{locale.assistant.stoppedLabel}</p>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
-              {error && (
+              {error && phase === "failed" && (
                 <p className="text-center text-xs text-[#8b1a1a]">{error}</p>
               )}
             </div>
@@ -285,28 +363,50 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
-                  void send()
+                  if (!streaming) {
+                    void send().catch((error) => {
+                      if (!isAbortError(error)) console.error(error)
+                    })
+                  }
                 }
               }}
               placeholder={locale.assistant.inputPlaceholder}
               disabled={streaming}
               className="min-w-0 flex-1 rounded-md border border-[#c8b89a] bg-[#f5f0e8]/80 px-3 py-2 text-sm text-[#2c1810] placeholder:text-[#6b4c35]/70 outline-none focus:border-[#8b1a1a]"
             />
-            <button
-              type="button"
-              onClick={() => void send()}
-              disabled={streaming || !input.trim()}
-              className="shrink-0 rounded-md border border-[#8b1a1a] bg-[#8b1a1a] px-3 py-2 text-sm text-[#f5f0e8] hover:bg-[#6b1414] disabled:opacity-50"
-            >
-              {locale.assistant.send}
-            </button>
+            {streaming ? (
+              <button
+                type="button"
+                onClick={stopActiveGeneration}
+                className="shrink-0 rounded-md border border-[#6b4c35] bg-[#6b4c35] px-3 py-2 text-sm text-[#f5f0e8] hover:bg-[#2c1810]"
+                aria-label={locale.assistant.stopAria}
+              >
+                {locale.assistant.stop}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  void send().catch((error) => {
+                    if (!isAbortError(error)) console.error(error)
+                  })
+                }}
+                disabled={!input.trim()}
+                className="shrink-0 rounded-md border border-[#8b1a1a] bg-[#8b1a1a] px-3 py-2 text-sm text-[#f5f0e8] hover:bg-[#6b1414] disabled:opacity-50"
+              >
+                {locale.assistant.send}
+              </button>
+            )}
           </div>
         </div>
       )}
 
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (open) closePanel()
+          else setOpen(true)
+        }}
         className="relative z-[20] flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-semibold text-[#f5f0e8] shadow-md transition hover:brightness-110"
         style={{
           background: "#8b1a1a",
