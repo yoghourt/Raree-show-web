@@ -16,6 +16,8 @@ export type ExecuteGenerationOptions = {
   primary: AIModelProvider
   /** Phase 1: empty — wiring for Phase 2 OpenRouter failover only. */
   fallbackProviders?: AIModelProvider[]
+  /** Client disconnect. Cancellation must not trigger provider fallback. */
+  abortSignal?: AbortSignal
 }
 
 function clientSafeMessage(normalized: ProviderRuntimeError): string {
@@ -42,7 +44,8 @@ function errorResponse(normalized: ProviderRuntimeError, status = 502): Response
 async function attemptStream(
   provider: AIModelProvider,
   context: VerifiedGenerationContext,
-  attemptIndex: number
+  attemptIndex: number,
+  abortSignal?: AbortSignal
 ): Promise<Response> {
   logProviderAttemptStart({
     requestId: context.requestId,
@@ -58,7 +61,8 @@ async function attemptStream(
   const lockedResponse = await orchestrateProviderStream(
     provider,
     context,
-    DEFAULT_STREAM_TIMEOUT_MS
+    DEFAULT_STREAM_TIMEOUT_MS,
+    abortSignal
   )
 
   return wrapResponseWithSemanticStreamGuard(lockedResponse, {
@@ -74,7 +78,7 @@ async function attemptStream(
 export async function executeVerifiedGeneration(
   options: ExecuteGenerationOptions
 ): Promise<Response> {
-  const { context, primary, fallbackProviders = [] } = options
+  const { context, primary, fallbackProviders = [], abortSignal } = options
   const providers: AIModelProvider[] = [primary, ...fallbackProviders]
 
   let lastNormalized: ProviderRuntimeError | null = null
@@ -82,8 +86,11 @@ export async function executeVerifiedGeneration(
   for (let i = 0; i < providers.length; i++) {
     const provider = providers[i]!
     try {
-      return await attemptStream(provider, context, i)
+      return await attemptStream(provider, context, i, abortSignal)
     } catch (e) {
+      if (abortSignal?.aborted) {
+        return new Response(null, { status: 499 })
+      }
       const normalized = provider.normalizeError(e)
       lastNormalized = normalized
 

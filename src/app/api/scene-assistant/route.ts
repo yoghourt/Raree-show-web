@@ -212,5 +212,6 @@ export async function POST(req: NextRequest) {
     },
     primary: provider,
     fallbackProviders,
+    abortSignal: req.signal,
   })
 }

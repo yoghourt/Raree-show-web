@@ -11,7 +11,7 @@ import type {
   TextStreamHandle,
 } from "@/runtime/types"
 
-const DEFAULT_MODEL_ID = "gemini-3-flash-preview"
+const DEFAULT_MODEL_ID = "gemini-3.5-flash-lite"
 
 export type CreateGeminiProviderOptions = {
   apiKey: string
@@ -100,6 +100,7 @@ export function createGeminiProvider(options: CreateGeminiProviderOptions): AIMo
         // each default retry wastes ~10s before coordinator can fallback.
         maxRetries: 0,
         timeout: request.timeoutMs ?? 60_000,
+        ...(request.abortSignal ? { abortSignal: request.abortSignal } : {}),
       })
       return {
         toUIMessageStreamResponse: () => result.toUIMessageStreamResponse(),

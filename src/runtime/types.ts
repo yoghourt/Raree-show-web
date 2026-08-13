@@ -37,7 +37,10 @@ export type GenerateTextRequest = {
   timeoutMs?: number
 }
 
-export type StreamTextRequest = GenerateTextRequest
+export type StreamTextRequest = GenerateTextRequest & {
+  /** Request disconnect / client abort. Must not trigger provider fallback. */
+  abortSignal?: AbortSignal
+}
 
 export type GenerateTextResult = { text: string }
 

@@ -24,7 +24,7 @@ import type {
 // options for production tuning; this value is intentionally conservative.
 // Override with OPENROUTER_MODEL_ID env var or options.modelId.
 const DEFAULT_MODEL_ID =
-  process.env.OPENROUTER_MODEL_ID ?? "openai/gpt-oss-120b:free"
+  process.env.OPENROUTER_MODEL_ID ?? "openai/gpt-oss-20b:free"
 
 export type CreateOpenRouterProviderOptions = {
   apiKey: string
@@ -99,6 +99,7 @@ export function createOpenRouterProvider(
         system: request.system,
         messages: request.messages,
         timeout: request.timeoutMs ?? 60_000,
+        ...(request.abortSignal ? { abortSignal: request.abortSignal } : {}),
       })
       return {
         toUIMessageStreamResponse: () => result.toUIMessageStreamResponse(),
