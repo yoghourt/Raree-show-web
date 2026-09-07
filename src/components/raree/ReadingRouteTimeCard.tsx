@@ -53,6 +53,10 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
     }
   }, [sceneId, chapterTitleText, currentText])
 
+  const widthText = [currentText, outgoingText, incomingText, chapterTitleText]
+    .filter((t): t is string => Boolean(t && t.trim()))
+    .reduce((longest, next) => (next.length > longest.length ? next : longest), currentText || " ")
+
   return (
     <div className="scene-time-card">
       <span className="rivet tl" aria-hidden />
@@ -62,6 +66,9 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
 
       <p className="scene-time-work-title">{workTitle.toUpperCase()}</p>
       <div className="scene-time-flip-stage" aria-live="polite">
+        <span className="scene-time-sizer" aria-hidden>
+          {widthText}
+        </span>
         {phase === "idle" ? (
           <span className="scene-time-current">{currentText}</span>
         ) : (
@@ -80,8 +87,10 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
         .scene-time-card {
           position: fixed;
           top: 28px;
-          left: 32px;
-          width: 200px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: max-content;
+          max-width: calc(100vw - 64px);
           min-height: 90px;
           border: 2px solid var(--rs-wood-mid);
           background: linear-gradient(135deg, #3d2410, #2a1a0e);
@@ -90,6 +99,8 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
           padding: 14px 18px;
           box-sizing: border-box;
           z-index: 20;
+          overflow: hidden;
+          text-align: center;
         }
 
         .rivet {
@@ -129,13 +140,36 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
           letter-spacing: 2.5px;
           font-family: Georgia, "Times New Roman", serif;
           line-height: 1.2;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+          text-align: center;
         }
 
         .scene-time-flip-stage {
           position: relative;
           margin-top: 10px;
           min-height: 30px;
+          width: max-content;
+          max-width: 100%;
+          margin-left: auto;
+          margin-right: auto;
           perspective: 600px;
+        }
+
+        .scene-time-sizer {
+          display: block;
+          visibility: hidden;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+          font-size: 22px;
+          font-family: Georgia, "Times New Roman", serif;
+          font-weight: 500;
+          line-height: 1.2;
+          pointer-events: none;
         }
 
         .scene-time-current,
@@ -146,14 +180,23 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
           font-family: Georgia, "Times New Roman", serif;
           font-weight: 500;
           line-height: 1.2;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
           transform-origin: 50% 50%;
           backface-visibility: hidden;
+        }
+
+        .scene-time-current {
+          position: absolute;
+          left: 0;
+          top: 0;
         }
 
         .scene-time-layer {
           position: absolute;
           left: 0;
-          right: 0;
           top: 0;
         }
 

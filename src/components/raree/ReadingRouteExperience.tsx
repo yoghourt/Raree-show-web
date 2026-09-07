@@ -292,7 +292,7 @@ export default function ReadingRouteExperience({
         style={{
           position: "fixed",
           left: "50%",
-          top: "48%",
+          top: "calc(50% + 36px)",
           transform: "translate(-50%, -50%)",
           pointerEvents: "none",
           zIndex: 10,
