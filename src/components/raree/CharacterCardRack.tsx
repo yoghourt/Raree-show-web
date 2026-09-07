@@ -87,6 +87,12 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
                 }}
                 initial={{ opacity: 0, y: 140, scale: 0.82 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
+                whileHover={{
+                  x: -14,
+                  filter: "brightness(1.2)",
+                  transition: { type: "spring", stiffness: 420, damping: 28, delay: 0 },
+                }}
+                whileTap={{ scale: 0.98, transition: { duration: 0.12, delay: 0 } }}
                 transition={{
                   delay: reverseIndex * 0.15,
                   duration: 0.6,
@@ -170,6 +176,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
           pointer-events: auto;
           --rack-card-width: 88px;
           --rack-scrollbar-gap: 18px;
+          --rack-hover-gutter: 18px;
         }
 
         .character-rack-scroll {
@@ -178,6 +185,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
           align-items: center;
           box-sizing: border-box;
           scrollbar-gutter: stable;
+          padding-left: var(--rack-hover-gutter);
           padding-right: var(--rack-scrollbar-gap);
           flex: 1 1 0;
           min-height: 0;
@@ -234,10 +242,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
           display: flex;
           flex-direction: column;
           cursor: pointer;
-          transition:
-            transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1),
-            filter 280ms ease,
-            box-shadow 280ms ease;
+          transition: box-shadow 220ms ease;
         }
 
         .character-card:focus {
@@ -245,11 +250,10 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
           outline-offset: 2px;
         }
 
-        .character-card:hover {
-          transform: translateX(-12px) scale(1.05);
-          filter: brightness(1.18);
-          z-index: 20;
+        .character-card:hover,
+        .character-card:focus-visible {
           box-shadow: 0 14px 28px rgba(0, 0, 0, 0.7);
+          z-index: 20;
         }
 
         .char-portrait-wrap {

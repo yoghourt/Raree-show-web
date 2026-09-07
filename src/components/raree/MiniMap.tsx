@@ -131,7 +131,7 @@ export default function MiniMap({
 
         .mini-map-hit:hover {
           transform: translateY(-2px);
-          filter: brightness(1.08);
+          filter: brightness(1.1);
         }
 
         .mini-map-hit:focus-visible {
