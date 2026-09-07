@@ -331,7 +331,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
 
         .character-detail-dialog {
           margin: auto;
-          max-width: min(420px, calc(100vw - 48px));
+          max-width: min(560px, calc(100vw - 48px));
           width: 100%;
           border: 1.5px solid var(--rs-wood-mid);
           border-radius: 8px;
@@ -391,16 +391,20 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
         }
 
         .character-detail-avatar {
-          width: 120px;
-          height: 120px;
+          width: 512px;
+          height: 512px;
+          max-width: 100%;
+          max-height: min(512px, 70vh);
           object-fit: cover;
           border-radius: 4px;
           border: 2px solid var(--rs-gold-dim);
         }
 
         .character-detail-avatar-fallback {
-          width: 120px;
-          height: 120px;
+          width: 512px;
+          height: 512px;
+          max-width: 100%;
+          max-height: min(512px, 70vh);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -408,7 +412,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
           border: 2px solid var(--rs-gold-dim);
           background: linear-gradient(135deg, #3d2410 0%, #2a1a0e 100%);
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 2.5rem;
+          font-size: 6rem;
           font-weight: 600;
           color: var(--rs-gold);
         }
