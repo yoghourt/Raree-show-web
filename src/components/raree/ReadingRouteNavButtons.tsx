@@ -54,7 +54,7 @@ export default function ReadingRouteNavButtons({
           position: fixed;
           left: 32px;
           top: 128px;
-          z-index: 8;
+          z-index: 20;
           display: flex;
           gap: 12px;
           pointer-events: auto;

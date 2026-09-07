@@ -80,20 +80,21 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
           .image-reel-root {
             position: relative;
             overflow: visible;
-            width: 520px;
+            width: min(560px, 62vh);
             pointer-events: auto;
             z-index: 2;
           }
           .image-reel-frame-wrap {
             position: relative;
-            width: 520px;
+            width: min(560px, 62vh);
             overflow: visible;
           }
           .image-reel-card {
             display: flex;
             flex-direction: column;
-            width: 520px;
-            height: 82vh;
+            width: min(560px, 62vh);
+            height: min(560px, 62vh);
+            aspect-ratio: 1 / 1;
             border: 5px solid transparent;
             border-radius: 4px;
             background:
@@ -254,14 +255,14 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
         .image-reel-root {
           position: relative;
           overflow: visible;
-          width: 520px;
+          width: min(560px, 62vh);
           pointer-events: auto;
           z-index: 2;
         }
 
         .image-reel-frame-wrap {
           position: relative;
-          width: 520px;
+          width: min(560px, 62vh);
           overflow: visible;
         }
 
@@ -342,8 +343,9 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
         .image-reel-card {
           display: flex;
           flex-direction: column;
-          width: 520px;
-          height: 82vh;
+          width: min(560px, 62vh);
+          height: min(560px, 62vh);
+          aspect-ratio: 1 / 1;
           border: 5px solid transparent;
           border-radius: 4px;
           background:
@@ -366,6 +368,7 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
           min-height: 0;
           position: relative;
           overflow: hidden;
+          background: #0d0705;
         }
 
         .image-reel-fill {
@@ -373,7 +376,7 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
           inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
           display: block;
         }
 

@@ -89,7 +89,7 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
           border-radius: 3px;
           padding: 14px 18px;
           box-sizing: border-box;
-          z-index: 8;
+          z-index: 20;
         }
 
         .rivet {

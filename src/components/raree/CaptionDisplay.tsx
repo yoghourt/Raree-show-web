@@ -145,7 +145,7 @@ export default function CaptionDisplay({
         .caption-display-root {
           position: relative;
           width: 400px;
-          height: 82vh;
+          height: min(560px, 62vh);
           pointer-events: auto;
           z-index: 2;
           box-sizing: border-box;

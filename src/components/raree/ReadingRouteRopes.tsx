@@ -4,6 +4,9 @@ import { useCallback, useState } from "react"
 import { messages as locale } from "@/lib/locale"
 
 const PLAQUE_W = 48
+/** Half width of ImageReel + CaptionDisplay; keep in sync with frame size. */
+const DEVICE_HALF =
+  "(min(560px, 62vh) + 400px) / 2"
 
 export interface ReadingRouteRopesProps {
   onPrev: () => void
@@ -32,7 +35,10 @@ export default function ReadingRouteRopes({ onPrev, onNext, disabled = false }: 
 
   return (
     <>
-      <div className="scene-rope scene-rope-left" style={{ left: "calc(50% - 460px - 50px)" }}>
+      <div
+        className="scene-rope scene-rope-left"
+        style={{ left: `calc(50% - ${DEVICE_HALF} - 50px)` }}
+      >
         <button
           type="button"
           className={`scene-rope-hit ${pullLeft ? "scene-rope-pulling" : ""}`}
@@ -77,7 +83,7 @@ export default function ReadingRouteRopes({ onPrev, onNext, disabled = false }: 
 
       <div
         className="scene-rope scene-rope-right"
-        style={{ left: `calc(50% + 460px + 50px - ${PLAQUE_W}px)` }}
+        style={{ left: `calc(50% + ${DEVICE_HALF} + 50px - ${PLAQUE_W}px)` }}
       >
         <button
           type="button"
