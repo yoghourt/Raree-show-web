@@ -145,7 +145,7 @@ export default function CaptionDisplay({
         .caption-display-root {
           position: relative;
           width: 400px;
-          height: 82vh;
+          height: min(560px, 62vh);
           pointer-events: auto;
           z-index: 2;
           box-sizing: border-box;
@@ -254,13 +254,13 @@ export default function CaptionDisplay({
         .caption-display-ornament {
           text-align: center;
           color: var(--rs-gold);
-          font-size: 12px;
+          font-size: 14px;
           letter-spacing: 0.2em;
         }
 
         .caption-display-roman {
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 11px;
+          font-size: 14px;
           letter-spacing: 0.28em;
           color: var(--rs-gold-dim);
           margin: 0;
@@ -277,7 +277,7 @@ export default function CaptionDisplay({
 
         .caption-chapter-roman {
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 10px;
+          font-size: 14px;
           letter-spacing: 0.28em;
           color: var(--rs-gold-dim);
           margin: 0;
@@ -299,7 +299,7 @@ export default function CaptionDisplay({
 
         .caption-chapter-subtitle {
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 12px;
+          font-size: 14px;
           letter-spacing: 0.06em;
           color: var(--rs-gold-dim);
           margin: 0;
@@ -312,7 +312,7 @@ export default function CaptionDisplay({
 
         .caption-scene-progress {
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 11px;
+          font-size: 14px;
           letter-spacing: 0.12em;
           color: var(--rs-gold-dim);
           margin: 0;

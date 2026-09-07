@@ -49,7 +49,7 @@ export default function HomeButton() {
 
         .home-btn-text {
           color: var(--rs-text);
-          font-size: 11px;
+          font-size: 14px;
           letter-spacing: 2px;
           font-family: Georgia, "Times New Roman", serif;
           text-transform: uppercase;

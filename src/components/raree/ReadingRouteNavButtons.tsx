@@ -52,9 +52,11 @@ export default function ReadingRouteNavButtons({
       <style jsx>{`
         .scene-nav-buttons {
           position: fixed;
-          left: 32px;
-          top: 128px;
-          z-index: 8;
+          left: 50%;
+          bottom: 32px;
+          transform: translateX(-50%);
+          top: auto;
+          z-index: 20;
           display: flex;
           gap: 12px;
           pointer-events: auto;
