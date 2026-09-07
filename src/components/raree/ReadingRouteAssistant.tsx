@@ -295,7 +295,7 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
           }}
         >
           <div className="flex shrink-0 items-center justify-between border-b border-[#c8b89a]/60 px-3 py-2">
-            <h2 className="text-[11px] font-medium uppercase tracking-widest text-[#8b1a1a]">
+            <h2 className="text-sm font-medium uppercase tracking-widest text-[#8b1a1a]">
               {locale.assistant.panelTitle}
             </h2>
             <button
@@ -314,7 +314,7 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
           >
             <div className="flex min-h-full flex-col justify-end gap-2">
               {messages.length === 0 && (
-                <p className="text-center text-xs text-[#6b4c35]">
+                <p className="text-center text-sm text-[#6b4c35]">
                   {locale.assistant.emptyState}
                 </p>
               )}
@@ -343,14 +343,14 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
                         />
                       )}
                       {msg.status === "cancelled" && (
-                        <p className="mt-1 text-[11px] text-[#6b4c35]">{locale.assistant.stoppedLabel}</p>
+                        <p className="mt-1 text-sm text-[#6b4c35]">{locale.assistant.stoppedLabel}</p>
                       )}
                     </>
                   )}
                 </div>
               ))}
               {error && phase === "failed" && (
-                <p className="text-center text-xs text-[#8b1a1a]">{error}</p>
+                <p className="text-center text-sm text-[#8b1a1a]">{error}</p>
               )}
             </div>
           </div>

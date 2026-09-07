@@ -58,49 +58,125 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
     .reduce((longest, next) => (next.length > longest.length ? next : longest), currentText || " ")
 
   return (
-    <div className="scene-time-card">
-      <span className="rivet tl" aria-hidden />
-      <span className="rivet tr" aria-hidden />
-      <span className="rivet bl" aria-hidden />
-      <span className="rivet br" aria-hidden />
+    <div className="scene-time-sign">
+      <div className="scene-time-lintel" aria-hidden>
+        <span className="scene-time-lintel-bolt left" />
+        <span className="scene-time-lintel-bolt right" />
+      </div>
+      <div className="scene-time-brackets" aria-hidden>
+        <span className="scene-time-bracket" />
+        <span className="scene-time-bracket" />
+      </div>
+      <div className="scene-time-card">
+        <span className="rivet bl" aria-hidden />
+        <span className="rivet br" aria-hidden />
 
-      <p className="scene-time-work-title">{workTitle.toUpperCase()}</p>
-      <div className="scene-time-flip-stage" aria-live="polite">
-        <span className="scene-time-sizer" aria-hidden>
-          {widthText}
-        </span>
-        {phase === "idle" ? (
-          <span className="scene-time-current">{currentText}</span>
-        ) : (
-          <>
-            <span className={`scene-time-layer scene-time-out ${phase}`}>
-              {outgoingText ?? currentText}
-            </span>
-            <span className={`scene-time-layer scene-time-in ${phase}`}>
-              {incomingText ?? chapterTitleText}
-            </span>
-          </>
-        )}
+        <p className="scene-time-work-title">{workTitle.toUpperCase()}</p>
+        <div className="scene-time-flip-stage" aria-live="polite">
+          <span className="scene-time-sizer" aria-hidden>
+            {widthText}
+          </span>
+          {phase === "idle" ? (
+            <span className="scene-time-current">{currentText}</span>
+          ) : (
+            <>
+              <span className={`scene-time-layer scene-time-out ${phase}`}>
+                {outgoingText ?? currentText}
+              </span>
+              <span className={`scene-time-layer scene-time-in ${phase}`}>
+                {incomingText ?? chapterTitleText}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
       <style jsx>{`
-        .scene-time-card {
+        .scene-time-sign {
           position: fixed;
-          top: 28px;
+          top: 0;
           left: 50%;
           transform: translateX(-50%);
+          z-index: 20;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
           width: max-content;
           max-width: calc(100vw - 64px);
-          min-height: 90px;
+          pointer-events: none;
+        }
+
+        .scene-time-lintel {
+          position: relative;
+          width: calc(100% + 28px);
+          height: 14px;
+          background: linear-gradient(180deg, #4a2d15 0%, #2a1a0e 55%, #1a100a 100%);
           border: 2px solid var(--rs-wood-mid);
-          background: linear-gradient(135deg, #3d2410, #2a1a0e);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-          border-radius: 3px;
-          padding: 14px 18px;
+          border-top: none;
+          border-radius: 0 0 2px 2px;
+          box-shadow:
+            0 4px 10px rgba(0, 0, 0, 0.45),
+            inset 0 1px 0 rgba(200, 169, 110, 0.2);
           box-sizing: border-box;
-          z-index: 20;
+        }
+
+        .scene-time-lintel-bolt {
+          position: absolute;
+          top: 50%;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          transform: translateY(-50%);
+          background: radial-gradient(circle at 30% 30%, #e5c88a 0%, #c8a96e 40%, #6b4e2a 100%);
+          box-shadow:
+            inset 0 1px 1px rgba(0, 0, 0, 0.35),
+            0 1px 1px rgba(0, 0, 0, 0.5);
+        }
+
+        .scene-time-lintel-bolt.left {
+          left: 10px;
+        }
+
+        .scene-time-lintel-bolt.right {
+          right: 10px;
+        }
+
+        .scene-time-brackets {
+          display: flex;
+          justify-content: space-between;
+          width: calc(100% - 36px);
+          max-width: 100%;
+          height: 16px;
+          margin-top: -2px;
+          pointer-events: none;
+        }
+
+        .scene-time-bracket {
+          width: 6px;
+          height: 100%;
+          background: linear-gradient(90deg, #3d2410, #c8a96e 45%, #3d2410);
+          border-radius: 0 0 1px 1px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .scene-time-card {
+          position: relative;
+          width: max-content;
+          max-width: 100%;
+          min-height: 78px;
+          margin-top: -2px;
+          border: 2px solid var(--rs-wood-mid);
+          border-top-color: rgba(200, 169, 110, 0.35);
+          background: linear-gradient(180deg, #3d2410 0%, #2a1a0e 100%);
+          box-shadow:
+            0 10px 22px rgba(0, 0, 0, 0.55),
+            inset 0 1px 0 rgba(200, 169, 110, 0.12);
+          border-radius: 0 0 4px 4px;
+          padding: 12px 22px 14px;
+          box-sizing: border-box;
           overflow: hidden;
           text-align: center;
+          pointer-events: auto;
         }
 
         .rivet {
@@ -116,14 +192,6 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
           pointer-events: none;
         }
 
-        .rivet.tl {
-          top: 8px;
-          left: 8px;
-        }
-        .rivet.tr {
-          top: 8px;
-          right: 8px;
-        }
         .rivet.bl {
           bottom: 8px;
           left: 8px;
@@ -136,7 +204,7 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
         .scene-time-work-title {
           margin: 0;
           color: var(--rs-gold-dim);
-          font-size: 11px;
+          font-size: 14px;
           letter-spacing: 2.5px;
           font-family: Georgia, "Times New Roman", serif;
           line-height: 1.2;
@@ -149,7 +217,7 @@ export default function ReadingRouteTimeCard({ workTitle, scene }: ReadingRouteT
 
         .scene-time-flip-stage {
           position: relative;
-          margin-top: 10px;
+          margin-top: 8px;
           min-height: 30px;
           width: max-content;
           max-width: 100%;

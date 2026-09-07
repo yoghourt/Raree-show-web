@@ -74,7 +74,7 @@ export default function MiniMap({ mapUrl, mapX, mapY, locationName }: MiniMapPro
           margin: 0;
           margin-top: 6px;
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 10px;
+          font-size: 14px;
           letter-spacing: 0.15em;
           color: var(--rs-text-dim);
           text-align: center;

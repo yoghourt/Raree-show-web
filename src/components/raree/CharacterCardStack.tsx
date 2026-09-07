@@ -139,7 +139,7 @@ export default function CharacterCardStack({ characters }: CharacterCardStackPro
         .char-name {
           margin: 0;
           color: var(--rs-text);
-          font-size: 11px;
+          font-size: 14px;
           line-height: 1.2;
           font-family: Georgia, "Times New Roman", serif;
           width: 100%;
@@ -152,7 +152,7 @@ export default function CharacterCardStack({ characters }: CharacterCardStackPro
         .char-house {
           margin: 2px 0 0;
           color: var(--rs-text-dim);
-          font-size: 9px;
+          font-size: 14px;
           line-height: 1.1;
           text-align: center;
           white-space: nowrap;

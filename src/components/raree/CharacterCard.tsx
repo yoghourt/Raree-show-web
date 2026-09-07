@@ -16,11 +16,11 @@ export default function CharacterCard({ character }: CharacterCardProps) {
     <article className="border border-[#c8b89a] rounded-lg p-4 bg-[#ede8dc]">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-[#2c1810] truncate">{character.name}</h3>
-        <span className={`text-xs px-2 py-0.5 rounded ${statusClassName}`}>
+        <span className={`text-sm px-2 py-0.5 rounded ${statusClassName}`}>
           {character.status}
         </span>
       </div>
-      <p className="text-xs text-[#6b4c35] mt-1 truncate">
+      <p className="text-sm text-[#6b4c35] mt-1 truncate">
         {character.house || "No known house"}
       </p>
     </article>

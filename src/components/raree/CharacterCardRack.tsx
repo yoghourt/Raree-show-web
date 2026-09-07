@@ -311,7 +311,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
 
         .char-name {
           color: var(--rs-text);
-          font-size: 11px;
+          font-size: 14px;
           line-height: 1.2;
           font-family: Georgia, "Times New Roman", serif;
           white-space: nowrap;
@@ -322,7 +322,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
         .char-house {
           margin-top: 2px;
           color: var(--rs-text-dim);
-          font-size: 9px;
+          font-size: 14px;
           line-height: 1.1;
           white-space: nowrap;
           overflow: hidden;
@@ -420,7 +420,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
         .character-detail-desc {
           margin: 0;
           width: 100%;
-          font-size: 13px;
+          font-size: 14px;
           line-height: 1.55;
           color: var(--rs-text);
           white-space: pre-wrap;
