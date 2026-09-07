@@ -125,17 +125,14 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
       >
         {selected ? (
           <div className="character-detail-inner" onClick={(e) => e.stopPropagation()}>
-            <header className="character-detail-header">
-              <h2 className="character-detail-title">{selected.name}</h2>
-              <button
-                type="button"
-                className="character-detail-close"
-                aria-label={locale.character.closeAria}
-                onClick={() => dialogRef.current?.close()}
-              >
-                ×
-              </button>
-            </header>
+            <button
+              type="button"
+              className="character-detail-close"
+              aria-label={locale.character.closeAria}
+              onClick={() => dialogRef.current?.close()}
+            >
+              ×
+            </button>
             <div className="character-detail-body">
               {selected.image_url?.trim() ? (
                 <img
@@ -148,9 +145,14 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
                   {(selected.name?.charAt(0) ?? "?").toUpperCase()}
                 </div>
               )}
-              <p className="character-detail-desc">
-                {selected.description?.trim() ? selected.description.trim() : locale.character.noDescription}
-              </p>
+              <div className="character-detail-copy">
+                <h2 className="character-detail-title">{selected.name}</h2>
+                <p className="character-detail-desc">
+                  {selected.description?.trim()
+                    ? selected.description.trim()
+                    : locale.character.noDescription}
+                </p>
+              </div>
             </div>
           </div>
         ) : null}
@@ -331,7 +333,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
 
         .character-detail-dialog {
           margin: auto;
-          max-width: min(560px, calc(100vw - 48px));
+          max-width: min(960px, calc(100vw - 48px));
           width: 100%;
           border: 1.5px solid var(--rs-wood-mid);
           border-radius: 8px;
@@ -346,28 +348,15 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
         }
 
         .character-detail-inner {
-          padding: 16px 18px 20px;
-        }
-
-        .character-detail-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 12px;
-        }
-
-        .character-detail-title {
-          margin: 0;
-          font-family: Georgia, "Times New Roman", serif;
-          font-size: 1.15rem;
-          font-weight: 600;
-          color: var(--rs-gold);
-          line-height: 1.25;
+          position: relative;
+          padding: 20px 22px 22px;
         }
 
         .character-detail-close {
-          flex-shrink: 0;
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          z-index: 2;
           width: 32px;
           height: 32px;
           border: 1px solid var(--rs-gold-dim);
@@ -385,45 +374,94 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
 
         .character-detail-body {
           display: flex;
-          flex-direction: column;
-          gap: 14px;
-          align-items: center;
+          flex-direction: row;
+          align-items: stretch;
+          gap: 20px;
+        }
+
+        .character-detail-avatar,
+        .character-detail-avatar-fallback {
+          flex: 0 0 512px;
+          width: 512px;
+          height: 512px;
+          max-width: min(512px, 48vw);
+          max-height: min(512px, 70vh);
+          border-radius: 4px;
+          border: 2px solid var(--rs-gold-dim);
+          box-sizing: border-box;
         }
 
         .character-detail-avatar {
-          width: 512px;
-          height: 512px;
-          max-width: 100%;
-          max-height: min(512px, 70vh);
           object-fit: cover;
-          border-radius: 4px;
-          border: 2px solid var(--rs-gold-dim);
+          object-position: center top;
+          display: block;
         }
 
         .character-detail-avatar-fallback {
-          width: 512px;
-          height: 512px;
-          max-width: 100%;
-          max-height: min(512px, 70vh);
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 4px;
-          border: 2px solid var(--rs-gold-dim);
           background: linear-gradient(135deg, #3d2410 0%, #2a1a0e 100%);
           font-family: Georgia, "Times New Roman", serif;
-          font-size: 6rem;
+          font-size: 5rem;
           font-weight: 600;
           color: var(--rs-gold);
         }
 
+        .character-detail-copy {
+          flex: 1 1 auto;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          padding-right: 28px;
+          padding-top: 4px;
+        }
+
+        .character-detail-title {
+          margin: 0;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 1.35rem;
+          font-weight: 600;
+          color: var(--rs-gold);
+          line-height: 1.25;
+        }
+
         .character-detail-desc {
           margin: 0;
-          width: 100%;
+          flex: 1 1 auto;
+          overflow: auto;
+          max-height: min(512px, 70vh);
           font-size: 14px;
-          line-height: 1.55;
+          line-height: 1.6;
           color: var(--rs-text);
           white-space: pre-wrap;
+        }
+
+        @media (max-width: 640px) {
+          .character-detail-body {
+            flex-direction: column;
+            align-items: center;
+          }
+
+          .character-detail-avatar,
+          .character-detail-avatar-fallback {
+            flex-basis: auto;
+            width: min(512px, 100%);
+            height: auto;
+            aspect-ratio: 1 / 1;
+            max-width: 100%;
+            max-height: min(512px, 70vh);
+          }
+
+          .character-detail-copy {
+            width: 100%;
+            padding-right: 0;
+          }
+
+          .character-detail-desc {
+            max-height: min(40vh, 240px);
+          }
         }
       `}</style>
     </div>

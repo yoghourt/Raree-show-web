@@ -374,6 +374,7 @@ export default function ReadingRouteExperience({
             ? undefined
             : stepPlace.displayName
         }
+        description={stepPlace.archive?.description}
       />
       <HomeButton />
 

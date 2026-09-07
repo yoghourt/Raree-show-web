@@ -69,6 +69,12 @@ export const en = {
     noKnownHouse: 'No known house',
     unknownRegion: 'Unknown region',
   },
+  location: {
+    viewDetailsAria: (name: string) => `${name}, view location details`,
+    closeAria: 'Close',
+    noDescription: 'No description available.',
+    untitled: 'Unknown location',
+  },
   navigation: {
     backToHomeAria: 'Back to home',
     homeLabel: 'HOME',
