@@ -16,6 +16,7 @@ import {
   getScenesByWork,
   getWorkById,
 } from "@/lib/data"
+import { loadWorkMapResolutionByWorkTsid } from "@/lib/work-maps"
 import ReadingRouteExperience from "../../../../../components/raree/ReadingRouteExperience"
 
 export const dynamic = 'force-dynamic'
@@ -38,9 +39,10 @@ export default async function ScenePage({ params }: Props) {
   const currentScene = scenes.find((s) => s.id === sceneId)
   if (!currentScene) notFound()
 
-  const [characters, locations] = await Promise.all([
+  const [characters, locations, workMapResolution] = await Promise.all([
     getAllCharacters(),
     getAllLocations(),
+    loadWorkMapResolutionByWorkTsid(work.tsid),
   ])
 
   return (
@@ -51,6 +53,7 @@ export default async function ScenePage({ params }: Props) {
       locations={locations}
       workId={work.id}
       workTitle={work.title}
+      workMapResolution={workMapResolution}
     />
   )
 }

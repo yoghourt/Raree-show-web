@@ -49,6 +49,7 @@ const locations: Location[] = [
     scenes: [],
     map_focus_x: 0.42,
     map_focus_y: 0.18,
+    map_focus_geometry_id: "geom_test",
   },
 ]
 
@@ -112,16 +113,22 @@ assert.ok(
 assert.equal(cast0[0]?.image_url, "https://example.com/arya.jpg")
 assert.deepEqual(resolveStepCast(null, characters), [], "no invented Work-wide cast")
 
-const place0 = resolveStepPlace(step0, locations, "Unknown")
-const place1 = resolveStepPlace(step1, locations, "Unknown")
-const placeMissing = resolveStepPlace(null, locations, "Unknown")
+const place0 = resolveStepPlace(step0, locations, "Unknown", "geom_test")
+const place1 = resolveStepPlace(step1, locations, "Unknown", "geom_test")
+const placeMissing = resolveStepPlace(null, locations, "Unknown", "geom_test")
+const placeUnbound = resolveStepPlace(step0, locations, "Unknown", null)
 
 assert.equal(place0.displayName, "Winterfell")
 assert.equal(place0.mapX, 0.42)
 assert.equal(place0.mapY, 0.18)
+assert.equal(place0.pinValid, true)
 assert.equal(place1.displayName, "Great Hall", "expression/name cue without archive")
+assert.equal(place1.pinValid, false)
+assert.equal(place1.mapX, null, "no archive pin → no coords")
 assert.equal(placeMissing.displayName, "Unknown")
-assert.equal(placeMissing.mapX, 0.5)
+assert.equal(placeMissing.mapX, null, "IMPLEMENT-WMA-001: no 0.5 fallback")
+assert.equal(placeUnbound.pinValid, false, "missing Work geometry → invalid pin")
+assert.equal(placeUnbound.mapX, null)
 
 // Assistant alignment: same names as rail
 assert.deepEqual(

@@ -2,7 +2,7 @@ import type { Character, Location, ReadingFrame, ReadingRoute, Work } from "./ty
 import { parseSceneContextsV1 } from "@/lib/scene-context/parse"
 import { supabase } from "./supabase"
 
-export const WESTEROS_MAP_URL = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/v1/raree-show/maps/westeros`
+// IMPLEMENT-WMA-001: WESTEROS_MAP_URL removed — maps resolve via Work Map Authority.
 
 // --- characters (Supabase) ---
 
@@ -62,6 +62,7 @@ type LocationRow = {
   description: string
   map_focus_x: number | null
   map_focus_y: number | null
+  map_focus_geometry_id?: string | null
   work_id: string | null
 }
 
@@ -76,6 +77,7 @@ function locationFromRow(row: LocationRow): Location {
     scenes: [],
     map_focus_x: row.map_focus_x ?? null,
     map_focus_y: row.map_focus_y ?? null,
+    map_focus_geometry_id: row.map_focus_geometry_id ?? null,
   }
 }
 

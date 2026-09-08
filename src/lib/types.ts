@@ -24,6 +24,8 @@ export interface Location {
   image_url?: string
   map_focus_x?: number | null
   map_focus_y?: number | null
+  /** IMPLEMENT-WMA-001: geometry_id this pin was authored against. */
+  map_focus_geometry_id?: string | null
 }
 
 export type ReadingFrame = {
