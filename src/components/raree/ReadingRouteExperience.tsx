@@ -28,6 +28,7 @@ import {
   resolveStepPlace,
 } from "@/lib/scene-context"
 import type { WorkMapResolution } from "@/lib/work-maps"
+import { cloudinaryDisplayUrl } from "@/lib/cloudinary-display"
 import CaptionDisplay from "@/components/raree/CaptionDisplay"
 import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
 import ReadingRouteRopes from "@/components/raree/ReadingRouteRopes"
@@ -90,7 +91,9 @@ export default function ReadingRouteExperience({
     workMapResolution.status === "ready" ? workMapResolution.geometry_id : null
   const publishedMapUrl =
     workMapResolution.status === "ready"
-      ? workMapResolution.published_asset_url
+      ? cloudinaryDisplayUrl(workMapResolution.published_asset_url, {
+          maxEdge: 2400,
+        })
       : null
 
   // L4-B: cast / place from Scene Context at current Reader Step (not Route membership).
