@@ -1,10 +1,12 @@
 /**
  * Step → Scene Context bind + Archive join (IMPLEMENT-SCC-001-L4-B).
  * Reader Step index === Context.projectsToFrameIndex.
+ * IMPLEMENT-WMA-001: map coords fail closed — no (0.5, 0.5) default.
  */
 
 import type { Character, Location } from "@/lib/types"
 import type { ReaderSceneContext } from "@/lib/scene-context/types"
+import { isValidLocationPin } from "@/lib/work-maps/resolve"
 
 export type StepCastItem = {
   id: string
@@ -19,8 +21,10 @@ export type StepPlace = {
   archive: Location | null
   /** Display label for MiniMap / Assistant (may be expression cue). */
   displayName: string
-  mapX: number
-  mapY: number
+  /** Valid pin only; null when missing / unbound / wrong geometry. */
+  mapX: number | null
+  mapY: number | null
+  pinValid: boolean
 }
 
 /** RDX-RS-06: missing Context → null (do not invent Work-wide cast). */
@@ -62,14 +66,16 @@ export function resolveStepCast(
 export function resolveStepPlace(
   context: ReaderSceneContext | null,
   locations: Location[],
-  unknownFallback: string
+  unknownFallback: string,
+  currentGeometryId?: string | null
 ): StepPlace {
   if (!context) {
     return {
       archive: null,
       displayName: unknownFallback,
-      mapX: 0.5,
-      mapY: 0.5,
+      mapX: null,
+      mapY: null,
+      pinValid: false,
     }
   }
   const locCtx = context.locationContext
@@ -82,9 +88,26 @@ export function resolveStepPlace(
     locCtx.archiveName?.trim() ||
     locCtx.environmentFromExpression.trim() ||
     unknownFallback
-  const mapX = Math.min(1, Math.max(0, archive?.map_focus_x ?? 0.5))
-  const mapY = Math.min(1, Math.max(0, archive?.map_focus_y ?? 0.5))
-  return { archive, displayName, mapX, mapY }
+
+  const pinValid = Boolean(
+    archive &&
+      isValidLocationPin(
+        {
+          map_focus_x: archive.map_focus_x,
+          map_focus_y: archive.map_focus_y,
+          map_focus_geometry_id: archive.map_focus_geometry_id,
+        },
+        currentGeometryId
+      )
+  )
+
+  return {
+    archive,
+    displayName,
+    mapX: pinValid ? Number(archive!.map_focus_x) : null,
+    mapY: pinValid ? Number(archive!.map_focus_y) : null,
+    pinValid,
+  }
 }
 
 /** Character names for Assistant — same Step Context as the rail. */

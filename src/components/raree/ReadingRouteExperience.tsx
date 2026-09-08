@@ -20,7 +20,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { Character, Location, ReadingRoute } from "@/lib/types"
 import { messages as locale } from "@/lib/locale"
-import { WESTEROS_MAP_URL } from "@/lib/data"
 import { effectiveReadingFramesFromV2, resolvePresentedCaption } from "@/lib/reading-frames"
 import { readUpToStoryIndexLastFromStep } from "@/lib/reader-step"
 import {
@@ -28,6 +27,8 @@ import {
   resolveStepCast,
   resolveStepPlace,
 } from "@/lib/scene-context"
+import type { WorkMapResolution } from "@/lib/work-maps"
+import { cloudinaryDisplayUrl } from "@/lib/cloudinary-display"
 import CaptionDisplay from "@/components/raree/CaptionDisplay"
 import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
 import ReadingRouteRopes from "@/components/raree/ReadingRouteRopes"
@@ -48,6 +49,8 @@ interface ReadingRouteExperienceProps {
   locations: Location[]
   workId: string
   workTitle: string
+  /** IMPLEMENT-WMA-001 — same resolve Creator consumes. */
+  workMapResolution: WorkMapResolution
 }
 
 function tactileOverflowHint() {
@@ -63,13 +66,13 @@ export default function ReadingRouteExperience({
   locations,
   workId,
   workTitle,
+  workMapResolution,
 }: ReadingRouteExperienceProps) {
   // W-01: Visibility-Synchronized Navigation — docs/specs/w-01-visibility-synchronized-navigation.md
   // imageIndex implements Reader Step index within effective frames (SPEC-RDX-001).
   const { visualReadingRoute, imageIndex, dispatch } = useReadingRouteNavigation(currentReadingRoute)
 
   const displayedTimeline = workTitle.toUpperCase()
-  const [mapError, setMapError] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapImgRef = useRef<HTMLImageElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
@@ -80,15 +83,18 @@ export default function ReadingRouteExperience({
     [visualReadingRoute.story_images_v2]
   )
 
-  useEffect(() => {
-    setTimeout(() => {
-      setMapError(false)
-    }, 0)
-  }, [visualReadingRoute.id])
-
   const routeIndex = allReadingRoutes.findIndex((route) => route.id === visualReadingRoute.id)
   const prevRoute = routeIndex > 0 ? allReadingRoutes[routeIndex - 1] : null
   const nextRoute = routeIndex >= 0 && routeIndex < allReadingRoutes.length - 1 ? allReadingRoutes[routeIndex + 1] : null
+
+  const geometryId =
+    workMapResolution.status === "ready" ? workMapResolution.geometry_id : null
+  const publishedMapUrl =
+    workMapResolution.status === "ready"
+      ? cloudinaryDisplayUrl(workMapResolution.published_asset_url, {
+          maxEdge: 2400,
+        })
+      : null
 
   // L4-B: cast / place from Scene Context at current Reader Step (not Route membership).
   const stepContext = useMemo(
@@ -106,13 +112,21 @@ export default function ReadingRouteExperience({
       resolveStepPlace(
         stepContext,
         locations,
-        locale.readingRoute.unknownLocationFallback
+        locale.readingRoute.unknownLocationFallback,
+        geometryId
       ),
-    [stepContext, locations]
+    [stepContext, locations, geometryId]
   )
 
-  const mapX = stepPlace.mapX
-  const mapY = stepPlace.mapY
+  const showMap =
+    workMapResolution.status === "ready" &&
+    stepPlace.pinValid &&
+    stepPlace.mapX != null &&
+    stepPlace.mapY != null &&
+    Boolean(publishedMapUrl)
+
+  const mapX = stepPlace.mapX ?? 0
+  const mapY = stepPlace.mapY ?? 0
 
   useEffect(() => {
     const el = mapContainerRef.current
@@ -255,26 +269,27 @@ export default function ReadingRouteExperience({
         className="absolute inset-0 z-[1] overflow-hidden"
         style={{ backgroundColor: "var(--rs-wood-dark)" }}
       >
-        <img
-          ref={mapImgRef}
-          src={mapError ? "/maps/westeros.jpg" : WESTEROS_MAP_URL}
-          alt="Map of Westeros and Essos"
-          className="absolute object-cover"
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: "280%",
-            height: "220%",
-            objectFit: "cover",
-            transform: `translate(${-mapX * 64}%, ${-mapY * 54}%)`,
-            transition: `transform ${MAP_TRANSITION_MS}ms cubic-bezier(0.65, 0, 0.35, 1)`,
-            visibility: containerSize.width > 0 ? "visible" : "hidden",
-          }}
-          onError={() => setMapError(true)}
-          loading="eager"
-          decoding="async"
-        />
+        {showMap && publishedMapUrl ? (
+          <img
+            ref={mapImgRef}
+            src={publishedMapUrl}
+            alt=""
+            className="absolute object-cover"
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: "280%",
+              height: "220%",
+              objectFit: "cover",
+              transform: `translate(${-mapX * 64}%, ${-mapY * 54}%)`,
+              transition: `transform ${MAP_TRANSITION_MS}ms cubic-bezier(0.65, 0, 0.35, 1)`,
+              visibility: containerSize.width > 0 ? "visible" : "hidden",
+            }}
+            loading="eager"
+            decoding="async"
+          />
+        ) : null}
       </div>
 
       <div
@@ -365,17 +380,33 @@ export default function ReadingRouteExperience({
         </div>
       </div>
 
-      <MiniMap
-        mapUrl={mapError ? "/maps/westeros.jpg" : WESTEROS_MAP_URL}
-        mapX={mapX}
-        mapY={mapY}
-        locationName={
-          stepPlace.displayName === locale.readingRoute.unknownLocationFallback
-            ? undefined
-            : stepPlace.displayName
-        }
-        description={stepPlace.archive?.description}
-      />
+      {showMap && publishedMapUrl && stepPlace.mapX != null && stepPlace.mapY != null ? (
+        <MiniMap
+          mapUrl={publishedMapUrl}
+          mapX={stepPlace.mapX}
+          mapY={stepPlace.mapY}
+          locationName={
+            stepPlace.displayName === locale.readingRoute.unknownLocationFallback
+              ? undefined
+              : stepPlace.displayName
+          }
+          description={stepPlace.archive?.description}
+        />
+      ) : stepPlace.displayName !== locale.readingRoute.unknownLocationFallback ? (
+        <div className="mini-map-place-label-only" style={{
+          position: "fixed",
+          bottom: 24,
+          left: 24,
+          zIndex: 25,
+          maxWidth: 180,
+          fontFamily: 'Georgia, "Times New Roman", serif',
+          fontSize: 14,
+          letterSpacing: "0.15em",
+          color: "var(--rs-text-dim)",
+        }}>
+          {stepPlace.displayName}
+        </div>
+      ) : null}
       <HomeButton />
 
       <style jsx>{`
