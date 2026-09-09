@@ -126,6 +126,10 @@ export function pinScreenPosition(
 /** Close-up multiplier vs cover; keeps the background map zoomed in like the old 220–280% crop. */
 export const BACKGROUND_MAP_COVER_MULTIPLIER = 2.2
 
+/** Shared camera duration for background map pan and MiniMap pin travel. */
+export const MAP_TRANSITION_MS = 1200
+export const MAP_TRANSITION_EASING = "cubic-bezier(0.65, 0, 0.35, 1)"
+
 /** Camera that places the 0–1 pin at the viewport center without letterboxing. */
 export function backgroundMapView(
   pinX: number,

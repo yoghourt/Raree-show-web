@@ -12,6 +12,8 @@ import { messages as locale } from "@/lib/locale"
 import {
   clampView,
   fitScale,
+  MAP_TRANSITION_EASING,
+  MAP_TRANSITION_MS,
   maxScale as maxScaleFor,
   pinScreenPosition,
   scaleToFramePin,
@@ -355,6 +357,7 @@ export default function MiniMap({
   const px = Math.min(1, Math.max(0, mapX))
   const py = Math.min(1, Math.max(0, mapY))
   const [open, setOpen] = useState(false)
+  const [allowPinTransition, setAllowPinTransition] = useState(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const title = locationName?.trim() || locale.location.untitled
   const body = description?.trim() || locale.location.noDescription
@@ -368,6 +371,16 @@ export default function MiniMap({
       el.close()
     }
   }, [open])
+
+  useEffect(() => {
+    setAllowPinTransition(false)
+    const id = requestAnimationFrame(() => setAllowPinTransition(true))
+    return () => cancelAnimationFrame(id)
+  }, [mapUrl])
+
+  const pinTravel = allowPinTransition
+    ? `${MAP_TRANSITION_MS}ms ${MAP_TRANSITION_EASING}`
+    : "none"
 
   return (
     <div className="mini-map-root">
@@ -384,10 +397,20 @@ export default function MiniMap({
             className="mini-map-img"
             style={{
               objectPosition: `${px * 100}% ${py * 100}%`,
+              transition:
+                pinTravel === "none" ? "none" : `object-position ${pinTravel}`,
             }}
             draggable={false}
           />
-          <span className="mini-map-dot" style={{ left: `${px * 100}%`, top: `${py * 100}%` }} />
+          <span
+            className="mini-map-dot"
+            style={{
+              left: `${px * 100}%`,
+              top: `${py * 100}%`,
+              transition:
+                pinTravel === "none" ? "none" : `left ${pinTravel}, top ${pinTravel}`,
+            }}
+          />
         </div>
         {locationName ? (
           <p className="mini-map-label" title={locationName}>

@@ -28,7 +28,11 @@ import {
   resolveStepPlace,
 } from "@/lib/scene-context"
 import type { WorkMapResolution } from "@/lib/work-maps"
-import { backgroundMapView } from "@/lib/map-viewport"
+import {
+  backgroundMapView,
+  MAP_TRANSITION_EASING,
+  MAP_TRANSITION_MS,
+} from "@/lib/map-viewport"
 import { cloudinaryDisplayUrl } from "@/lib/cloudinary-display"
 import CaptionDisplay from "@/components/raree/CaptionDisplay"
 import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
@@ -40,8 +44,6 @@ import CharacterCardRack from "@/components/raree/CharacterCardRack"
 import ReadingRouteNavButtons from "@/components/raree/ReadingRouteNavButtons"
 import HomeButton from "@/components/raree/HomeButton"
 import { useReadingRouteNavigation } from "@/components/raree/useReadingRouteNavigation"
-
-const MAP_TRANSITION_MS = 1200
 
 interface ReadingRouteExperienceProps {
   currentReadingRoute: ReadingRoute
@@ -122,7 +124,7 @@ function BackgroundWorkMap({
           ? `translate(${view.x}px, ${view.y}px) scale(${view.scale})`
           : "translate(0px, 0px) scale(1)",
         transition: allowTransition
-          ? `transform ${MAP_TRANSITION_MS}ms cubic-bezier(0.65, 0, 0.35, 1)`
+          ? `transform ${MAP_TRANSITION_MS}ms ${MAP_TRANSITION_EASING}`
           : "none",
         visibility: view ? "visible" : "hidden",
         willChange: "transform",
