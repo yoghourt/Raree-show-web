@@ -11,6 +11,7 @@ import {
   scaleToFramePin,
   viewCenteredOnPin,
   zoomAt,
+  backgroundMapView,
 } from "../src/lib/map-viewport"
 
 const iw = 2000
@@ -57,5 +58,18 @@ assert.ok(Math.abs(after.y - originY) < 0.5, "zoom keeps cursor point")
 
 const atMin = zoomAt(fitted, minS * 0.5, 256, 256, iw, ih, vw, vh, minS, cover * 4)
 assert.equal(atMin.scale, minS, "cannot zoom out past whole-map fit")
+
+const screenVw = 1440
+const screenVh = 900
+for (const [px, py] of [
+  [0.5, 0.5],
+  [0.18, 0.22],
+  [0.82, 0.71],
+] as const) {
+  const camera = backgroundMapView(px, py, iw, ih, screenVw, screenVh)
+  const focused = pinScreenPosition(camera, px, py, iw, ih)
+  assert.ok(Math.abs(focused.x - screenVw / 2) < 0.5, `background pin x centered at (${px}, ${py})`)
+  assert.ok(Math.abs(focused.y - screenVh / 2) < 0.5, `background pin y centered at (${px}, ${py})`)
+}
 
 console.log("verify-map-viewport: ok")
