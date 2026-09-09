@@ -74,6 +74,8 @@ export const en = {
     closeAria: 'Close',
     noDescription: 'No description available.',
     untitled: 'Unknown location',
+    mapViewportAria: 'Location map. Scroll to zoom, drag to pan.',
+    mapPanZoomHint: 'Scroll to zoom · Drag to pan',
   },
   navigation: {
     backToHomeAria: 'Back to home',

@@ -17,7 +17,7 @@
  * SceneProjectionLink / Rollout association reads deferred (RC1).
  * Owner: W-01 (orchestration) + Implementation (presentation).
  */
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Character, Location, ReadingRoute } from "@/lib/types"
 import { messages as locale } from "@/lib/locale"
 import { effectiveReadingFramesFromV2, resolvePresentedCaption } from "@/lib/reading-frames"
@@ -28,7 +28,12 @@ import {
   resolveStepPlace,
 } from "@/lib/scene-context"
 import type { WorkMapResolution } from "@/lib/work-maps"
-import { cloudinaryDisplayUrl } from "@/lib/cloudinary-display"
+import {
+  backgroundMapView,
+  MAP_TRANSITION_EASING,
+  MAP_TRANSITION_MS,
+} from "@/lib/map-viewport"
+import { cloudinaryDisplayUrl, WORK_MAP_DISPLAY_OPTIONS } from "@/lib/cloudinary-display"
 import CaptionDisplay from "@/components/raree/CaptionDisplay"
 import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
 import ReadingRouteRopes from "@/components/raree/ReadingRouteRopes"
@@ -39,8 +44,6 @@ import CharacterCardRack from "@/components/raree/CharacterCardRack"
 import ReadingRouteNavButtons from "@/components/raree/ReadingRouteNavButtons"
 import HomeButton from "@/components/raree/HomeButton"
 import { useReadingRouteNavigation } from "@/components/raree/useReadingRouteNavigation"
-
-const MAP_TRANSITION_MS = 1200
 
 interface ReadingRouteExperienceProps {
   currentReadingRoute: ReadingRoute
@@ -59,6 +62,80 @@ function tactileOverflowHint() {
   }
 }
 
+function BackgroundWorkMap({
+  url,
+  mapX,
+  mapY,
+  viewportWidth,
+  viewportHeight,
+}: {
+  url: string
+  mapX: number
+  mapY: number
+  viewportWidth: number
+  viewportHeight: number
+}) {
+  const imgRef = useRef<HTMLImageElement>(null)
+  const [nat, setNat] = useState<{ w: number; h: number } | null>(null)
+  const [allowTransition, setAllowTransition] = useState(false)
+
+  const applyNaturalSize = useCallback((img: HTMLImageElement) => {
+    if (img.naturalWidth <= 0 || img.naturalHeight <= 0) return
+    setNat((prev) =>
+      prev?.w === img.naturalWidth && prev.h === img.naturalHeight
+        ? prev
+        : { w: img.naturalWidth, h: img.naturalHeight }
+    )
+  }, [])
+
+  useEffect(() => {
+    setNat(null)
+    setAllowTransition(false)
+    const img = imgRef.current
+    if (img?.complete) applyNaturalSize(img)
+  }, [applyNaturalSize, url])
+
+  const view =
+    nat && viewportWidth > 0 && viewportHeight > 0
+      ? backgroundMapView(mapX, mapY, nat.w, nat.h, viewportWidth, viewportHeight)
+      : null
+
+  useEffect(() => {
+    if (!nat || viewportWidth <= 0 || viewportHeight <= 0) return
+    const id = requestAnimationFrame(() => setAllowTransition(true))
+    return () => cancelAnimationFrame(id)
+  }, [nat, url, viewportHeight, viewportWidth])
+
+  return (
+    <img
+      ref={imgRef}
+      src={url}
+      alt=""
+      className="absolute"
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: nat?.w ?? 1,
+        height: nat?.h ?? 1,
+        maxWidth: "none",
+        transformOrigin: "0 0",
+        transform: view
+          ? `translate(${view.x}px, ${view.y}px) scale(${view.scale})`
+          : "translate(0px, 0px) scale(1)",
+        transition: allowTransition
+          ? `transform ${MAP_TRANSITION_MS}ms ${MAP_TRANSITION_EASING}`
+          : "none",
+        visibility: view ? "visible" : "hidden",
+        willChange: "transform",
+      }}
+      onLoad={(event) => applyNaturalSize(event.currentTarget)}
+      loading="eager"
+      decoding="async"
+    />
+  )
+}
+
 export default function ReadingRouteExperience({
   currentReadingRoute,
   allReadingRoutes,
@@ -74,7 +151,6 @@ export default function ReadingRouteExperience({
 
   const displayedTimeline = workTitle.toUpperCase()
   const mapContainerRef = useRef<HTMLDivElement>(null)
-  const mapImgRef = useRef<HTMLImageElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const imageReelRef = useRef<ImageReelHandle>(null)
 
@@ -91,9 +167,10 @@ export default function ReadingRouteExperience({
     workMapResolution.status === "ready" ? workMapResolution.geometry_id : null
   const publishedMapUrl =
     workMapResolution.status === "ready"
-      ? cloudinaryDisplayUrl(workMapResolution.published_asset_url, {
-          maxEdge: 2400,
-        })
+      ? cloudinaryDisplayUrl(
+          workMapResolution.published_asset_url,
+          WORK_MAP_DISPLAY_OPTIONS
+        )
       : null
 
   // L4-B: cast / place from Scene Context at current Reader Step (not Route membership).
@@ -270,24 +347,12 @@ export default function ReadingRouteExperience({
         style={{ backgroundColor: "var(--rs-wood-dark)" }}
       >
         {showMap && publishedMapUrl ? (
-          <img
-            ref={mapImgRef}
-            src={publishedMapUrl}
-            alt=""
-            className="absolute object-cover"
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              width: "280%",
-              height: "220%",
-              objectFit: "cover",
-              transform: `translate(${-mapX * 64}%, ${-mapY * 54}%)`,
-              transition: `transform ${MAP_TRANSITION_MS}ms cubic-bezier(0.65, 0, 0.35, 1)`,
-              visibility: containerSize.width > 0 ? "visible" : "hidden",
-            }}
-            loading="eager"
-            decoding="async"
+          <BackgroundWorkMap
+            url={publishedMapUrl}
+            mapX={mapX}
+            mapY={mapY}
+            viewportWidth={containerSize.width}
+            viewportHeight={containerSize.height}
           />
         ) : null}
       </div>
