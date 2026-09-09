@@ -126,9 +126,30 @@ export function pinScreenPosition(
 /** Close-up multiplier vs cover; keeps the background map zoomed in like the old 220–280% crop. */
 export const BACKGROUND_MAP_COVER_MULTIPLIER = 2.2
 
+/**
+ * Location-detail dialog is ~512px, so it needs a higher cover multiplier than
+ * the full-screen background to keep place labels at a similar on-screen size.
+ */
+export const DETAIL_MAP_COVER_MULTIPLIER = 3.5
+
 /** Shared camera duration for background map pan and MiniMap pin travel. */
 export const MAP_TRANSITION_MS = 1200
 export const MAP_TRANSITION_EASING = "cubic-bezier(0.65, 0, 0.35, 1)"
+
+export function closeUpMapView(
+  pinX: number,
+  pinY: number,
+  iw: number,
+  ih: number,
+  vw: number,
+  vh: number,
+  coverMultiplier: number
+): MapView {
+  const framed = scaleToFramePin(pinX, pinY, iw, ih, vw, vh)
+  const cinematic = coverScale(iw, ih, vw, vh) * coverMultiplier
+  const scale = Math.min(Math.max(framed, cinematic), maxScale(iw, ih, vw, vh))
+  return viewCenteredOnPin(scale, pinX, pinY, iw, ih, vw, vh)
+}
 
 /** Camera that places the 0–1 pin at the viewport center without letterboxing. */
 export function backgroundMapView(
@@ -139,8 +160,13 @@ export function backgroundMapView(
   vw: number,
   vh: number
 ): MapView {
-  const framed = scaleToFramePin(pinX, pinY, iw, ih, vw, vh)
-  const cinematic = coverScale(iw, ih, vw, vh) * BACKGROUND_MAP_COVER_MULTIPLIER
-  const scale = Math.min(Math.max(framed, cinematic), maxScale(iw, ih, vw, vh))
-  return viewCenteredOnPin(scale, pinX, pinY, iw, ih, vw, vh)
+  return closeUpMapView(
+    pinX,
+    pinY,
+    iw,
+    ih,
+    vw,
+    vh,
+    BACKGROUND_MAP_COVER_MULTIPLIER
+  )
 }

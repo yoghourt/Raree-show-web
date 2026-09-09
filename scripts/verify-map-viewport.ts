@@ -5,7 +5,9 @@
 import assert from "node:assert/strict"
 import {
   clampView,
+  closeUpMapView,
   coverScale,
+  DETAIL_MAP_COVER_MULTIPLIER,
   fitScale,
   pinScreenPosition,
   scaleToFramePin,
@@ -71,5 +73,24 @@ for (const [px, py] of [
   assert.ok(Math.abs(focused.x - screenVw / 2) < 0.5, `background pin x centered at (${px}, ${py})`)
   assert.ok(Math.abs(focused.y - screenVh / 2) < 0.5, `background pin y centered at (${px}, ${py})`)
 }
+
+const dialogVw = 512
+const dialogVh = 512
+const dialogCamera = closeUpMapView(
+  0.18,
+  0.22,
+  iw,
+  ih,
+  dialogVw,
+  dialogVh,
+  DETAIL_MAP_COVER_MULTIPLIER
+)
+assert.ok(
+  dialogCamera.scale > coverScale(iw, ih, dialogVw, dialogVh) * 2,
+  "detail dialog opens closer than cover"
+)
+const dialogPin = pinScreenPosition(dialogCamera, 0.18, 0.22, iw, ih)
+assert.ok(Math.abs(dialogPin.x - dialogVw / 2) < 0.5, "detail pin x centered")
+assert.ok(Math.abs(dialogPin.y - dialogVh / 2) < 0.5, "detail pin y centered")
 
 console.log("verify-map-viewport: ok")

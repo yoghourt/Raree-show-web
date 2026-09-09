@@ -33,7 +33,7 @@ import {
   MAP_TRANSITION_EASING,
   MAP_TRANSITION_MS,
 } from "@/lib/map-viewport"
-import { cloudinaryDisplayUrl } from "@/lib/cloudinary-display"
+import { cloudinaryDisplayUrl, WORK_MAP_DISPLAY_OPTIONS } from "@/lib/cloudinary-display"
 import CaptionDisplay from "@/components/raree/CaptionDisplay"
 import ImageReel, { type ImageReelHandle } from "@/components/raree/ImageReel"
 import ReadingRouteRopes from "@/components/raree/ReadingRouteRopes"
@@ -167,9 +167,10 @@ export default function ReadingRouteExperience({
     workMapResolution.status === "ready" ? workMapResolution.geometry_id : null
   const publishedMapUrl =
     workMapResolution.status === "ready"
-      ? cloudinaryDisplayUrl(workMapResolution.published_asset_url, {
-          maxEdge: 2400,
-        })
+      ? cloudinaryDisplayUrl(
+          workMapResolution.published_asset_url,
+          WORK_MAP_DISPLAY_OPTIONS
+        )
       : null
 
   // L4-B: cast / place from Scene Context at current Reader Step (not Route membership).

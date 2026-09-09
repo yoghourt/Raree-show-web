@@ -11,13 +11,13 @@ import {
 import { messages as locale } from "@/lib/locale"
 import {
   clampView,
+  closeUpMapView,
+  DETAIL_MAP_COVER_MULTIPLIER,
   fitScale,
   MAP_TRANSITION_EASING,
   MAP_TRANSITION_MS,
   maxScale as maxScaleFor,
   pinScreenPosition,
-  scaleToFramePin,
-  viewCenteredOnPin,
   zoomAt,
   type MapView,
 } from "@/lib/map-viewport"
@@ -105,14 +105,14 @@ function LocationMapViewport({
     if (epochRef.current !== epoch) {
       epochRef.current = epoch
       applyView(
-        viewCenteredOnPin(
-          scaleToFramePin(px, py, nat.w, nat.h, vw, vh),
+        closeUpMapView(
           px,
           py,
           nat.w,
           nat.h,
           vw,
-          vh
+          vh,
+          DETAIL_MAP_COVER_MULTIPLIER
         )
       )
       return
