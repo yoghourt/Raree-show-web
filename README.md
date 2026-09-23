@@ -1,152 +1,112 @@
 # Raree Show
 
-> A narrative visualization and story interaction platform — explore literary works through map-based scene navigation with a visibility-aware AI assistant.
->
-> 叙事可视化与故事交互平台：地图场景导航 + 防剧透 AI 阅读助手。
+An AI-native reading companion for long-form literary works. Readers move through a work on a map, scene by scene, and can ask a streaming assistant that only receives narrative they have already reached.
 
-**[Live Demo](https://raree-show-web.vercel.app)** · **[Admin CMS](https://raree-show-admin.vercel.app)**
+Next.js 16 · TypeScript · Vercel AI SDK · Tailwind CSS 4 · Supabase (Postgres + pgvector) · Gemini · OpenRouter
 
----
+**[Live Demo](https://raree-show-web.vercel.app)**
 
-## Screenshots / Demo
-<!-- TODO: 录制 GIF 后替换此处 -->
-<!-- Recommended: 场景幻灯片页 + AI 问答悬浮球 的操作录屏，时长 30-60 秒 -->
+[Admin CMS](https://raree-show-admin.vercel.app) (access required). A separate editorial app for the same Supabase data. Sign-in is required; there is no public demo account.
 
-> 🎬 Demo GIF coming soon
+## Experience
 
----
+The public app opens on a bookshelf of works. Choosing a work starts at its first scene.
 
-## Features
+- **Map navigation.** The background map moves to the current scene. Frame images, captions, cast, place, and scene progress stay with that position.
+- **Reading progress.** Moving between scenes and frames is the position the assistant is allowed to use.
+- **Streaming assistant.** Questions about the current scene stream into the panel.
+- **Stop.** Stop aborts the in-flight request. Text already streamed stays in the thread and is marked Stopped. A stop before any text leaves no assistant message.
+- **Visibility limit.** Scenes beyond the reader’s progress are excluded from retrieval. Unread frame captions are omitted from the prompt before generation.
 
-- **Scene Slideshow** — Navigate literary scenes through a map-based slideshow with animated panning across the story world.
-  地图背景幻灯片，支持平移动画，场景与幻灯切换。
+Works, scenes, characters, and locations are read from Supabase. Images are served from Cloudinary URLs stored with that content.
 
-- **Character Bar** — Animated character portraits for the current scene.
-  当前场景人物肖像栏，带进场动效。
+## Engineering Highlights
 
-- **Scene Caption Panel** — Slide captions, chapter title, and scene progress in the central reader panel.
-  中央阅读面板：幻灯 caption、章节标题与场景进度。
+- **Progress-scoped retrieval.** A SQL filter selects scenes at or behind the reader’s chapter and order. Vector search reranks only inside that set (`match_scenes` on pgvector). Results outside the set fail the request.
+- **Caption boundary.** Revealed frame captions are the story text sent to the model. Those raw caption bytes are SHA-256 checked before any generation call. A mismatch returns HTTP 500.
+- **Provider boundary.** Gemini (`gemini-3.5-flash-lite`) streams the answer. If `OPENROUTER_API_KEY` is set, OpenRouter can take over only when Gemini fails before the first text token. After that token, the stream stays with the provider that started it. Query embeddings (`gemini-embedding-001`, 768 dimensions) have no fallback.
+- **Cancellation.** The Stop control aborts the browser `fetch`. `POST /api/scene-assistant` forwards `req.signal` into provider generation. Abort is not treated as a provider failure and does not start fallback.
+- **Offline evaluation.** `npm run eval:ragas` checks retrieval governance locally, including the same raw-caption hash used at runtime. It is not part of CI.
 
-- **Visibility-aware Scene Assistant** — Progress-bound, streaming Q&A about the current scene. Retrieval and prompts respect what the reader has actually reached.
-  随阅读进度约束的悬浮 AI 助手，流式输出；检索与提示均遵循已读边界，避免剧透。
-
-- **Admin CMS** — Separate admin panel for managing works, scenes, characters, and locations with Supabase as the shared data layer.
-  独立 Admin 后台管理作品、场景、角色、地点，数据实时同步到主站。
-
----
+Provider keys stay on the server. Structured provider logs are written to the server console; they are not shipped to an observability backend.
 
 ## Runtime Architecture
 
-The Scene Assistant runtime enforces visibility boundaries at the pipeline level, not only in prompts.
-
 ```text
-Client Progress
-    → SQL Visibility Gate (reading-progress-constrained candidate universe)
-    → Hybrid RAG: pgvector rerank within SQL-authorized candidate set
-    → Raw-byte Oracle Verification (SHA-256 on canonical caption bytes)
-    → Generation (Gemini primary; OpenRouter fallback if configured)
+Reader progress
+  → SQL visibility gate (chapter / order at or behind progress)
+  → pgvector rerank inside that candidate set
+  → revealed captions only, then SHA-256 check
+  → stream: Gemini, or OpenRouter if the key is set and Gemini fails before the first token
 ```
 
-- **SQL visibility gate** — Reading progress constrains which scenes may enter retrieval. Scenes beyond the user's progress boundary are excluded at the SQL layer.
-- **Hybrid RAG retrieval** — Semantic search operates only within the SQL-authorized candidate set. Retrieval is bounded, not maximal.
-- **Raw-byte oracle verification** — Before any generation call, authorized semantic bytes (`revealedStorySlides[].caption`) are collected and SHA-256 verified. Invariant mismatch is a hard runtime failure (HTTP 500).
-- **Provider abstraction & failover** — Generation executes through a provider abstraction layer (`src/runtime/`). Gemini is the primary provider; OpenRouter is wired as a conditional fallback (activated by `OPENROUTER_API_KEY`). Rollout is ongoing; see ADR-003.
-- **Governance submodule CI checks** — `npm run dev` and CI bootstrap verify the governance mount is present and readable.
 
-An offline RAGAS harness (`npm run eval:ragas`) supports local evaluation of retrieval governance. Evaluation oracle uses the same raw-byte SHA-256 semantics as the production runtime. Baseline evidence: [`docs/evaluations/ragas-baseline-v1.md`](docs/evaluations/ragas-baseline-v1.md)
+| Stage           | What it does                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| SQL gate        | `metadataPreFiltering` in `src/services/retrieval.ts` limits scenes by `workTsid`, `readUpToChapter`, and `readUpToOrderIndex`. |
+| Vector rerank   | `match_scenes` runs on those scene ids only. Default match count is 10.                                                         |
+| Prompt boundary | Current-chapter captions are truncated to frames the reader has reached (`readUpToStoryIndexLast`).                             |
+| Oracle          | `src/lib/production-story-oracle.ts` hashes authorized caption bytes before `executeVerifiedGeneration`.                        |
+| Generation      | `src/runtime/` owns streaming, pre-token fallback, and abort. Retrieval is not called again during fallback.                    |
 
-Deep dive: [`docs/runtime-architecture.md`](docs/runtime-architecture.md)
 
-> **Vocabulary notice:** "Scene" and "Story Images" in this README are implementation symbols.
-> Normative Runtime vocabulary is `Reading Route` and `Reading Frame`.
-> See `governance/vocabulary/runtime-lexicon.md` (via submodule).
+Scene navigation in the browser updates the URL with `history.replaceState` and commits progress before the assistant request, so the payload matches the scene on screen.
 
----
+Deeper layout notes: [`docs/runtime-architecture.md`](docs/runtime-architecture.md).
 
-## ADR Index
+## Evidence
 
-| ADR | Topic | Status |
-|-----|-------|--------|
-| [ADR-001](docs/adr/001-pgvector-as-vector-store.md) | pgvector as vector store | Accepted |
-| [ADR-002](docs/adr/002-hybrid-rag-retrieval.md) | Hybrid RAG visibility boundary | Accepted |
-| [ADR-003](docs/adr/003-multi-provider-ai-runtime.md) | Multi-provider AI runtime | **Accepted** |
 
-ADR-003 defines the accepted generation-layer failover topology. Provider abstraction and OpenRouter fallback are implemented in `src/runtime/`. Production rollout maturity and telemetry hardening are ongoing.
+| ADR                                                               | Topic                                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------ |
+| [ADR-001](docs/adr/001-pgvector-as-vector-store.md)               | pgvector as the vector store                           |
+| [ADR-002](docs/adr/002-hybrid-rag-retrieval.md)                   | Serial hybrid retrieval and the two visibility layers  |
+| [ADR-003](docs/adr/003-multi-provider-ai-runtime.md)              | Generation provider abstraction and pre-token fallback |
+| [ADR-013](docs/adr/013-scene-assistant-cancellation-semantics.md) | Cooperative cancellation; abort is not fallback        |
 
----
+
+Retrieval evaluation: [`docs/evaluations/ragas-baseline-v1.md`](docs/evaluations/ragas-baseline-v1.md) (candidate baseline, not a CI gate). Harness notes: [`eval/ragas/README.md`](eval/ragas/README.md).
+
+In code, a scene is a reading route and a story image is a reading frame. The shared glossary is `governance/vocabulary/runtime-lexicon.md`.
 
 ## Local Development
 
 ```bash
-# 1. Clone
 git clone https://github.com/yoghourt/raree-show-web.git
 cd raree-show-web
-
-# 2. Install dependencies
 npm install
+```
 
-# 3. Set up environment variables
-cp .env.example .env.local
-# Fill in:
-# GEMINI_API_KEY
-# NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-# NEXT_PUBLIC_SUPABASE_URL
-# NEXT_PUBLIC_SUPABASE_ANON_KEY
-# SUPABASE_SERVICE_ROLE_KEY   # server-only; Scene Assistant retrieval
-# HTTPS_PROXY                 # optional; mainland China local dev
+Create `.env.local` (this repo does not ship an env template):
 
-# 4. Run dev server
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=   # server-only; assistant retrieval
+GEMINI_API_KEY=               # generation and query embeddings
+# OPENROUTER_API_KEY=         # optional generation fallback
+# OPENROUTER_MODEL_ID=        # optional; default openai/gpt-oss-20b:free
+# HTTPS_PROXY=                # optional; local Gemini access
+```
+
+```bash
 npm run dev
 ```
 
-`npm run dev` runs bootstrap first (syncs the `governance/` submodule). First clone requires network access.
+`npm run dev` bootstraps the `governance/` submodule first. The first clone needs network access. Open [http://localhost:3000](http://localhost:3000).
 
-Open [http://localhost:3000](http://localhost:3000).
-
----
-
-## Project Structure
+## Repository
 
 ```text
-src/                 # Next.js app, Scene Experience, Scene Assistant API
-docs/                # ADRs, specs, runtime-architecture.md
-eval/                # Offline RAGAS evaluation harness
-scripts/governance/  # Governance bootstrap & CI checks
-governance/          # Shared governance submodule (synced at dev/CI)
+src/app/         Next.js App Router, reading pages, POST /api/scene-assistant
+src/components/  Bookshelf and reading-route UI
+src/runtime/     Providers, stream orchestration, fallback, abort
+src/services/    Hybrid retrieval
+src/lib/         Supabase reads, visibility checks, caption oracle, prompts
+docs/            ADRs, specs, runtime notes, evaluation reports
+eval/ragas/      Offline RAG evaluation harness
+scripts/         Governance bootstrap and retrieval checks
+governance/      Shared governance submodule
 ```
 
----
-
-## Roadmap
-
-### Current Runtime
-
-- [x] Scene slideshow + map navigation
-- [x] Visibility-aware Scene Assistant (Hybrid RAG)
-- [x] SQL visibility gate + bounded vector rerank
-- [x] Raw-byte oracle verification (SHA-256 on canonical caption bytes)
-- [x] Admin CMS + Supabase data layer
-- [x] Governance CI checks (`check:governance`)
-- [x] Offline RAGAS harness (`npm run eval:ragas`) — raw-byte oracle aligned
-- [x] Provider abstraction & transparent failover (ADR-003 — implemented; rollout converging)
-
-### In Progress / Planned
-
-- [ ] OpenRouter production hardening (model governance, key management, fallback SLA)
-- [ ] Runtime telemetry backend (provider-switch observability logs exist; pipeline not yet connected)
-- [ ] Embedding failover (separate ADR scope; current retrieval has no failover)
-- [ ] Evaluation automation (CI integration — not current)
-- [ ] Migrate characters and locations to Supabase
-- [ ] Expand scene coverage (ongoing with reading)
-
----
-
-## License
-
-MIT
-
----
-
-> **Vocabulary Notice:** This repository uses implementation symbols (`Scene`, `StoryImage`, `story_images_v2`).
-> Normative Runtime vocabulary is `Reading Route`, `Reading Frame`, and `Frame Narrative`. See
-> `governance/vocabulary/runtime-lexicon.md` in `raree-show-admin`.
+The editorial CMS lives in the separate `raree-show-admin` repository.

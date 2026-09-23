@@ -76,8 +76,10 @@ flowchart TB
     oracle --> xmlOut[XML builders]
   end
   xmlOut --> promptAsm[Prompt assembly in scene-assistant route]
-  promptAsm --> gemini[Gemini streamText]
+  promptAsm --> generation[executeVerifiedGeneration]
 ```
+
+Generation after this ingress is [ADR-003](003-multi-provider-ai-runtime.md). The route calls `executeVerifiedGeneration` with Gemini (`gemini-3.5-flash-lite`) as primary. OpenRouter runs only when `OPENROUTER_API_KEY` is set and Gemini fails before the first text token. Client abort is forwarded as `AbortSignal` and does not re-enter retrieval ([ADR-013](013-scene-assistant-cancellation-semantics.md)).
 
 **Branch A — semantic retrieval** (`retrieveScenesUncached`):
 

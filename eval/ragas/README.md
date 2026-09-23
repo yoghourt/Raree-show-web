@@ -14,7 +14,7 @@ Oracle-only (no LLM / no API key):
 npm run eval:ragas:oracle
 ```
 
-Requires `.env.local` with `GEMINI_API_KEY` for samples that pass the content-hash Oracle (semantic layer).
+The semantic judge is one provider per run. The default is Gemini (`EVAL_GEMINI_MODEL`, default `gemini-2.5-flash`) and needs `GEMINI_API_KEY`. `EVAL_JUDGE_PROVIDER=openrouter` uses OpenRouter and needs `OPENROUTER_API_KEY` (default model `EVAL_OPENROUTER_MODEL` or `openai/gpt-oss-120b:free`). A run does not switch judges after a failure.
 
 Optional debug judge output (console only, not persisted):
 
