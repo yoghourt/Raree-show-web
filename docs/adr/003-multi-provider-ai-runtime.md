@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 
-**Last Updated:** 2026-05-29
+**Last Updated:** 2026-09-23
 
 **Runtime authority:** `src/app/api/scene-assistant/route.ts`, `src/runtime/`
 
@@ -43,7 +43,7 @@ Gemini (primary) → [OpenRouter (fallback, if OPENROUTER_API_KEY set)]
         ↓
 wrapResponseWithSemanticStreamGuard
         ↓
-SceneAssistant UI
+ReadingRouteAssistant
 ```
 
 ### Deployed components
@@ -54,11 +54,11 @@ Defines the generation runtime contract: `streamText`, `generateText`, `normaliz
 
 **Gemini provider adapter** (`src/runtime/providers/gemini-provider.ts`)
 
-Implements `AIModelProvider` over `@ai-sdk/google`. Sets `maxRetries: 0` to reclaim retry ownership at coordinator level.
+Implements `AIModelProvider` over `@ai-sdk/google`. The scene-assistant route uses the adapter default `gemini-3.5-flash-lite`. Sets `maxRetries: 0` to reclaim retry ownership at coordinator level.
 
 **OpenRouter provider adapter** (`src/runtime/providers/openrouter-provider.ts`)
 
-Implements `AIModelProvider` over `@openrouter/ai-sdk-provider`. Acts as failover aggregation layer only — not a routing system.
+Implements `AIModelProvider` over `@openrouter/ai-sdk-provider`. Default model is `OPENROUTER_MODEL_ID`, or `openai/gpt-oss-20b:free` when that variable is unset. Acts as failover aggregation layer only — not a routing system. The route passes `req.signal` into `executeVerifiedGeneration`. Abort is not a fallback trigger (ADR-013).
 
 **Failover coordinator** (`src/runtime/fallback-coordinator.ts` → `executeVerifiedGeneration`)
 
@@ -86,7 +86,7 @@ Provider credentials remain server-only (`GEMINI_API_KEY`, `OPENROUTER_API_KEY`)
 
 ### Evaluation runtime (deployed)
 
-Evaluation uses Gemini only with same-provider transient RPM retry. Cross-provider failover is not implemented and is forbidden for evaluation. Evaluation fails closed.
+`npm run eval:ragas` pins one judge per run. The default is Gemini (`EVAL_JUDGE_PROVIDER` unset or `gemini`; model `EVAL_GEMINI_MODEL` or `gemini-2.5-flash`) with same-provider RPM retry. `EVAL_JUDGE_PROVIDER=openrouter` selects the OpenRouter judge instead. A run does not fail over from one judge to the other. This harness is not the Scene Assistant generation path.
 
 ---
 
@@ -149,7 +149,7 @@ Transparent failover MUST preserve:
 The following areas remain unresolved or in active evolution. This section exists to prevent an "architecture complete" reading of this ADR.
 
 * **OpenRouter production hardening:** `OPENROUTER_API_KEY` is optional today. Production rollout maturity — including key management, model selection governance, and fallback SLA — is not yet fully defined.
-* **Default model governance:** `OPENROUTER_MODEL_ID` defaults to a free-tier model (`openai/gpt-oss-120b:free`). Production model selection requires explicit governance decision.
+* **Default model governance:** `OPENROUTER_MODEL_ID` defaults to `openai/gpt-oss-20b:free`. Production model selection requires explicit governance decision.
 * **Broader provider coverage:** Current topology covers Gemini → OpenRouter only. Direct multi-vendor integration, provider-specific prompt normalization, and extended fallback chains are future ADR scope.
 * **Telemetry evolution:** Structured logs exist (`provider-observability.ts`) but are not yet connected to an observability backend or alerting pipeline.
 * **Embedding failover:** Query embedding remains a separate Gemini REST path (`src/services/retrieval.ts`) with no failover. Outside generation HA scope; requires a separate ADR.
@@ -185,7 +185,7 @@ Integrate multiple providers independently without an aggregation layer. Rejecte
 * `src/runtime/provider-observability.ts`
 * `src/runtime/providers/gemini-provider.ts`
 * `src/runtime/providers/openrouter-provider.ts`
-* `src/components/raree/SceneAssistant.tsx`
+* `src/components/raree/ReadingRouteAssistant.tsx`
 * `src/services/retrieval.ts` (embedding SPOF; outside generation failover scope)
 
 ### Design anchors

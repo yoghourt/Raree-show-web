@@ -5,8 +5,8 @@
 | Field        | Value                                                                 |
 | ------------ | --------------------------------------------------------------------- |
 | Status       | **Accepted**                                                          |
-| Version      | v2.1                                                                  |
-| Last Updated | 2026-07-11                                                            |
+| Version      | v2.2                                                                  |
+| Last Updated | 2026-09-23                                                            |
 | Authority    | How this repository realizes Runtime Reading — not what it is         |
 | Baseline     | Runtime Reading Governance RC1 (`raree-show-admin`)                   |
 
@@ -79,11 +79,11 @@ Implementation MUST NOT amend SPEC-RDX-001 from this repository. Semantic change
 │  Owner: Implementation (src/components) │
 └────────────────────┬────────────────────┘
                      │
-┌────────────────────▼────────────────────┐
-│  Runtime Services                       │  API routes, retrieval, oracle,
-│  Owner: Implementation (src/services,   │  visibility gates
-│          src/app/api)                   │
-└────────────────────┬────────────────────┘
+┌──────────────────────────────────────────┐
+│  Runtime Services                        │  API, retrieval, oracle,
+│  Owner: Implementation                   │  generation (`src/runtime`)
+│  (src/services, src/app/api, src/runtime)│
+└────────────────────┬─────────────────────┘
                      │
 ┌────────────────────▼────────────────────┐
 │  Browser Orchestration                  │  Commit order, reducer, URL
@@ -123,6 +123,8 @@ What this repository **does** — mapped to admin authority by reference, not re
 | `/api/scene-assistant` | Server request handler | Implementation |
 | `retrieval.ts` hybrid RAG | SQL gate → vector rerank | ADR-002 + Implementation |
 | `production-story-oracle.ts` | SHA-256 before LLM | Implementation |
+| `executeVerifiedGeneration` | Gemini stream; OpenRouter only before the first text token, and only if `OPENROUTER_API_KEY` is set | ADR-003 |
+| `req.signal` on `/api/scene-assistant` | Abort reaches provider generation and does not start fallback | ADR-013 |
 
 For lifecycle phase names and capability ownership, see **SPEC-RDX-001** §2 and §3 — not this table.
 
@@ -139,6 +141,8 @@ For lifecycle phase names and capability ownership, see **SPEC-RDX-001** §2 and
 | `src/lib/production-story-oracle.ts` | **Implementation** |
 | `src/lib/visibility-invariant.ts` | **Implementation** |
 | `src/app/api/scene-assistant/route.ts` | **Implementation** |
+| `src/runtime/` | **Implementation** (ADR-003, ADR-013) |
+| `src/lib/assistant-generation-lifecycle.ts` | **Implementation** (client Stop / terminal state) |
 | Runtime Reading semantics (any) | **SPEC-RDX-001** (admin) |
 
 ---
@@ -147,23 +151,28 @@ For lifecycle phase names and capability ownership, see **SPEC-RDX-001** §2 and
 
 The Scene Assistant answers questions about the reader's current position with **system-enforced spoiler boundaries** (ADR-002).
 
-```mermaid
-flowchart LR
-  clientProgress[ClientProgress] --> sqlGate[SQLVisibilityGate]
-  sqlGate --> vectorRerank[VectorRerank]
-  vectorRerank --> promptAssembly[PromptAssembly]
-  promptAssembly --> shaOracle[SHA256Verification]
-  shaOracle --> geminiGen[GeminiGeneration]
+```text
+Client progress
+  → retrieveVerifiedAssistantContext
+       semantic retrieval (SQL gate → embed → vector rerank)  ┐ parallel I/O
+       revealed captions for the current chapter              ┘
+  → SHA-256 on revealed caption bytes
+  → prompt assembly
+  → executeVerifiedGeneration
+       Gemini (gemini-3.5-flash-lite)
+       OpenRouter only if OPENROUTER_API_KEY is set and Gemini fails before the first text token
+       AbortSignal does not enter fallback
 ```
 
 | Stage | Owner | Role |
 | ----- | ----- | ---- |
 | Client commit + refresh | **W-01** | Committed `userProgress` before retrieval |
 | SQL visibility gate | **Implementation** | Route candidate filter |
-| Vector rerank | **Implementation** | Semantic rank within SQL set |
-| Prompt assembly | **Implementation** | Truncate captions to revealed frames |
-| SHA-256 verification | **Implementation** | Fail-closed before LLM |
-| Gemini streaming | **Implementation** | `@ai-sdk/google` |
+| Vector rerank | **Implementation** | Semantic rank within SQL set. Default `match_count` is 10 |
+| SHA-256 verification | **Implementation** | Fail-closed on revealed caption bytes, before the prompt is sent |
+| Prompt assembly | **Implementation** | System prompt uses only those revealed captions |
+| Generation | **Implementation** | `src/runtime/`: Gemini primary; optional OpenRouter pre-token fallback |
+| Cancellation | **Implementation** | `req.signal` forwarded into provider `streamText`; abort is not fallback |
 
 Client commit ordering: [W-01](specs/w-01-visibility-synchronized-navigation.md).
 
@@ -198,19 +207,24 @@ Layer 2 runs after retrieval. W-01 governs client sequencing so `userProgress` m
 
 ## 10. SHA-256 Production Oracle
 
-[`src/lib/production-story-oracle.ts`](../src/lib/production-story-oracle.ts): `sha256` over raw caption UTF-8 from revealed slides; ascending route order, array frame order. Mismatch → `InvariantViolationError`, no LLM call.
+[`src/lib/production-story-oracle.ts`](../src/lib/production-story-oracle.ts): `sha256` over raw caption UTF-8 from revealed slides; ascending route order, array frame order. Mismatch → `InvariantViolationError` (HTTP 500), no LLM call.
 
-Eval harness uses different serialization — not interchangeable ([`eval/ragas/README.md`](../eval/ragas/README.md)).
+Eval v2 uses the same raw-caption hash via `hashRawCaptions` ([`eval/ragas/README.md`](../eval/ragas/README.md)). `legacyRagasJoinHashForTelemetry` (captions joined with newlines) is telemetry only and does not gate generation.
 
 ---
 
 ## 11. Generation Runtime (Deployed)
 
 ```text
-retrieveVerifiedAssistantContext → streamText() → SceneAssistant UI
+retrieveVerifiedAssistantContext
+  → executeVerifiedGeneration (src/runtime/fallback-coordinator.ts)
+  → Gemini, or OpenRouter if OPENROUTER_API_KEY is set and failure is before the first text token
+  → ReadingRouteAssistant
 ```
 
-[ADR-003](adr/003-multi-provider-ai-runtime.md) — planned, not deployed.
+[ADR-003](adr/003-multi-provider-ai-runtime.md) is implemented on `POST /api/scene-assistant`. Query embeddings stay on `gemini-embedding-001` (768 dimensions) in `src/services/retrieval.ts` and have no fallback.
+
+[ADR-013](adr/013-scene-assistant-cancellation-semantics.md): the Stop control aborts the browser `fetch`. The route passes `req.signal` into generation. Abort does not start another provider. Text already streamed is kept and marked Stopped; a stop before any text drops the empty assistant message. Production/Vercel cancellation has not been separately probed.
 
 ---
 
@@ -228,7 +242,7 @@ CI verifies governance mount — not in-request governance engine.
 
 ## 13. Offline Evaluation
 
-RAGAS harness: [`docs/specs/ragas-evaluation-suite.md`](specs/ragas-evaluation-suite.md). Manual / local only.
+RAGAS harness: [`eval/ragas/README.md`](../eval/ragas/README.md) and [`docs/specs/ragas-evaluation-suite.md`](specs/ragas-evaluation-suite.md). Local only (`npm run eval:ragas`). Not a CI gate. Candidate run record: [`docs/evaluations/ragas-baseline-v1.md`](evaluations/ragas-baseline-v1.md).
 
 ---
 
@@ -239,9 +253,12 @@ RAGAS harness: [`docs/specs/ragas-evaluation-suite.md`](specs/ragas-evaluation-s
 | W-01 visibility-synchronized navigation | **Deployed** | W-01 |
 | Hybrid RAG (SQL → vector) | **Deployed** | Implementation |
 | Visibility gates + SHA-256 oracle | **Deployed** | Implementation |
-| Gemini generation | **Deployed** | Implementation |
+| Gemini generation (`gemini-3.5-flash-lite`) | **Deployed** | Implementation |
+| OpenRouter pre-token fallback (key-gated) | **Deployed** | ADR-003 |
+| Cooperative cancellation in the request path | **Deployed in code** | ADR-013 |
+| Production / Vercel abort behavior | **Not verified** | ADR-013 |
+| Embedding failover | **Not implemented** | `src/services/retrieval.ts` |
 | Frame UI rendering | **Deployed** | Implementation |
-| Provider failover | **Planned** | ADR-003 |
 
 ---
 
@@ -249,13 +266,14 @@ RAGAS harness: [`docs/specs/ragas-evaluation-suite.md`](specs/ragas-evaluation-s
 
 ### Admin (authority — cite, do not duplicate)
 
-- [SPEC-RDX-001 — Runtime Reading Experience](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/spec-rdx-001-runtime-reading-experience.md)
-- [Runtime Reading Governance RC1](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/runtime-reading-governance-rc1.md)
-- [SPEC-ROL-001](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/spec-rol-001-governed-projection.md) · [SPEC-ROL-002](https://github.com/raree-show-admin/raree-show-admin/blob/main/docs/specs/spec-rol-002-projection-semantics.md)
+- [SPEC-RDX-001 — Runtime Reading Experience](https://github.com/yoghourt/raree-show-admin/blob/main/docs/specs/spec-rdx-001-runtime-reading-experience.md)
+- [Runtime Reading Governance RC1](https://github.com/yoghourt/raree-show-admin/blob/main/docs/specs/runtime-reading-governance-rc1.md)
+- [SPEC-ROL-001](https://github.com/yoghourt/raree-show-admin/blob/main/docs/specs/spec-rol-001-governed-projection.md) · [SPEC-ROL-002](https://github.com/yoghourt/raree-show-admin/blob/main/docs/specs/spec-rol-002-projection-semantics.md)
 
 ### Web
 
 - [W-01 — Browser Runtime Specification](specs/w-01-visibility-synchronized-navigation.md)
 - [ADR-002: Hybrid RAG](adr/002-hybrid-rag-retrieval.md)
-- [ADR-003: Multi-Provider AI](adr/003-multi-provider-ai-runtime.md) — planned
+- [ADR-003: Multi-Provider AI](adr/003-multi-provider-ai-runtime.md) — deployed generation failover
+- [ADR-013: Cancellation](adr/013-scene-assistant-cancellation-semantics.md)
 - [RDX Governance Compatibility Report](specs/rdx-governance-compatibility-report.md) — frozen historical record

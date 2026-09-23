@@ -6,7 +6,7 @@
 
 **Version:** v0.1
 
-**Last Updated:** 2026-08-13
+**Last Updated:** 2026-09-23
 
 **Owner:** Architect
 
@@ -146,12 +146,14 @@ client fetch.abort() / reader.cancel()
 7. Normal progressive streaming regression passed.
 8. If abort is not performed, an old generation may continue after UI remount. UI stop alone is not Runtime Cancellation (C7).
 
+### Client Stop control (source)
+
+`ReadingRouteAssistant` Stop calls `abortGenerationController` while the phase is `streaming`. That aborts the in-flight `fetch`. Text already accumulated stays on the assistant message and the turn is marked `cancelled` (“Stopped”). A stop before any text removes the empty assistant message. This is the current client behavior. It was not part of the §K probe below.
+
 ### Explicitly unverified
 
 * Vercel / production deployment cancellation support
 * instantaneous physical termination of every upstream vendor resource beyond the abort signal boundary
-* Stop UI interaction
-* cancelled / partial / failed product state machine
 * observability schema fields for cancellation vs failure
 
 AI SDK may compose an internal abort signal from `req.signal` (`abortSignal` identity need not equal `req.signal`). Cooperative Cancellation requires that generation receive a derived cancellation signal, not signal-object identity.
@@ -252,6 +254,7 @@ Rejected: not a supportable runtime guarantee. Cooperative Cancellation stops ow
 | Cancellation does not trigger provider fallback | IMPLEMENT-SCENE-ASSISTANT-CANCEL-001 (`abortSignal.aborted` isolated from fallback) |
 | Normal progressive streaming regression PASS | §K probe control scenarios (Gemini + OpenRouter) |
 | Unabortable remount can leave old generation running | EAR-SCENE-ASSISTANT-STREAMING; §K concurrent/orphan observation |
+| Client Stop aborts `fetch`, keeps streamed text, marks the turn Stopped | `src/components/raree/ReadingRouteAssistant.tsx`, `src/lib/assistant-generation-lifecycle.ts` |
 | Production / Vercel cancellation | **Not verified. Not claimed.** |
 
 Probe harness used for §K was temporary instrumentation and is not retained as a committed test suite.
@@ -273,3 +276,5 @@ Probe harness used for §K was temporary instrumentation and is not retained as 
 * Runtime: `src/runtime/types.ts`
 * Runtime: `src/runtime/providers/gemini-provider.ts`
 * Runtime: `src/runtime/providers/openrouter-provider.ts`
+* Runtime: `src/components/raree/ReadingRouteAssistant.tsx`
+* Runtime: `src/lib/assistant-generation-lifecycle.ts`
