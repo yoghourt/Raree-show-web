@@ -21,6 +21,8 @@ export type StepPlace = {
   archive: Location | null
   /** Display label for MiniMap / Assistant (may be expression cue). */
   displayName: string
+  /** True when displayName is the unknown-place fallback, not a resolved name. */
+  isFallback: boolean
   /** Valid pin only; null when missing / unbound / wrong geometry. */
   mapX: number | null
   mapY: number | null
@@ -73,6 +75,7 @@ export function resolveStepPlace(
     return {
       archive: null,
       displayName: unknownFallback,
+      isFallback: true,
       mapX: null,
       mapY: null,
       pinValid: false,
@@ -83,11 +86,13 @@ export function resolveStepPlace(
   const archive = archiveId
     ? locations.find((l) => l.id === archiveId) ?? null
     : null
-  const displayName =
+  const resolvedName =
     archive?.name?.trim() ||
     locCtx.archiveName?.trim() ||
     locCtx.environmentFromExpression.trim() ||
-    unknownFallback
+    ""
+  const isFallback = resolvedName.length === 0
+  const displayName = isFallback ? unknownFallback : resolvedName
 
   const pinValid = Boolean(
     archive &&
@@ -104,6 +109,7 @@ export function resolveStepPlace(
   return {
     archive,
     displayName,
+    isFallback,
     mapX: pinValid ? Number(archive!.map_focus_x) : null,
     mapY: pinValid ? Number(archive!.map_focus_y) : null,
     pinValid,

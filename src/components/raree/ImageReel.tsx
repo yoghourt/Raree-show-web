@@ -1,6 +1,7 @@
 "use client"
 
 import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react"
+import { useLocale } from "@/lib/locale/provider"
 
 export type StoryImageSlide = {
   url: string
@@ -25,6 +26,7 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
   { images, imageIndex, onNext, onPrev },
   ref
 ) {
+  const { messages: locale } = useLocale()
   const [sliding, setSliding] = useState(false)
   const [slideDir, setSlideDir] = useState<SlideDir>("forward")
   const skipEndRef = useRef(false)
@@ -73,7 +75,7 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
       <div className="image-reel-root">
         <div className="image-reel-frame-wrap">
           <div className="image-reel-card image-reel-placeholder">
-            <span>No images</span>
+            <span>{locale.readingFrame.noImages}</span>
           </div>
         </div>
         <style jsx>{`
@@ -168,7 +170,7 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
                 />
               ) : (
                 <div className="image-reel-empty-frame">
-                  <span>No image yet</span>
+                  <span>{locale.readingFrame.noImageYet}</span>
                 </div>
               ))}
             {sliding && slideDir === "forward" && (
@@ -188,7 +190,7 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
                     className="image-reel-empty-frame image-reel-slide-out-up"
                     onAnimationEnd={handleExitAnimationEnd}
                   >
-                    <span>No image yet</span>
+                    <span>{locale.readingFrame.noImageYet}</span>
                   </div>
                 )}
                 {images[nextIdx].url ? (
@@ -204,7 +206,7 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
                     key={`in-f-${nextIdx}`}
                     className="image-reel-empty-frame image-reel-slide-in-bottom"
                   >
-                    <span>No image yet</span>
+                    <span>{locale.readingFrame.noImageYet}</span>
                   </div>
                 )}
               </>
@@ -226,7 +228,7 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
                     className="image-reel-empty-frame image-reel-slide-out-down"
                     onAnimationEnd={handleExitAnimationEnd}
                   >
-                    <span>No image yet</span>
+                    <span>{locale.readingFrame.noImageYet}</span>
                   </div>
                 )}
                 {images[prevIdx].url ? (
@@ -242,7 +244,7 @@ const ImageReel = forwardRef<ImageReelHandle, ImageReelProps>(function ImageReel
                     key={`in-b-${prevIdx}`}
                     className="image-reel-empty-frame image-reel-slide-in-top"
                   >
-                    <span>No image yet</span>
+                    <span>{locale.readingFrame.noImageYet}</span>
                   </div>
                 )}
               </>

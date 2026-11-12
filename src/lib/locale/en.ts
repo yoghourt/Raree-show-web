@@ -16,10 +16,10 @@ export const en = {
   },
   meta: {
     title:       'Raree Show',
-    description: 'Step inside complex worlds, one reading route at a time.',
+    description: 'Make sense of sprawling worlds, one scene at a time.',
   },
   home: {
-    tagline: 'Step inside complex worlds, one reading route at a time.',
+    tagline: 'Make sense of sprawling worlds, one scene at a time.',
     noWorks: 'No works yet.',
   },
   bookshelf: {
@@ -43,6 +43,8 @@ export const en = {
     nextAria: 'Next reading frame',
     nextStoryImageAria: 'Next story image',
     noImages: 'No images',
+    noImageYet: 'No image yet',
+    emptyCaption: '(No caption)',
   },
   assistant: {
     panelTitle: 'Ask about this reading route',
@@ -58,6 +60,17 @@ export const en = {
     errorGeneric: 'Something went wrong',
     errorNoBody: 'No response body',
     errorRequestFailed: (status: number) => `Request failed (${status})`,
+    errorRateLimit: 'Generation temporarily unavailable (rate limit).',
+    errorAuthFailure: 'Generation service configuration error.',
+    errorTimeout: 'Generation timed out.',
+    errorUnavailable: 'Generation service temporarily unavailable.',
+    errorInvalidRequest: 'Invalid generation request.',
+    errorFailed: 'Generation failed.',
+  },
+  localeSwitch: {
+    groupAria: 'Language',
+    en: 'EN',
+    zhCN: '中文',
   },
   character: {
     viewDetailsAria: (name: string) => `${name}, view details`,

@@ -8,7 +8,7 @@ import {
   useState,
   type PointerEvent,
 } from "react"
-import { messages as locale } from "@/lib/locale"
+import { useLocale } from "@/lib/locale/provider"
 import {
   clampView,
   closeUpMapView,
@@ -42,6 +42,7 @@ function LocationMapViewport({
   px: number
   py: number
 }) {
+  const { messages: locale } = useLocale()
   const viewportRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<MapView | null>(null)
   const epochRef = useRef("")
@@ -354,6 +355,7 @@ export default function MiniMap({
   locationName,
   description,
 }: MiniMapProps) {
+  const { messages: locale } = useLocale()
   const px = Math.min(1, Math.max(0, mapX))
   const py = Math.min(1, Math.max(0, mapY))
   const [open, setOpen] = useState(false)

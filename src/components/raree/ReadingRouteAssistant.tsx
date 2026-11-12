@@ -12,7 +12,9 @@ import {
   type AssistantChatMessage,
   type AssistantGenerationPhase,
 } from "@/lib/assistant-generation-lifecycle"
-import { messages as locale } from "@/lib/locale"
+import { en } from "@/lib/locale/en"
+import { localizeKnownError } from "@/lib/locale/errors"
+import { useLocale } from "@/lib/locale/provider"
 
 export interface ReadingRouteAssistantContext {
   /** Business scene id (`scenes.tsid`); must match `userProgress.sceneTsid`. */
@@ -71,6 +73,7 @@ function parseUiMessageSseEvent(rawEvent: string): { delta?: string; error?: str
 }
 
 export default function ReadingRouteAssistant({ sceneContext, userProgress }: ReadingRouteAssistantProps) {
+  const { locale, messages: copy } = useLocale()
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<AssistantChatMessage[]>([])
@@ -163,11 +166,11 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
 
       if (!res.ok) {
         const errText = await res.text().catch(() => res.statusText)
-        throw new Error(errText || locale.assistant.errorRequestFailed(res.status))
+        throw new Error(errText || en.assistant.errorRequestFailed(res.status))
       }
 
       const reader = res.body?.getReader()
-      if (!reader) throw new Error(locale.assistant.errorNoBody)
+      if (!reader) throw new Error(en.assistant.errorNoBody)
 
       const decoder = new TextDecoder()
       let lineBuffer = ""
@@ -262,7 +265,7 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
         return
       }
       if (generationIdRef.current !== generationId) return
-      const msg = e instanceof Error ? e.message : locale.assistant.errorGeneric
+      const msg = e instanceof Error ? e.message : en.assistant.errorGeneric
       setGenerationPhase("failed")
       setError(msg)
       setMessages((m) => markAssistantTerminal(m, generationId, "failed", acc))
@@ -295,14 +298,18 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
           }}
         >
           <div className="flex shrink-0 items-center justify-between border-b border-[#c8b89a]/60 px-3 py-2">
-            <h2 className="text-sm font-medium uppercase tracking-widest text-[#8b1a1a]">
-              {locale.assistant.panelTitle}
+            <h2
+              className={`text-sm font-medium text-[#8b1a1a] ${
+                locale === "zh-CN" ? "tracking-normal" : "uppercase tracking-widest"
+              }`}
+            >
+              {copy.assistant.panelTitle}
             </h2>
             <button
               type="button"
               onClick={() => closePanel()}
               className="rounded p-1 text-sm text-[#6b4c35] hover:bg-[#c8b89a]/40 hover:text-[#2c1810]"
-              aria-label={locale.assistant.closeAria}
+              aria-label={copy.assistant.closeAria}
             >
               ×
             </button>
@@ -315,7 +322,7 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
             <div className="flex min-h-full flex-col justify-end gap-2">
               {messages.length === 0 && (
                 <p className="text-center text-sm text-[#6b4c35]">
-                  {locale.assistant.emptyState}
+                  {copy.assistant.emptyState}
                 </p>
               )}
               {messages.map((msg, i) => (
@@ -343,14 +350,14 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
                         />
                       )}
                       {msg.status === "cancelled" && (
-                        <p className="mt-1 text-sm text-[#6b4c35]">{locale.assistant.stoppedLabel}</p>
+                        <p className="mt-1 text-sm text-[#6b4c35]">{copy.assistant.stoppedLabel}</p>
                       )}
                     </>
                   )}
                 </div>
               ))}
               {error && phase === "failed" && (
-                <p className="text-center text-sm text-[#8b1a1a]">{error}</p>
+                <p className="text-center text-sm text-[#8b1a1a]">{localizeKnownError(error, copy)}</p>
               )}
             </div>
           </div>
@@ -370,7 +377,7 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
                   }
                 }
               }}
-              placeholder={locale.assistant.inputPlaceholder}
+              placeholder={copy.assistant.inputPlaceholder}
               disabled={streaming}
               className="min-w-0 flex-1 rounded-md border border-[#c8b89a] bg-[#f5f0e8]/80 px-3 py-2 text-sm text-[#2c1810] placeholder:text-[#6b4c35]/70 outline-none focus:border-[#8b1a1a]"
             />
@@ -379,9 +386,9 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
                 type="button"
                 onClick={stopActiveGeneration}
                 className="shrink-0 rounded-md border border-[#6b4c35] bg-[#6b4c35] px-3 py-2 text-sm text-[#f5f0e8] hover:bg-[#2c1810]"
-                aria-label={locale.assistant.stopAria}
+                aria-label={copy.assistant.stopAria}
               >
-                {locale.assistant.stop}
+                {copy.assistant.stop}
               </button>
             ) : (
               <button
@@ -394,7 +401,7 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
                 disabled={!input.trim()}
                 className="shrink-0 rounded-md border border-[#8b1a1a] bg-[#8b1a1a] px-3 py-2 text-sm text-[#f5f0e8] hover:bg-[#6b1414] disabled:opacity-50"
               >
-                {locale.assistant.send}
+                {copy.assistant.send}
               </button>
             )}
           </div>
@@ -411,7 +418,7 @@ export default function ReadingRouteAssistant({ sceneContext, userProgress }: Re
         style={{
           background: "#8b1a1a",
         }}
-        aria-label={locale.assistant.openFabAria}
+        aria-label={copy.assistant.openFabAria}
       >
         ✦
       </button>

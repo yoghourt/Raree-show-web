@@ -3,7 +3,7 @@ import { createGeminiProvider, executeVerifiedGeneration } from "@/runtime"
 import { createOpenRouterProvider } from "@/runtime/providers/openrouter-provider"
 import type { AIModelProvider } from "@/runtime/types"
 import { escapeXmlAttr, escapeXmlTextForPresentation } from "@/lib/scene-assistant-context"
-import { buildAssistantSystemPrompt } from "@/lib/assistant-system-prompt"
+import { composeAssistantSystemPrompt } from "@/lib/assistant-request-prompt"
 import { messages } from "@/lib/locale"
 import { InvariantViolationError } from "@/lib/production-story-oracle"
 import { assertReadUpToStoryIndexLast, VisibilityInvariantViolation } from "@/lib/visibility-invariant"
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
 
   const contextXml = buildContextXml(verified.results)
 
-  const system = buildAssistantSystemPrompt(
+  const system = await composeAssistantSystemPrompt(
     sceneContext,
     verified.currentSceneRevealedXml,
     verified.chapterScenesXml,

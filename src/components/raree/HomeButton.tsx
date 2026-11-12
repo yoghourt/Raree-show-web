@@ -1,15 +1,16 @@
 "use client"
 
 import Link from "next/link"
-import { messages as locale } from "@/lib/locale"
+import { useLocale } from "@/lib/locale/provider"
 
 export default function HomeButton() {
+  const { locale, messages } = useLocale()
   return (
-    <Link href="/" className="home-btn" aria-label={locale.navigation.backToHomeAria}>
+    <Link href="/" className="home-btn" aria-label={messages.navigation.backToHomeAria}>
       <span className="home-btn-arrow" aria-hidden>
         ←
       </span>
-      <span className="home-btn-text">{locale.navigation.homeLabel}</span>
+      <span className="home-btn-text">{messages.navigation.homeLabel}</span>
       <span className="rivet tl" aria-hidden />
       <span className="rivet tr" aria-hidden />
 
@@ -50,7 +51,7 @@ export default function HomeButton() {
         .home-btn-text {
           color: var(--rs-text);
           font-size: 14px;
-          letter-spacing: 2px;
+          letter-spacing: ${locale === "zh-CN" ? "0" : "2px"};
           font-family: Georgia, "Times New Roman", serif;
           text-transform: uppercase;
           line-height: 1;

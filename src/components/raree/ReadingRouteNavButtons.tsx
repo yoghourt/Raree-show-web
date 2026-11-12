@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { messages as locale } from "@/lib/locale"
+import { useLocale } from "@/lib/locale/provider"
 
 interface ReadingRouteNavButtonsProps {
   onPrev: () => void
@@ -16,6 +16,7 @@ export default function ReadingRouteNavButtons({
   prevDisabled,
   nextDisabled,
 }: ReadingRouteNavButtonsProps) {
+  const { messages: locale } = useLocale()
   const [pressed, setPressed] = useState<"left" | "right" | null>(null)
 
   const handlePress = useCallback((side: "left" | "right", cb: () => void, disabled: boolean) => {
