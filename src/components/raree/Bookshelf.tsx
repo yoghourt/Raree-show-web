@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 import type { Work } from "@/lib/types"
-import { messages as locale } from "@/lib/locale"
+import { useLocale } from "@/lib/locale/provider"
 
 interface BookshelfProps {
   works: Work[]
 }
 
 export default function Bookshelf({ works }: BookshelfProps) {
+  const { messages: locale } = useLocale()
   const router = useRouter()
   const [openWork, setOpenWork] = useState<Work | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)

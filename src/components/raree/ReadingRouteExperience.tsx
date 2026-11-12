@@ -17,9 +17,9 @@
  * SceneProjectionLink / Rollout association reads deferred (RC1).
  * Owner: W-01 (orchestration) + Implementation (presentation).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import type { Character, Location, ReadingRoute } from "@/lib/types"
-import { messages as locale } from "@/lib/locale"
+import { useLocale } from "@/lib/locale/provider"
 import { effectiveReadingFramesFromV2, resolvePresentedCaption } from "@/lib/reading-frames"
 import { readUpToStoryIndexLastFromStep } from "@/lib/reader-step"
 import {
@@ -145,6 +145,7 @@ export default function ReadingRouteExperience({
   workTitle,
   workMapResolution,
 }: ReadingRouteExperienceProps) {
+  const { messages: locale, registerPageTitle } = useLocale()
   // W-01: Visibility-Synchronized Navigation — docs/specs/w-01-visibility-synchronized-navigation.md
   // imageIndex implements Reader Step index within effective frames (SPEC-RDX-001).
   const { visualReadingRoute, imageIndex, dispatch } = useReadingRouteNavigation(currentReadingRoute)
@@ -153,6 +154,11 @@ export default function ReadingRouteExperience({
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const imageReelRef = useRef<ImageReelHandle>(null)
+
+  const titleSubject = visualReadingRoute.title.trim() || workTitle.trim()
+  useLayoutEffect(() => {
+    registerPageTitle({ kind: "reading", subject: titleSubject })
+  }, [registerPageTitle, titleSubject])
 
   const storyImages = useMemo(
     () => effectiveReadingFramesFromV2(visualReadingRoute.story_images_v2),
@@ -192,7 +198,7 @@ export default function ReadingRouteExperience({
         locale.readingRoute.unknownLocationFallback,
         geometryId
       ),
-    [stepContext, locations, geometryId]
+    [stepContext, locations, geometryId, locale.readingRoute.unknownLocationFallback]
   )
 
   const showMap =
@@ -227,7 +233,7 @@ export default function ReadingRouteExperience({
       characters: presentCharacters.map((p) => p.name),
       summary: visualReadingRoute.summary,
     }),
-    [visualReadingRoute, stepPlace.displayName, presentCharacters, workTitle]
+    [visualReadingRoute, stepPlace.displayName, presentCharacters, workTitle, locale.readingRoute.unnamedWorkFallback]
   )
 
   // RDX-3 Progress Update — committed boundary for Assistant retrieval (W-01 / ADR-002).
@@ -450,14 +456,10 @@ export default function ReadingRouteExperience({
           mapUrl={publishedMapUrl}
           mapX={stepPlace.mapX}
           mapY={stepPlace.mapY}
-          locationName={
-            stepPlace.displayName === locale.readingRoute.unknownLocationFallback
-              ? undefined
-              : stepPlace.displayName
-          }
+          locationName={stepPlace.isFallback ? undefined : stepPlace.displayName}
           description={stepPlace.archive?.description}
         />
-      ) : stepPlace.displayName !== locale.readingRoute.unknownLocationFallback ? (
+      ) : !stepPlace.isFallback ? (
         <div className="mini-map-place-label-only" style={{
           position: "fixed",
           bottom: 24,
@@ -481,7 +483,7 @@ export default function ReadingRouteExperience({
           position: fixed;
           right: 32px;
           bottom: 32px;
-          top: calc(28px + env(safe-area-inset-top, 0px));
+          top: calc(68px + env(safe-area-inset-top, 0px));
           z-index: 20;
           display: flex;
           flex-direction: column;

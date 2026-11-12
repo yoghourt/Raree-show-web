@@ -3,7 +3,17 @@
  * All reader-facing assistant instructions originate from lib/locale/en.ts.
  */
 
-import { messages } from "@/lib/locale"
+import { en } from "@/lib/locale/en"
+import type { AppLocaleId } from "@/lib/locale/types"
+import { zhCN } from "@/lib/locale/zh-CN"
+
+const ZH_OUTPUT_LANGUAGE = `[Output language]
+Write the reader-facing explanation, analysis, and answer in Simplified Chinese.
+If the user explicitly asks for another language in this turn, follow that request.
+When quoting captions, book passages, or sources, keep the quoted text in its original language.
+You may explain English source text in Simplified Chinese.
+Do not translate or rewrite the injected story XML, and do not change its contents.
+Do not switch the entire answer to English merely because a quotation is in English.`
 
 export type AssistantSceneContext = {
   tsid: string
@@ -20,9 +30,12 @@ export function buildAssistantSystemPrompt(
   sceneContext: AssistantSceneContext,
   currentSceneRevealedXml: string,
   chapterScenesXml: string,
-  contextXml: string
+  contextXml: string,
+  locale: AppLocaleId = "en"
 ): string {
-  const p = messages.assistantPrompt
+  const p = en.assistantPrompt
+  const refusal =
+    locale === "zh-CN" ? zhCN.assistantPrompt.closedDomainRefusal : p.closedDomainRefusal
   const chapterLine = p.chapterLine(
     sceneContext.chapter_number,
     sceneContext.chapter_title
@@ -32,7 +45,7 @@ export function buildAssistantSystemPrompt(
       ? sceneContext.workTitle.trim()
       : p.untitledWork
 
-  return `${p.personaIntro}
+  const body = `${p.personaIntro}
 ${p.currentWorkRaree(workLine)}
 ${p.progressBoundary}
 
@@ -52,7 +65,7 @@ ${p.revealedNarrativeIntro}
 
 [Unrevealed narrative — closed domain]
 Fixed refusal does **not** apply when the answer is on-screen identification within the same read span.
-Refuse only when (1) revealed material, inference, and on-screen entity rules still cannot answer, and (2) a full answer necessarily requires unread story, unrevealed captions, or post-progress timeline — then reply verbatim: ${p.closedDomainRefusal}
+Refuse only when (1) revealed material, inference, and on-screen entity rules still cannot answer, and (2) a full answer necessarily requires unread story, unrevealed captions, or post-progress timeline — then reply verbatim: ${refusal}
 
 ${p.toneNote}
 
@@ -73,4 +86,5 @@ ${chapterScenesXml}
 
 [${p.semanticContextHeader}]
 ${contextXml}`
+  return locale === "zh-CN" ? `${body}\n\n${ZH_OUTPUT_LANGUAGE}` : body
 }

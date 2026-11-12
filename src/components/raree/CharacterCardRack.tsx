@@ -1,7 +1,7 @@
 "use client"
 import { motion } from "framer-motion"
 import { useEffect, useRef, useState } from "react"
-import { messages as locale } from "@/lib/locale"
+import { useLocale } from "@/lib/locale/provider"
 
 type CharacterRackItem = {
   id: string
@@ -46,6 +46,7 @@ function CharacterPortrait({ character }: { character: CharacterRackItem }) {
 }
 
 export default function CharacterCardRack({ characters, sceneId }: CharacterCardRackProps) {
+  const { messages: locale } = useLocale()
   const totalCards = characters.length
   const [selected, setSelected] = useState<CharacterRackItem | null>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)

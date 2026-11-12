@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import type { ReadingRoute } from "@/lib/types"
-import { messages as locale } from "@/lib/locale"
+import { useLocale } from "@/lib/locale/provider"
 
 export interface CaptionDisplayProps {
   scene: ReadingRoute
@@ -71,6 +71,7 @@ export default function CaptionDisplay({
   sceneIndex,
   totalScenes,
 }: CaptionDisplayProps) {
+  const { messages: locale } = useLocale()
   const [visibleLength, setVisibleLength] = useState(0)
   const resolvedCaption = caption.trim()
   const chapterTitle = scene.chapter_title?.trim() || ""
@@ -98,7 +99,7 @@ export default function CaptionDisplay({
 
   const displayed =
     resolvedCaption.length === 0
-      ? locale.assistantPrompt.emptyCaption
+      ? locale.readingFrame.emptyCaption
       : resolvedCaption.slice(0, visibleLength)
   const typingComplete =
     resolvedCaption.length === 0 || visibleLength >= resolvedCaption.length

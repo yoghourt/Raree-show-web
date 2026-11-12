@@ -9,6 +9,8 @@
  *
  * Lifecycle: route URL load → RDX-1 Reading Session Start (realized in ReadingRouteExperience).
  */
+import type { Metadata } from "next"
+import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import {
   getAllCharacters,
@@ -16,6 +18,9 @@ import {
   getScenesByWork,
   getWorkById,
 } from "@/lib/data"
+import { catalogs } from "@/lib/locale/catalog"
+import { LOCALE_HEADER, parseLocale } from "@/lib/locale/request"
+import { readingDocumentTitle } from "@/lib/locale/title"
 import { loadWorkMapResolutionByWorkTsid } from "@/lib/work-maps"
 import ReadingRouteExperience from "../../../../../components/raree/ReadingRouteExperience"
 
@@ -26,6 +31,18 @@ interface Props {
     workId: string
     sceneId: string
   }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { workId, sceneId } = await params
+  const headerList = await headers()
+  const locale = parseLocale(headerList.get(LOCALE_HEADER))
+  const brand = catalogs[locale].meta.title
+  const work = await getWorkById(workId)
+  const scenes = work ? await getScenesByWork(workId) : []
+  const scene = scenes.find((item) => item.id === sceneId)
+  const subject = scene?.title?.trim() || work?.title?.trim() || ""
+  return { title: { absolute: readingDocumentTitle(subject, brand) } }
 }
 
 export default async function ScenePage({ params }: Props) {

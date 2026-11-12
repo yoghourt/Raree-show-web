@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { messages as locale } from "@/lib/locale"
+import { useLocale } from "@/lib/locale/provider"
 
 const PLAQUE_W = 48
 /** Half width of ImageReel + CaptionDisplay; keep in sync with frame size. */
@@ -15,6 +15,7 @@ export interface ReadingRouteRopesProps {
 }
 
 export default function ReadingRouteRopes({ onPrev, onNext, disabled = false }: ReadingRouteRopesProps) {
+  const { messages: locale } = useLocale()
   const [pullLeft, setPullLeft] = useState(false)
   const [pullRight, setPullRight] = useState(false)
 
