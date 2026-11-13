@@ -68,6 +68,16 @@ export const zhCN = {
     errorInvalidRequest: "生成请求无效。",
     errorFailed: "生成失败。",
   },
+  readerGuide: {
+    button: "询问故事向导",
+    buttonAriaLabel: "询问故事向导",
+    onboarding: {
+      title: "认识你的阅读向导",
+      description: "对当前场景有疑问？探索人物关系、隐藏背景，以及故事背后的世界。",
+      supportingText: "在你需要的时候，随时为你解读。",
+      dismiss: "关闭阅读向导介绍",
+    },
+  },
   localeSwitch: {
     groupAria: "语言",
     en: "EN",
