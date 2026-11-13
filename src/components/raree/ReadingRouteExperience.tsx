@@ -17,7 +17,7 @@
  * SceneProjectionLink / Rollout association reads deferred (RC1).
  * Owner: W-01 (orchestration) + Implementation (presentation).
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import type { Character, Location, ReadingRoute } from "@/lib/types"
 import { useLocale } from "@/lib/locale/provider"
 import { effectiveReadingFramesFromV2, resolvePresentedCaption } from "@/lib/reading-frames"
@@ -44,6 +44,12 @@ import CharacterCardRack from "@/components/raree/CharacterCardRack"
 import ReadingRouteNavButtons from "@/components/raree/ReadingRouteNavButtons"
 import HomeButton from "@/components/raree/HomeButton"
 import { useReadingRouteNavigation } from "@/components/raree/useReadingRouteNavigation"
+import {
+  getReaderGuideCueVisible,
+  getServerReaderGuideCueVisible,
+  subscribeReaderGuide,
+  writeReaderGuideDismissed,
+} from "@/lib/reader-guide-onboarding"
 
 interface ReadingRouteExperienceProps {
   currentReadingRoute: ReadingRoute
@@ -154,6 +160,19 @@ export default function ReadingRouteExperience({
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const imageReelRef = useRef<ImageReelHandle>(null)
+  const guideCueVisible = useSyncExternalStore(
+    subscribeReaderGuide,
+    getReaderGuideCueVisible,
+    getServerReaderGuideCueVisible,
+  )
+
+  const dismissGuideCue = useCallback(() => {
+    try {
+      writeReaderGuideDismissed()
+    } catch {
+      // The cue stays closed in memory even when the write throws.
+    }
+  }, [])
 
   const titleSubject = visualReadingRoute.title.trim() || workTitle.trim()
   useLayoutEffect(() => {
@@ -447,6 +466,8 @@ export default function ReadingRouteExperience({
             key={visualReadingRoute.tsid}
             sceneContext={sceneAssistantContext}
             userProgress={sceneAssistantUserProgress}
+            guideCueVisible={guideCueVisible}
+            onDismissGuideCue={dismissGuideCue}
           />
         </div>
       </div>
@@ -518,11 +539,12 @@ export default function ReadingRouteExperience({
         }
 
         .rs-scene-right-rail-assistant {
+          position: relative;
+          overflow: visible;
           flex-shrink: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
           width: 100%;
+          height: 52px;
+          min-height: 52px;
           pointer-events: none;
         }
 

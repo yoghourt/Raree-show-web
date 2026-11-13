@@ -67,6 +67,17 @@ export const en = {
     errorInvalidRequest: 'Invalid generation request.',
     errorFailed: 'Generation failed.',
   },
+  readerGuide: {
+    button: 'Ask the Guide',
+    buttonAriaLabel: 'Ask the Guide',
+    onboarding: {
+      title: 'Meet your reading guide',
+      description:
+        'Have questions about this scene? Explore characters, hidden context, and the world behind the story.',
+      supportingText: 'A little help when you need it.',
+      dismiss: 'Dismiss reading guide introduction',
+    },
+  },
   localeSwitch: {
     groupAria: 'Language',
     en: 'EN',
