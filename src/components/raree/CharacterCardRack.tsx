@@ -6,7 +6,10 @@ import { useLocale } from "@/lib/locale/provider"
 type CharacterRackItem = {
   id: string
   name: string
+  /** Canonical house. Visibility uses this, not the translation. */
   house?: string
+  /** Display house. Falls back to the canonical house. */
+  houseText?: string
   image_url?: string
   /** In-memory only; no extra fetch (W-02). */
   description?: string
@@ -70,6 +73,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
               character.house &&
               character.house.trim() &&
               character.house.trim().toLowerCase() !== "unknown house"
+            const houseLabel = character.houseText?.trim() || character.house?.trim() || ""
             const reverseIndex = totalCards - 1 - index
             return (
               <motion.article
@@ -112,7 +116,7 @@ export default function CharacterCardRack({ characters, sceneId }: CharacterCard
                   <span className="char-name" title={character.name}>
                     {character.name}
                   </span>
-                  {showHouse ? <span className="char-house">{character.house?.trim()}</span> : null}
+                  {showHouse ? <span className="char-house">{houseLabel}</span> : null}
                 </div>
               </motion.article>
             )

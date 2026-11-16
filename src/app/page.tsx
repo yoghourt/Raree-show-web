@@ -1,4 +1,6 @@
 import { getAllWorks } from "@/lib/data"
+import { buildDisplayDictionary } from "@/lib/content-translations/dictionary"
+import { loadContentTranslations } from "@/lib/content-translations/load"
 import Bookshelf from "@/components/raree/Bookshelf"
 import { HomeEmpty, HomeTagline, HomeTitle } from "@/components/raree/HomeCopy"
 
@@ -6,6 +8,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const works = await getAllWorks()
+  const rows = await loadContentTranslations(works.map((work) => work.id))
+  const displayDictionary = buildDisplayDictionary(rows, { works })
 
   return (
     <main className="min-h-screen bg-[#1a0f0a] text-[#e8dcc8]">
@@ -45,7 +49,7 @@ export default async function HomePage() {
         </header>
 
         <div className="flex flex-col items-center pb-8">
-          {works.length > 0 ? <Bookshelf works={works} /> : <HomeEmpty />}
+          {works.length > 0 ? <Bookshelf works={works} displayDictionary={displayDictionary} /> : <HomeEmpty />}
         </div>
       </div>
     </main>

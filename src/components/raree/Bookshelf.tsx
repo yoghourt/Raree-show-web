@@ -3,14 +3,21 @@
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 import type { Work } from "@/lib/types"
+import { displayText } from "@/lib/content-translations/display"
+import { emptyDisplayDictionary, type DisplayDictionary } from "@/lib/content-translations/types"
 import { useLocale } from "@/lib/locale/provider"
 
 interface BookshelfProps {
   works: Work[]
+  displayDictionary?: DisplayDictionary
 }
 
-export default function Bookshelf({ works }: BookshelfProps) {
-  const { messages: locale } = useLocale()
+export default function Bookshelf({ works, displayDictionary = emptyDisplayDictionary() }: BookshelfProps) {
+  const { locale: localeId, messages: locale } = useLocale()
+  const workTitle = (work: Work) =>
+    displayText(localeId, work.title, displayDictionary.work[work.id]?.title)
+  const workDescription = (work: Work) =>
+    displayText(localeId, work.description, displayDictionary.work[work.id]?.description)
   const router = useRouter()
   const [openWork, setOpenWork] = useState<Work | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -43,7 +50,7 @@ export default function Bookshelf({ works }: BookshelfProps) {
                 <div
                   role="button"
                   tabIndex={0}
-                  aria-label={locale.bookshelf.openWorkAria(work.title)}
+                  aria-label={locale.bookshelf.openWorkAria(workTitle(work))}
                   onClick={() => setOpenWork(work)}
                   onMouseEnter={() => setHoveredId(work.id)}
                   onMouseLeave={() => setHoveredId(null)}
@@ -136,7 +143,7 @@ export default function Bookshelf({ works }: BookshelfProps) {
                           textShadow: "0 1px 3px rgba(0,0,0,0.8)",
                         }}
                       >
-                        {work.title}
+                        {workTitle(work)}
                       </span>
                     </div>
                   </div>
@@ -358,7 +365,7 @@ export default function Bookshelf({ works }: BookshelfProps) {
                       lineHeight: 1.3,
                     }}
                   >
-                    {openWork.title}
+                    {workTitle(openWork)}
                   </h2>
                   <p
                     style={{
@@ -372,7 +379,7 @@ export default function Bookshelf({ works }: BookshelfProps) {
                       overflow: "hidden",
                     }}
                   >
-                    {openWork.description}
+                    {workDescription(openWork)}
                   </p>
                 </div>
 
