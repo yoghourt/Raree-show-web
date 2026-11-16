@@ -16,10 +16,15 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import dotenv from "dotenv"
 
 import {
+  acceptPlainTranslation,
   DEFAULT_TRANSLATION_MODEL,
+  isChineseNameText,
   needsTranslation,
+  plainTranslationPrompt,
   PROMPT_VERSION,
+  responseSnippet,
   translationPrompt,
+  translationSlotDelay,
   validateTranslationBatch,
   type TranslationFailure,
   type TranslationItem,
@@ -244,7 +249,6 @@ async function main() {
       const names = namesFromContext(contextRecord)
       const context = [
         `work title: ${nonEmpty(work.title) ?? ""}`,
-        `work description: ${nonEmpty(work.description) ?? ""}`,
         `scene title: ${nonEmpty(scene.title) ?? ""}`,
         `caption: ${caption}`,
         neighbors.length ? `nearby captions: ${neighbors.join(" | ")}` : "",
@@ -321,27 +325,34 @@ async function main() {
           item.entity_key === row.entity_key &&
           item.field_key === "name"
       )?.source
-      if (source && row.text.trim() && row.source_hash === sourceHash(source)) {
+      if (source && isChineseNameText(row.text) && row.source_hash === sourceHash(source)) {
         glossaryState[source] = row.text.trim()
       }
     }
   }
 
   const fetchImpl = getFetchForGoogleGenerativeAI()
+  const requestTimestamps: number[] = []
   for (const phase of ["names", "fields", "captions"] as const) {
     const phaseItems = pending.filter((item) => item.phase === phase)
     for (let offset = 0; offset < phaseItems.length; offset += 12) {
       const chunk = phaseItems.slice(offset, offset + 12)
-      const context = chunk.map((item) => item.context).filter(Boolean).join("\n---\n")
+      const sharedContext = phase === "captions" && nonEmpty(work.description) ? `work description: ${nonEmpty(work.description)}` : ""
+      const context = [sharedContext, ...chunk.map((item) => item.context)].filter(Boolean).join("\n---\n")
       let raw = ""
       try {
-        raw = await generateTranslation(fetchImpl, model, translationPrompt(chunk, glossaryState, context))
+        raw = await generateTranslation(
+          fetchImpl,
+          model,
+          translationPrompt(chunk, glossaryState, context),
+          requestTimestamps
+        )
       } catch (error) {
         const reason = error instanceof Error ? error.message : "model_error"
         failures.push(...chunk.map((item) => ({ ...item, reason })))
         continue
       }
-      let validated = validateTranslationBatch(chunk, raw)
+      let validated = validateTranslationBatch(chunk, raw, glossaryState)
       if (validated.failures.length > 0 && chunk.length > 1) {
         const recovered: typeof validated.accepted = []
         const stillFailed: TranslationFailure[] = []
@@ -360,9 +371,10 @@ async function main() {
             const oneRaw = await generateTranslation(
               fetchImpl,
               model,
-              translationPrompt([item], glossaryState, item.context)
+              translationPrompt([item], glossaryState, item.context),
+              requestTimestamps
             )
-            const one = validateTranslationBatch([item], oneRaw)
+            const one = validateTranslationBatch([item], oneRaw, glossaryState)
             recovered.push(...one.accepted)
             stillFailed.push(...one.failures)
           } catch (error) {
@@ -372,6 +384,39 @@ async function main() {
         }
         validated = { accepted: [...validated.accepted, ...recovered], failures: stillFailed }
       }
+      const plainRecovered: typeof validated.accepted = []
+      const unresolved: TranslationFailure[] = []
+      for (const failed of validated.failures) {
+        if (failed.reason !== "missing_key" && failed.reason !== "bad_json" && failed.reason !== "unexpected_key") {
+          unresolved.push(failed)
+          continue
+        }
+        const item = chunk.find(
+          (candidate) =>
+            candidate.entity_kind === failed.entity_kind &&
+            candidate.entity_key === failed.entity_key &&
+            candidate.field_key === failed.field_key
+        )
+        if (!item) {
+          unresolved.push(failed)
+          continue
+        }
+        try {
+          const plainRaw = await generateTranslation(
+            fetchImpl,
+            model,
+            plainTranslationPrompt(item.source, glossaryState),
+            requestTimestamps
+          )
+          const plain = acceptPlainTranslation(item, plainRaw, glossaryState)
+          if (plain.ok) plainRecovered.push({ ...item, text: plain.text })
+          else unresolved.push({ ...failed, reason: plain.reason, response: responseSnippet(plainRaw) })
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : "model_error"
+          unresolved.push({ ...failed, reason })
+        }
+      }
+      validated = { accepted: [...validated.accepted, ...plainRecovered], failures: unresolved }
       failures.push(...validated.failures)
       for (const item of validated.accepted) {
         const sourceHashValue = chunk.find(
@@ -393,7 +438,11 @@ async function main() {
           failures.push({ ...item, reason: written.reason })
           continue
         }
-        if ((item.entity_kind === "character" || item.entity_kind === "location") && item.field_key === "name") {
+        if (
+          (item.entity_kind === "character" || item.entity_kind === "location") &&
+          item.field_key === "name" &&
+          isChineseNameText(item.text)
+        ) {
           glossaryState[item.source] = item.text
         }
       }
@@ -415,7 +464,64 @@ async function main() {
   console.log(JSON.stringify({ failures: 0, prompt_version: PROMPT_VERSION, model }))
 }
 
-async function generateTranslation(fetchImpl: typeof fetch, model: string, prompt: string): Promise<string> {
+const MODEL_ATTEMPTS = 4
+const RATE_LIMIT_RETRY_MS = 60_000
+
+class ModelHttpError extends Error {
+  constructor(
+    readonly status: number,
+    readonly retryAfterMs: number | null
+  ) {
+    super(`model_http_${status}`)
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function retryAfterDelay(response: Response): number | null {
+  const raw = response.headers.get("retry-after")
+  if (!raw) return null
+  const seconds = Number(raw)
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000)
+  const date = Date.parse(raw)
+  if (Number.isNaN(date)) return null
+  return Math.max(0, date - Date.now())
+}
+
+async function waitForTranslationSlot(timestamps: number[]): Promise<void> {
+  const wait = translationSlotDelay(timestamps, Date.now())
+  if (wait >= 1000) console.log(JSON.stringify({ wait_ms: wait, reason: "request_pace" }))
+  if (wait > 0) await sleep(wait)
+}
+
+async function generateTranslation(
+  fetchImpl: typeof fetch,
+  model: string,
+  prompt: string,
+  timestamps: number[]
+): Promise<string> {
+  let lastError: Error | null = null
+  for (let attempt = 1; attempt <= MODEL_ATTEMPTS; attempt++) {
+    await waitForTranslationSlot(timestamps)
+    timestamps.push(Date.now())
+    try {
+      return await requestTranslation(fetchImpl, model, prompt)
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("model_error")
+      const status = error instanceof ModelHttpError ? error.status : 0
+      if ((status !== 429 && status !== 503) || attempt === MODEL_ATTEMPTS) throw lastError
+      const retryAfter = error instanceof ModelHttpError ? error.retryAfterMs ?? 0 : 0
+      const wait = Math.max(RATE_LIMIT_RETRY_MS, retryAfter)
+      console.log(JSON.stringify({ wait_ms: wait, reason: lastError.message, attempt }))
+      await sleep(wait)
+    }
+  }
+  throw lastError ?? new Error("model_error")
+}
+
+async function requestTranslation(fetchImpl: typeof fetch, model: string, prompt: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY ?? ""
   const response = await fetchImpl(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
@@ -433,7 +539,7 @@ async function generateTranslation(fetchImpl: typeof fetch, model: string, promp
     }
   )
   if (!response.ok) {
-    throw new Error(`model_http_${response.status}`)
+    throw new ModelHttpError(response.status, retryAfterDelay(response))
   }
   const body = (await response.json()) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>

@@ -1,4 +1,20 @@
-export const PROMPT_VERSION = "p0-zh-cn-v1"
+export const PROMPT_VERSION = "p0-zh-cn-v3"
+export const TRANSLATION_REQUESTS_PER_MINUTE = 15
+export const TRANSLATION_REQUEST_WINDOW_MS = 60_000
+export const TRANSLATION_REQUEST_MIN_GAP_MS = TRANSLATION_REQUEST_WINDOW_MS / TRANSLATION_REQUESTS_PER_MINUTE
+
+export function translationSlotDelay(
+  timestamps: number[],
+  now: number,
+  limit = TRANSLATION_REQUESTS_PER_MINUTE,
+  windowMs = TRANSLATION_REQUEST_WINDOW_MS,
+  minGapMs = TRANSLATION_REQUEST_MIN_GAP_MS
+): number {
+  const recent = timestamps.filter((stamp) => now - stamp < windowMs).sort((left, right) => left - right)
+  const gap = recent.length > 0 ? minGapMs - (now - recent[recent.length - 1]) : 0
+  const windowDelay = recent.length >= limit ? windowMs - (now - recent[0]) : 0
+  return Math.max(0, gap, windowDelay)
+}
 export const DEFAULT_TRANSLATION_MODEL = "gemini-3.5-flash-lite"
 
 export type TranslationKind = "work" | "scene" | "frame" | "character" | "location"
@@ -40,9 +56,137 @@ export function parseModelJson(raw: string): unknown {
   return JSON.parse(trimmed)
 }
 
+export function isChineseNameText(text: string): boolean {
+  const visible = text.replace(/\{[^{}]+\}/g, " ")
+  return visible.trim().length > 0 && !/[A-Za-z]/.test(visible)
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function withoutPlaceholders(text: string): string {
+  return text.replace(/\{[^{}]+\}/g, " ")
+}
+
+function containsWord(text: string, english: string): boolean {
+  const pattern = new RegExp(`(^|[^A-Za-z])${escapeRegExp(english)}(?![A-Za-z])`, "i")
+  return pattern.test(text)
+}
+
+function replaceWord(text: string, english: string, replacement: string): string {
+  const pattern = new RegExp(`(^|[^A-Za-z])${escapeRegExp(english)}(?:'s)?(?![A-Za-z])`, "gi")
+  return text.replace(pattern, `$1${replacement}`)
+}
+
+function usableGlossary(glossary: Record<string, string>): Array<[string, string]> {
+  return Object.entries(glossary)
+    .map(([english, chinese]) => [english.trim(), chinese.trim()] as [string, string])
+    .filter(([english, chinese]) => /[A-Za-z]/.test(english) && isChineseNameText(chinese))
+    .sort((left, right) => right[0].length - left[0].length)
+}
+
+function sourceMentions(source: string, english: string, entries: Array<[string, string]>): boolean {
+  const visible = withoutPlaceholders(source)
+  if (!containsWord(visible, english)) return false
+  let rest = visible
+  for (const [longer] of entries) {
+    if (longer.length > english.length && containsWord(longer, english) && containsWord(visible, longer)) {
+      rest = replaceWord(rest, longer, " ")
+    }
+  }
+  return containsWord(rest, english)
+}
+
+function protectPlaceholders(text: string): { masked: string; tokens: string[] } {
+  const tokens: string[] = []
+  const masked = text.replace(/\{[^{}]+\}/g, (match) => {
+    const slot = `\u0000${tokens.length}\u0000`
+    tokens.push(match)
+    return slot
+  })
+  return { masked, tokens }
+}
+
+function restorePlaceholders(masked: string, tokens: string[]): string {
+  return masked.replace(/\u0000(\d+)\u0000/g, (_match, index: string) => tokens[Number(index)] ?? "")
+}
+
+export function applyGlossaryNames(source: string, text: string, glossary: Record<string, string>): string {
+  const entries = usableGlossary(glossary)
+  const { masked, tokens } = protectPlaceholders(text)
+  let out = masked
+  for (const [english, chinese] of entries) {
+    if (!sourceMentions(source, english, entries)) continue
+    out = replaceWord(out, english, chinese)
+    const parts = english.split(/\s+/)
+    const characters = [...chinese]
+    const unique = new Set(parts.map((part) => part.toLowerCase()))
+    if (parts.length !== 2 || characters.length !== 2 || unique.size !== 2) continue
+    if (!parts.every((part) => /^[A-Za-z][A-Za-z'-]*$/.test(part))) continue
+    if (!characters.every((character) => /[\u3400-\u9fff]/.test(character))) continue
+    const [firstToken, secondToken] = parts
+    const [firstHan, secondHan] = characters
+    const repairs: Array<[string, string]> = [
+      [`${firstHan}\\s*${escapeRegExp(secondToken)}`, chinese],
+      [`${escapeRegExp(firstToken)}\\s*${secondHan}`, chinese],
+      [`${secondHan}\\s*${escapeRegExp(firstToken)}`, chinese],
+      [`${escapeRegExp(secondToken)}\\s*${firstHan}`, chinese],
+      [`${firstHan}\\s*${escapeRegExp(firstToken)}`, firstHan],
+      [`${escapeRegExp(firstToken)}\\s*${firstHan}`, firstHan],
+      [`${secondHan}\\s*${escapeRegExp(secondToken)}`, secondHan],
+      [`${escapeRegExp(secondToken)}\\s*${secondHan}`, secondHan],
+    ]
+    for (const [sourcePattern, replacement] of repairs) {
+      out = out.replace(new RegExp(sourcePattern, "gi"), replacement)
+    }
+  }
+  out = out.replace(/([\u3400-\u9fff])\s+(?=[\u3400-\u9fff])/g, "$1")
+  return restorePlaceholders(out, tokens)
+}
+
+function isNameField(item: TranslationItem): boolean {
+  return (item.entity_kind === "character" || item.entity_kind === "location") && item.field_key === "name"
+}
+
+function glossaryLatinRemaining(source: string, text: string, glossary: Record<string, string>): boolean {
+  const entries = usableGlossary(glossary)
+  const visible = withoutPlaceholders(text)
+  for (const [english] of entries) {
+    if (!sourceMentions(source, english, entries)) continue
+    for (const part of english.split(/\s+/)) {
+      if (part.length < 2) continue
+      if (!/^[A-Za-z][A-Za-z'-]*$/.test(part)) continue
+      if (containsWord(visible, part)) return true
+    }
+  }
+  return false
+}
+
+function finalizeTranslation(
+  item: TranslationItem,
+  text: string,
+  glossary: Record<string, string>
+): { ok: true; text: string } | { ok: false; reason: string } {
+  const trimmed = text.trim()
+  if (!trimmed) return { ok: false, reason: "empty_text" }
+  if (placeholderTokens(item.source).some((token) => !trimmed.includes(token))) {
+    return { ok: false, reason: "placeholder" }
+  }
+  const normalized = applyGlossaryNames(item.source, trimmed, glossary).replace(/\s{2,}/g, " ").trim()
+  if (!normalized) return { ok: false, reason: "empty_text" }
+  if (placeholderTokens(item.source).some((token) => !normalized.includes(token))) {
+    return { ok: false, reason: "placeholder" }
+  }
+  if (isNameField(item) && !isChineseNameText(normalized)) return { ok: false, reason: "latin_name" }
+  if (glossaryLatinRemaining(item.source, normalized, glossary)) return { ok: false, reason: "glossary_name" }
+  return { ok: true, text: normalized }
+}
+
 export function validateTranslationBatch(
   items: TranslationItem[],
-  raw: string
+  raw: string,
+  glossary: Record<string, string> = {}
 ): { accepted: Array<TranslationItem & { text: string }>; failures: TranslationFailure[] } {
   let parsed: unknown
   try {
@@ -94,17 +238,12 @@ export function validateTranslationBatch(
       failures.push({ ...identityOf(item), reason: "missing_key" })
       continue
     }
-    const text = texts[0].trim()
-    if (!text) {
-      failures.push({ ...identityOf(item), reason: "empty_text" })
+    const finalized = finalizeTranslation(item, texts[0], glossary)
+    if (!finalized.ok) {
+      failures.push({ ...identityOf(item), reason: finalized.reason })
       continue
     }
-    const missing = placeholderTokens(item.source).filter((token) => !text.includes(token))
-    if (missing.length > 0) {
-      failures.push({ ...identityOf(item), reason: "placeholder" })
-      continue
-    }
-    accepted.push({ ...item, text })
+    accepted.push({ ...item, text: finalized.text })
   }
   return { accepted, failures }
 }
@@ -122,7 +261,8 @@ export function translationPrompt(items: TranslationItem[], glossary: Record<str
   return [
     "Translate the source strings into Simplified Chinese.",
     "Do not add, omit, or explain. Keep each {token} placeholder unchanged.",
-    "Use the name pairs when the same name appears.",
+    "When a name pair applies, do not leave any Latin fragment of that English name.",
+    "Write personal names and place names entirely in Chinese.",
     glossaryLines.length ? `Names:\n${glossaryLines.join("\n")}` : "Names:\n(none)",
     context ? `Context:\n${context}` : "Context:\n(none)",
     "Return a JSON array. Each object has entity_kind, entity_key, field_key, and text.",
@@ -136,4 +276,53 @@ export function translationPrompt(items: TranslationItem[], glossary: Record<str
       }))
     ),
   ].join("\n\n")
+}
+
+export function responseSnippet(raw: string): string {
+  return raw.replace(/\s+/g, " ").trim().slice(0, 180)
+}
+
+export function plainTranslationPrompt(source: string, glossary: Record<string, string>): string {
+  const entries = usableGlossary(glossary).filter(([english], _index, all) => sourceMentions(source, english, all))
+  const names = entries.map(([english, chinese]) => `${english} = ${chinese}`)
+  return [
+    "Translate the source into Simplified Chinese.",
+    "Return only the translation, with no explanation and no JSON.",
+    "Keep each {token} placeholder unchanged.",
+    "Do not leave any Latin fragment of an English name from the name list.",
+    names.length ? `Names:\n${names.join("\n")}` : "Names:\n(none)",
+    source,
+  ].join("\n\n")
+}
+
+export function acceptPlainTranslation(
+  item: TranslationItem,
+  raw: string,
+  glossary: Record<string, string> = {}
+): { ok: true; text: string } | { ok: false; reason: string } {
+  const text = translationTextFromPlain(raw)
+  if (text === null) return { ok: false, reason: "missing_key" }
+  return finalizeTranslation(item, text, glossary)
+}
+
+function translationTextFromPlain(raw: string): string | null {
+  const text = raw.trim().replace(/^```(?:json|text)?\s*/i, "").replace(/\s*```$/, "").trim()
+  if (!text) return null
+  if (text.startsWith("{") || text.startsWith("[") || text.startsWith("\"")) {
+    try {
+      const parsed = JSON.parse(text) as unknown
+      if (typeof parsed === "string") return parsed.trim() || null
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && typeof (parsed as { text?: unknown }).text === "string") {
+        return ((parsed as { text: string }).text.trim() || null)
+      }
+      if (Array.isArray(parsed) && parsed.length === 1) {
+        const entry = parsed[0] as { text?: unknown }
+        if (entry && typeof entry.text === "string") return entry.text.trim() || null
+      }
+      return null
+    } catch {
+      if (text.startsWith("{") || text.startsWith("[")) return null
+    }
+  }
+  return text
 }
