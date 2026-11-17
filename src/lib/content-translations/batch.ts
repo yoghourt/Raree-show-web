@@ -31,6 +31,7 @@ export type TranslationFailure = {
   entity_key: string
   field_key: string
   reason: string
+  response?: string
 }
 
 export function placeholderTokens(source: string): string[] {
