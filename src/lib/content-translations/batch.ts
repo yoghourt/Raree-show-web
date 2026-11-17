@@ -1,4 +1,4 @@
-export const PROMPT_VERSION = "p0-zh-cn-v3"
+export const PROMPT_VERSION = "p0-zh-cn-v4"
 export const TRANSLATION_REQUESTS_PER_MINUTE = 15
 export const TRANSLATION_REQUEST_WINDOW_MS = 60_000
 export const TRANSLATION_REQUEST_MIN_GAP_MS = TRANSLATION_REQUEST_WINDOW_MS / TRANSLATION_REQUESTS_PER_MINUTE
@@ -119,6 +119,7 @@ export function applyGlossaryNames(source: string, text: string, glossary: Recor
   for (const [english, chinese] of entries) {
     if (!sourceMentions(source, english, entries)) continue
     out = replaceWord(out, english, chinese)
+    out = stripParentheticalGloss(out, chinese)
     const parts = english.split(/\s+/)
     const characters = [...chinese]
     const unique = new Set(parts.map((part) => part.toLowerCase()))
@@ -149,18 +150,23 @@ function isNameField(item: TranslationItem): boolean {
   return (item.entity_kind === "character" || item.entity_kind === "location") && item.field_key === "name"
 }
 
+function stripParentheticalGloss(text: string, chinese: string): string {
+  const escaped = escapeRegExp(chinese)
+  const paren = `[（(]\\s*${escaped}\\s*[）)]`
+  const mixed = `[\\u3400-\\u9fff]{0,1}\\s*[A-Za-z]+(?:\\s+[A-Za-z]+)*\\s*[\\u3400-\\u9fff]{0,2}`
+  let out = text.replace(new RegExp(`${mixed}\\s*${paren}`, "g"), chinese)
+  out = out.replace(new RegExp(`${paren}\\s*${mixed}`, "g"), chinese)
+  const parenOnly = new RegExp(paren, "g")
+  if (out.replace(parenOnly, "").includes(chinese)) return out.replace(parenOnly, "")
+  return out.replace(parenOnly, chinese)
+}
+
 function glossaryLatinRemaining(source: string, text: string, glossary: Record<string, string>): boolean {
   const entries = usableGlossary(glossary)
   const visible = withoutPlaceholders(text)
-  for (const [english] of entries) {
-    if (!sourceMentions(source, english, entries)) continue
-    for (const part of english.split(/\s+/)) {
-      if (part.length < 2) continue
-      if (!/^[A-Za-z][A-Za-z'-]*$/.test(part)) continue
-      if (containsWord(visible, part)) return true
-    }
-  }
-  return false
+  const mentioned = entries.some(([english]) => sourceMentions(source, english, entries))
+  if (!mentioned) return false
+  return /[A-Za-z]/.test(visible)
 }
 
 function finalizeTranslation(
@@ -261,7 +267,8 @@ export function translationPrompt(items: TranslationItem[], glossary: Record<str
   return [
     "Translate the source strings into Simplified Chinese.",
     "Do not add, omit, or explain. Keep each {token} placeholder unchanged.",
-    "When a name pair applies, do not leave any Latin fragment of that English name.",
+    "When a name pair applies, write that Chinese name only.",
+    "Do not leave pinyin or any other Latin letters in the name, and do not repeat the Chinese name in parentheses.",
     "Write personal names and place names entirely in Chinese.",
     glossaryLines.length ? `Names:\n${glossaryLines.join("\n")}` : "Names:\n(none)",
     context ? `Context:\n${context}` : "Context:\n(none)",
@@ -289,7 +296,7 @@ export function plainTranslationPrompt(source: string, glossary: Record<string, 
     "Translate the source into Simplified Chinese.",
     "Return only the translation, with no explanation and no JSON.",
     "Keep each {token} placeholder unchanged.",
-    "Do not leave any Latin fragment of an English name from the name list.",
+    "Write the Chinese name only. Do not leave pinyin or any other Latin letters, and do not repeat the Chinese name in parentheses.",
     names.length ? `Names:\n${names.join("\n")}` : "Names:\n(none)",
     source,
   ].join("\n\n")
@@ -305,6 +312,13 @@ export function acceptPlainTranslation(
   return finalizeTranslation(item, text, glossary)
 }
 
+function plainStringField(record: object, key: string): string | null {
+  const value = (record as Record<string, unknown>)[key]
+  if (typeof value !== "string") return null
+  const trimmed = value.trim()
+  return trimmed || null
+}
+
 function translationTextFromPlain(raw: string): string | null {
   const text = raw.trim().replace(/^```(?:json|text)?\s*/i, "").replace(/\s*```$/, "").trim()
   if (!text) return null
@@ -312,12 +326,15 @@ function translationTextFromPlain(raw: string): string | null {
     try {
       const parsed = JSON.parse(text) as unknown
       if (typeof parsed === "string") return parsed.trim() || null
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && typeof (parsed as { text?: unknown }).text === "string") {
-        return ((parsed as { text: string }).text.trim() || null)
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return plainStringField(parsed, "text") ?? plainStringField(parsed, "translation")
       }
       if (Array.isArray(parsed) && parsed.length === 1) {
-        const entry = parsed[0] as { text?: unknown }
-        if (entry && typeof entry.text === "string") return entry.text.trim() || null
+        const entry = parsed[0]
+        if (typeof entry === "string") return entry.trim() || null
+        if (entry && typeof entry === "object") {
+          return plainStringField(entry, "text") ?? plainStringField(entry, "translation")
+        }
       }
       return null
     } catch {

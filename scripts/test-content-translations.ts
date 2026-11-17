@@ -209,12 +209,83 @@ const wallFragment = validateTranslationBatch(
   wallGlossary
 )
 assert.equal(wallFragment.failures[0]?.reason, "glossary_name")
+const anxi = { "Anxi County": "安喜县" }
+const glossed = validateTranslationBatch(
+  [
+    {
+      entity_kind: "frame",
+      entity_key: "frame_anxi",
+      field_key: "caption",
+      source: "Liu Bei earns the love of Anxi County.",
+    },
+  ],
+  JSON.stringify([
+    {
+      entity_kind: "frame",
+      entity_key: "frame_anxi",
+      field_key: "caption",
+      text: "刘备深得安xi县（安喜县）百姓爱戴。",
+    },
+  ]),
+  anxi
+)
+assert.equal(glossed.accepted[0]?.text, "刘备深得安喜县百姓爱戴。")
+const glossedHalf = validateTranslationBatch(
+  [
+    {
+      entity_kind: "frame",
+      entity_key: "frame_anxi",
+      field_key: "caption",
+      source: "Liu Bei earns the love of Anxi County.",
+    },
+  ],
+  JSON.stringify([
+    {
+      entity_kind: "frame",
+      entity_key: "frame_anxi",
+      field_key: "caption",
+      text: "刘备深得安xi县(安喜县)百姓爱戴。",
+    },
+  ]),
+  anxi
+)
+assert.equal(glossedHalf.accepted[0]?.text, "刘备深得安喜县百姓爱戴。")
+const bareFragment = validateTranslationBatch(
+  [
+    {
+      entity_kind: "frame",
+      entity_key: "frame_anxi",
+      field_key: "caption",
+      source: "Liu Bei earns the love of Anxi County.",
+    },
+  ],
+  JSON.stringify([
+    {
+      entity_kind: "frame",
+      entity_key: "frame_anxi",
+      field_key: "caption",
+      text: "刘备深得安xi县百姓爱戴。",
+    },
+  ]),
+  anxi
+)
+assert.equal(bareFragment.failures[0]?.reason, "glossary_name")
 const plainTitle = acceptPlainTranslation(
   { entity_kind: "scene", entity_key: "scene_wall", field_key: "title", source: "The Haunting Beyond the Wall" },
   "长城之外的惊骇",
   wallGlossary
 )
 assert.equal(plainTitle.ok && plainTitle.text, "长城之外的惊骇")
+const wrappedTranslation = acceptPlainTranslation(
+  { entity_kind: "location", entity_key: "loc_1", field_key: "description", source: "The political center of the empire." },
+  '{ "translation": "帝国政治中心，皇宫与腐败朝臣的所在地。" }'
+)
+assert.equal(wrappedTranslation.ok && wrappedTranslation.text, "帝国政治中心，皇宫与腐败朝臣的所在地。")
+const wrappedArray = acceptPlainTranslation(
+  { entity_kind: "character", entity_key: "char_1", field_key: "description", source: "The last Han emperor." },
+  '[ "汉献帝" ]'
+)
+assert.equal(wrappedArray.ok && wrappedArray.text, "汉献帝")
 assert.match(plainTranslationPrompt("beyond the Wall", wallGlossary), /Return only the translation/)
 assert.doesNotMatch(plainTranslationPrompt("beyond the Wall", wallGlossary), /entity_key/)
 const repeatedToken = validateTranslationBatch(
@@ -238,8 +309,9 @@ const shorterName = validateTranslationBatch(
   { ...glossary, "Liu Bei": "刘备" }
 )
 assert.equal(shorterName.accepted[0]?.text, "刘备与董卓相会。")
-assert.equal(PROMPT_VERSION, "p0-zh-cn-v3")
-assert.match(translationPrompt([], glossary), /do not leave any Latin fragment/)
+assert.equal(PROMPT_VERSION, "p0-zh-cn-v4")
+assert.match(translationPrompt([], glossary), /do not repeat the Chinese name in parentheses/)
+assert.match(plainTranslationPrompt("beyond the Wall", wallGlossary), /do not repeat the Chinese name in parentheses/)
 assert.equal(translationSlotDelay([], 1_000), 0)
 assert.equal(translationSlotDelay([0], 1_000), 3_000)
 assert.equal(translationSlotDelay([0], 5_000), 0)
