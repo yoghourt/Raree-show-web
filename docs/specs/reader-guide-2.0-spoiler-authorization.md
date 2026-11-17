@@ -911,3 +911,17 @@ Production story oracle 的字段范围不变，仍然只哈希实际注入的 c
 | Story oracle | `collectAuthorizedSemanticBytes` | P1 仍只哈希实际注入的 caption，并改为稳定的跨章排序 |
 | 面板生命周期 | `open` 与 `key={visualReadingRoute.tsid}` | 关闭保留状态；换路线自然重置 |
 | 技术错误 | `route.ts` 与 `executeVerifiedGeneration` | 不改成情节文案 |
+
+---
+
+## 最终状态（2026-11-17）
+
+上文契约保持冻结。当前范围的收尾见 `docs/specs/reader-guide-2.0-final-acceptance.md`。
+
+- P2-A：Implemented。
+- P2-B.1：Implemented; known content leakage remains。
+- P2-B.2：Deferred. Not implemented. Not on the active roadmap.
+- P2-C：Functionally accepted with documented limitations。功能验收关闭。零残余泄漏的行为标准没有通过。
+- Reader Guide 2.0：Closed for current scope; known spoiler risk remains。
+
+不使用 Spoiler leakage fixed、Zero-spoiler guaranteed 或 All spoiler regression tests passed。

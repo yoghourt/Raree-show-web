@@ -1,6 +1,6 @@
 # Reader Guide 2.0 — P2 两阶段生成设计
 
-**Status:** P2-B implemented; P2-C acceptance pending  
+**Status:** Closed for current scope; known spoiler risk remains. 见第 18 节。  
 **Date:** 2026-11-17  
 **Frozen:** 2026-11-17  
 **Implemented:** 2026-11-17 P2-A、P2-B、P2-B.1 提示收紧，以及 P2-C 结构测试。浏览器验收尚未全部完成。P2-C 验收没有通过。  
@@ -426,3 +426,22 @@ P2-B.2 与 P2-C 是两件事。P2-C 验收没有通过。延期 P2-B.2 不能把
 | P2-B / P2-B.1 无剧透提示 | 已实现。不是零泄漏 |
 | P2-C 结构测试与主要浏览器路径 | 已做。整体验收未通过 |
 | P2-B.2 缓冲审查 | Deferred. Not implemented. 不在活跃路线 |
+
+---
+
+## 18. 最终状态：当前范围关闭
+
+**Status:** Closed for current scope; known spoiler risk remains  
+**Date:** 2026-11-17  
+**Report:** `docs/specs/reader-guide-2.0-final-acceptance.md`  
+**Does not claim:** Spoiler leakage fixed. Zero-spoiler guaranteed. All spoiler regression tests passed.
+
+第 1–17 节保留。本节只记录收尾决定，不改写那些历史结论。
+
+- P2-A：Implemented。
+- P2-B.1：Implemented; known content leakage remains。
+- P2-B.2：Deferred. Not implemented. Not on the active roadmap.
+- P2-C：Functionally accepted with documented limitations。功能验收关闭。零残余泄漏的行为标准没有通过。
+- Reader Guide 2.0：Closed for current scope; known spoiler risk remains。
+
+接受当前授权机制。不再为绝对无剧透增加 Prompt 或审核模型。南华老仙、张宝与张梁、太平道撼动汉室、群雄并起这些记录继续保留，不改写成静态背景。

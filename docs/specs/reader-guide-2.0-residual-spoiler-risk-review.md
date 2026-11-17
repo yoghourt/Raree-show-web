@@ -102,3 +102,9 @@ Stage 2 先写出完整草稿，不立刻流式给用户。审查器只看已揭
 - 审查器漏判时，记录为残余风险，不写成结构保证。
 
 这需要修订冻结设计里「`answer_allowed` 后直接流式 Stage 2」的交付方式。在设计修订之前，不开始实现。
+
+---
+
+## 5. 最终决定
+
+2026-11-17 关闭当前范围。第 4 节的缓冲审查不实施，状态为 Deferred. Not implemented. Not on the active roadmap。上文的失败案例保留。功能验收见 `docs/specs/reader-guide-2.0-final-acceptance.md`。零残余泄漏的行为标准没有通过，产品接受这个限制。不能写成 Spoiler leakage fixed。
