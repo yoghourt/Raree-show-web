@@ -1,4 +1,8 @@
-import { buildAssistantSystemPrompt, type AssistantSceneContext } from "@/lib/assistant-system-prompt"
+import {
+  buildAssistantSystemPrompt,
+  type AssistantPromptOptions,
+  type AssistantSceneContext,
+} from "@/lib/assistant-system-prompt"
 import { readRequestLocale } from "@/lib/locale/read-request-locale"
 
 /**
@@ -9,7 +13,8 @@ export async function composeAssistantSystemPrompt(
   sceneContext: AssistantSceneContext,
   currentSceneRevealedXml: string,
   chapterScenesXml: string,
-  contextXml: string
+  contextXml: string,
+  options: AssistantPromptOptions = {}
 ): Promise<string> {
   const locale = await readRequestLocale()
   return buildAssistantSystemPrompt(
@@ -17,6 +22,7 @@ export async function composeAssistantSystemPrompt(
     currentSceneRevealedXml,
     chapterScenesXml,
     contextXml,
-    locale
+    locale,
+    options
   )
 }

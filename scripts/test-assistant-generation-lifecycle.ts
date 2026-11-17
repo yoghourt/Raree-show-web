@@ -4,6 +4,7 @@
  */
 import {
   applyAssistantDelta,
+  assistantRequestMessages,
   historyTurnsForRequest,
   isAbortError,
   markAssistantTerminal,
@@ -103,8 +104,21 @@ function run(): void {
     { role: "user", content: "q2" },
     { role: "assistant", content: "", status: "streaming", generationId: 2 },
   ])
-  assertEqual(history.length, 3, "streaming turn excluded from request history")
-  assertEqual(history[1]?.content, "a1", "cancelled partial included in later request history")
+  assertEqual(history.length, 2, "streaming and unfinished assistant turns stay out of history")
+  assertEqual(history[0]?.content, "q1", "user question remains")
+
+  const retry = assistantRequestMessages(
+    [
+      { role: "user" as const, content: "earlier", questionId: "q0" },
+      { role: "assistant" as const, content: "earlier answer", questionId: "q0" },
+      { role: "user" as const, content: "下一章讲什么", questionId: "q1" },
+      { role: "assistant" as const, content: "", questionId: "q1" },
+    ],
+    { content: "下一章讲什么", questionId: "q1" }
+  )
+  assertEqual(retry.length, 3, "retry keeps earlier turns and one copy of the question")
+  assertEqual(retry[2]?.role, "user", "retry ends with the user question")
+  assertEqual(retry[2]?.questionId, "q1", "retry keeps the original questionId")
 
   console.log("test-assistant-generation-lifecycle: ok")
 }

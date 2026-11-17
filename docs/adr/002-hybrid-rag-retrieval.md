@@ -4,6 +4,8 @@
 > `caption`, `order_index`). Normative Runtime vocabulary is `Reading Route` (impl: Scene) and
 > `Reading Frame` (impl: Story Images). See `governance/vocabulary/runtime-lexicon.md` in `raree-show-admin`.
 
+> **Amendment A (Accepted 2026-11-17, not yet implemented):** The Decision below remains the original hybrid-RAG decision and the description of the deployed default path. Explicit reader authorization, and the rule that the default path injects captions from the SQL candidate set instead of untruncated `scenes.summary`, are recorded only in [Amendment A](#amendment-a--explicit-reader-authorization). Product behavior and budgets stay in [Reader Guide 2.0](../specs/reader-guide-2.0-spoiler-authorization.md). The paired visibility law is [Amendment A of the visibility invariant](../specs/ADR-002-VISIBILITY-INVARIANT-SPEC.md).
+
 ## Context
 
 ### Current limitation
@@ -233,7 +235,141 @@ Layer 2 is **downstream prompt construction** over an already authorized retriev
 - Scene Assistant API: `src/app/api/scene-assistant/route.ts`.
 - Client navigation spec: [W-01: Visibility-Synchronized Navigation](../specs/w-01-visibility-synchronized-navigation.md) (`ReadingRouteExperience.tsx`, `useReadingRouteNavigation.ts`).
 - Reading frame filtering alignment: `src/lib/reading-frames.ts`.
+- Amendment A product contract: [Reader Guide 2.0](../specs/reader-guide-2.0-spoiler-authorization.md).
+- Amendment A visibility law: [ADR-002-VISIBILITY-INVARIANT-SPEC](../specs/ADR-002-VISIBILITY-INVARIANT-SPEC.md).
 
 ### Follow-up (granularity)
 
 - Story-level embedding chunks (ADR-001 evolution) if RAG text must align exactly with story boundaries without post-filtering.
+
+---
+
+## Amendment A — Explicit reader authorization
+
+**Status:** Accepted on 2026-11-17. Not implemented in `src/services/retrieval.ts` or `src/app/api/scene-assistant/route.ts`.
+**Normative pair:** [ADR-002-VISIBILITY-INVARIANT-SPEC Amendment A](../specs/ADR-002-VISIBILITY-INVARIANT-SPEC.md).
+**Product contract:** [Reader Guide 2.0](../specs/reader-guide-2.0-spoiler-authorization.md) §§6–9. This amendment does not copy the authorization-card UI.
+
+The original Decision stands. It recorded a pipeline that had no separate reader grant, so the progress fields were both the reading position and the only visibility ceiling. Amendment A keeps the pipeline and splits those two roles. Progress remains the default ceiling. A validated grant is the only exception.
+
+### A.1 Principles that do not change
+
+These are structural. They are not defaults that existed only because authorization was missing.
+
+1. The order is SQL candidate set, then embedding, then `match_scenes`, then context assembly. Vector search does not add scenes outside that set. There is no second semantic pipeline, and there is no route that skips SQL.
+2. `match_scenes` receives only the tsids from that request's candidate set, together with `work_id_filter` for the resolved work. A returned tsid outside the set fails the request.
+3. A narrative atom is one caption in the effective `story_images_v2` list. On the default path, atoms past the current route's frame boundary are omitted before the model call. The model is not asked to ignore text that was still placed in the prompt.
+4. Scenes from another `work_id` never enter the candidate set or the prompt.
+5. Similarity, score, and distance stay out of the model prompt.
+6. An empty `match_scenes` array is an empty ranking. It is not an empty work, and it is not a technical failure. A thrown embedding call or RPC error stays a technical error. The assistant must not describe that error as plot which has not been revealed, and the server must not skip the vector step in order to hide the error.
+7. Text already present in model weights is not a narrative atom. Prompt rules may constrain it. Physical truncation does not delete it.
+
+### A.2 Default path
+
+`spoilerMode` is omitted or `"none"`.
+
+The SQL candidate set is unchanged from the original Layer 1 rule. After `workTsid` resolves to `work_id`, and after `sceneTsid` is confirmed to belong to that work, the set is every scene of that work where `chapter_number < readUpToChapter`, or `chapter_number = readUpToChapter` and `order_index <= readUpToOrderIndex`.
+
+Caption bytes are read from that same set: `work_id` matches and `tsid` is in the candidate set. The read does not invent a second, narrower chapter predicate. `match_scenes` does not supply those bytes. A null `rag_embedding` may make the ranking empty; the caption read still happens, so already-read captions are not dropped merely because they were never embedded.
+
+Frame rules, applied in memory:
+
+- A route behind the progress point, meaning a lower chapter or the same chapter with a lower `order_index`, contributes every effective-frame caption.
+- The current route, `sceneTsid`, contributes captions `0..readUpToStoryIndexLast` inclusive. The index is clamped to the effective frame list. A missing index, a non-integer, or a value below `-1` still fails fast.
+- A different route with the same chapter and the same `order_index` contributes no captions.
+
+On this path, `scenes.summary` and the client-supplied summary are not narrative facts. The original ADR governed summaries separately from narrative atoms, and the deployed prompt injected the current summary without a frame cut. That channel can carry later frames. Amendment A closes it for the default path. Character names and the place name may remain. Character descriptions are not added.
+
+`match_scenes` still reranks only inside the candidate set. Its order matters when the prompt budget omits whole routes. The budget and the omission order are the product contract §9. Omission drops an entire route rather than slicing one route's story. The current route's already-read captions are kept inside the frame rule above. Dropped captions are not replaced with summaries.
+
+A larger `readUpToChapter` or `readUpToOrderIndex` is still only a client progress declaration. It does not select this amendment's exception. No server reading ledger is introduced, so the default path still cannot prove that the client did not raise its own progress.
+
+The model must not volunteer plot past the revealed captions. That duty stays in the prompt. It does not replace the caption cut.
+
+### A.3 Explicit exception
+
+The exception applies only when the server has validated the request. It is not inferred from progress numbers, from the wording of the question, or from an earlier request that is not repeated.
+
+`single_request`:
+
+- `spoilerMode` is `"single_request"`.
+- `authorizedQuestionId` is present and equals the `questionId` of the last user message.
+- Otherwise the server rejects the request and does not widen the candidate set.
+- The server stores no grant. The next message does not inherit this mode.
+
+`conversation`:
+
+- `spoilerMode` is `"conversation"` on that request.
+- The reader turned the mode on. Each later request must carry it again.
+- After the reader turns it off, the next request is `"none"`.
+- Topic detection does not open or close the mode.
+
+Both modes:
+
+- `sceneTsid` belongs to the `work_id` resolved from `workTsid`. If it does not, the request is rejected.
+- The SQL candidate set is every ingested route of that `work_id`. The server computes the set. Client progress is not the ceiling, and the client cannot submit an "authorized through chapter N" bound.
+- `match_scenes` reranks only that set.
+- Captions placed in the prompt for those routes are not cut at `readUpToStoryIndexLast`. The vector step must not see later routes while the prompt still receives only the default-path captions.
+- A summary may be injected only for a route whose captions were included, and only from that route's stored summary. A summary does not replace a route whose captions were omitted.
+- Tsids of another work cannot be inserted by the client.
+
+When the exception is over, the next `"none"` request uses §A.2. Keeping an earlier spoiler answer on screen does not keep the expanded candidate set.
+
+### A.4 History integrity is not the SQL gate
+
+An assistant turn produced on the expanded path must not be replayed into the model context of a later `"none"` request. The product contract seals a completed assistant turn with an HMAC over the retrieval mode and the visible text. On `"none"`, the server drops an assistant turn whose seal is missing, invalid, or marked as expanded disclosure.
+
+The seal checks provenance of an assistant message. It does not build the SQL candidate set, and it does not prove that the prose contains no unread plot. User messages are not sealed. Field-level rules stay in the product contract §§7–8.
+
+### A.5 Story oracle
+
+The production story oracle continues to hash caption bytes only: raw UTF-8, no separators, no trim. It still fails closed when the chunk list and the concatenated buffer disagree. RAGAS v2 keeps that caption boundary. Summaries and character-card text stay outside the hash.
+
+What changes is the caption set being hashed, not the kind of field. The hash covers captions actually placed in the prompt after the frame rules and the budget. Captions fetched and then dropped are not hashed. Route order for the hash is `chapter_number`, then `order_index`, then `tsid`. The request fingerprint gains the visibility mode and does not absorb story bytes. The algorithm remains in `src/lib/production-story-oracle.ts`.
+
+### A.6 Limits
+
+This amendment does not make the assistant an absolute spoiler-safety system.
+
+1. Without a server reading ledger, the default path cannot prove that the client did not raise `readUpToChapter` or `readUpToOrderIndex`.
+2. The default path cannot delete later plot from model weights.
+3. The server cannot reliably classify spoiler text that the reader types into a user message.
+4. A valid HMAC shows the retrieval mode and that the sealed assistant text was not edited. It does not show that the model withheld unread plot.
+5. The expanded set is the work's ingested routes. It is not the complete literary source.
+
+No reading ledger, account-level permission, or session database is added here.
+
+### A.7 Data flow
+
+```text
+resolve work_id from workTsid
+  → reject the request if sceneTsid is not in that work
+  → SQL candidate set
+       none: progress bound in §A.2
+       single_request or conversation, after §A.3: every ingested route of work_id
+  → embedQuery
+  → match_scenes on that set only
+  → read story_images_v2 for the same tsids
+  → §A.2 frame rules, or no frame cut on the exception path
+  → prompt budget from the product contract
+  → story oracle over the injected captions only
+  → prompt
+  → generation
+```
+
+An empty ranking continues into caption assembly. A thrown embedding call or RPC does not.
+
+### A.8 Accepted checks
+
+1. `"none"` still names the progress SQL filter.
+2. Without a validated grant, captions past `readUpToStoryIndexLast` on the current route do not enter the model context.
+3. A validated grant opens only the ingested routes of the current `work_id`.
+4. The SQL candidate set is still built before vector rerank.
+5. An empty embedding result does not erase captions that the SQL set already admitted.
+6. The caption read uses the same tsid set as the SQL gate.
+7. The default path does not use an untruncated summary to pass the frame boundary.
+8. `single_request` does not apply to the next message.
+9. `conversation` changes only when the reader sends that mode, not when the topic changes.
+10. The story oracle still hashes captions, not summaries or character cards.
+11. The HMAC is a message-integrity check, not an absolute safety boundary and not a replacement for the SQL filter.
+12. Both candidate sets remain limited to one `work_id`.

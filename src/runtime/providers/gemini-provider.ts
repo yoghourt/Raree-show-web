@@ -85,6 +85,7 @@ export function createGeminiProvider(options: CreateGeminiProviderOptions): AIMo
         // not apply their own retry layer.
         maxRetries: 0,
         ...(request.timeoutMs !== undefined ? { timeout: request.timeoutMs } : {}),
+        ...(request.abortSignal ? { abortSignal: request.abortSignal } : {}),
       })
       return { text }
     },

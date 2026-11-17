@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown"
 import {
   abortGenerationController,
   applyAssistantDelta,
+  assistantRequestMessages,
   historyTurnsForRequest,
   isAbortError,
   markAssistantTerminal,
@@ -12,6 +13,7 @@ import {
   type AssistantChatMessage,
   type AssistantGenerationPhase,
 } from "@/lib/assistant-generation-lifecycle"
+import { type AssistantTurnSeal, type SpoilerMode } from "@/lib/assistant-turn-seal"
 import { en } from "@/lib/locale/en"
 import { localizeKnownError } from "@/lib/locale/errors"
 import { useLocale } from "@/lib/locale/provider"
@@ -32,6 +34,7 @@ export interface ReadingRouteAssistantContext {
   location: string
   characters: string[]
   summary: string
+  characterTsids?: string[]
 }
 
 /** Mirrors ProgressConfig in retrieval (client-safe shape, no server imports). */
@@ -66,7 +69,12 @@ function GuideMark({ size = 16 }: { size?: number }) {
   )
 }
 
-function parseUiMessageSseEvent(rawEvent: string): { delta?: string; error?: string } {
+function parseUiMessageSseEvent(rawEvent: string): {
+  delta?: string
+  error?: string
+  seal?: AssistantTurnSeal
+  authorization?: { questionId: string; excerpt: string }
+} {
   const dataLines = rawEvent
     .split("\n")
     .filter((line) => line.startsWith("data:"))
@@ -78,9 +86,26 @@ function parseUiMessageSseEvent(rawEvent: string): { delta?: string; error?: str
   if (!payload || payload === "[DONE]") return {}
 
   try {
-    const json = JSON.parse(payload) as { type?: string; delta?: string; errorText?: string }
+    const json = JSON.parse(payload) as {
+      type?: string
+      delta?: string
+      errorText?: string
+      seal?: AssistantTurnSeal
+      questionId?: string
+      excerpt?: string
+    }
     if (json.type === "error" && typeof json.errorText === "string") {
       return { error: json.errorText }
+    }
+    if (
+      json.type === "assistant-authorization-required" &&
+      typeof json.questionId === "string" &&
+      typeof json.excerpt === "string"
+    ) {
+      return { authorization: { questionId: json.questionId, excerpt: json.excerpt } }
+    }
+    if (json.type === "assistant-turn-seal" && json.seal) {
+      return { seal: json.seal }
     }
     if (json.type === "text-delta" && typeof json.delta === "string") {
       return { delta: json.delta }
@@ -111,6 +136,9 @@ export default function ReadingRouteAssistant({
   const [messages, setMessages] = useState<AssistantChatMessage[]>([])
   const [phase, setPhase] = useState<AssistantGenerationPhase>("idle")
   const [error, setError] = useState<string | null>(null)
+  const [spoilerSession, setSpoilerSession] = useState<"no_spoiler" | "conversation_spoiler">("no_spoiler")
+  const spoilerSessionRef = useRef(spoilerSession)
+  spoilerSessionRef.current = spoilerSession
   const scrollRef = useRef<HTMLDivElement>(null)
   const sendingRef = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
@@ -151,15 +179,59 @@ export default function ReadingRouteAssistant({
     setOpen(false)
   }
 
-  async function send() {
-    const question = input.trim()
+  function setSpoilerMode(next: "no_spoiler" | "conversation_spoiler") {
+    spoilerSessionRef.current = next
+    setSpoilerSession(next)
+  }
+
+  function authorize(
+    choice: "accepted_single" | "accepted_conversation" | "declined",
+    questionId: string,
+    question: string
+  ) {
+    if (!questionId || sendingRef.current || phaseRef.current === "streaming") return
+    setMessages((current) =>
+      current.map((message) =>
+        message.questionId === questionId && message.kind === "authorization_request"
+          ? { ...message, resolution: choice }
+          : message
+      )
+    )
+    if (choice === "declined") return
+    if (choice === "accepted_conversation") setSpoilerMode("conversation_spoiler")
+    void send({
+      question,
+      questionId,
+      mode: choice === "accepted_single" ? "single_request" : "conversation",
+    }).catch((error) => {
+      if (!isAbortError(error)) console.error(error)
+    })
+  }
+
+  function startNewConversation() {
+    abortGenerationController(abortRef.current)
+    abortRef.current = null
+    sendingRef.current = false
+    generationIdRef.current += 1
+    setGenerationPhase("idle")
+    setError(null)
+    setInput("")
+    setMessages([])
+    setSpoilerMode("no_spoiler")
+  }
+
+  async function send(override?: { question: string; questionId: string; mode: SpoilerMode }) {
+    const question = override?.question ?? input.trim()
     if (!question || sendingRef.current || phaseRef.current === "streaming") return
     sendingRef.current = true
+    const questionId = override?.questionId ?? crypto.randomUUID()
+    const spoilerMode: SpoilerMode =
+      override?.mode ?? (spoilerSessionRef.current === "conversation_spoiler" ? "conversation" : "none")
 
-    const apiMessages = [
-      ...historyTurnsForRequest(messages),
-      { role: "user" as const, content: question },
-    ]
+    const apiMessages = assistantRequestMessages(historyTurnsForRequest(messages), {
+      content: question,
+      questionId,
+    })
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -167,15 +239,17 @@ export default function ReadingRouteAssistant({
     generationIdRef.current = generationId
     setGenerationPhase("streaming")
 
-    setInput("")
+    if (!override) setInput("")
     setError(null)
     setMessages((m) => [
       ...m.filter((x) => !(x.role === "assistant" && x.status === "streaming")),
-      { role: "user", content: question },
-      { role: "assistant", content: "", status: "streaming", generationId },
+      ...(override ? [] : [{ role: "user" as const, content: question, questionId }]),
+      { role: "assistant" as const, content: "", status: "streaming" as const, generationId },
     ])
 
     let acc = ""
+    let turnSeal: AssistantTurnSeal | undefined
+    let authorizationExcerpt: string | undefined
     try {
       const res = await fetch("/api/scene-assistant", {
         method: "POST",
@@ -184,6 +258,8 @@ export default function ReadingRouteAssistant({
           messages: apiMessages,
           sceneContext,
           userProgress,
+          spoilerMode,
+          ...(spoilerMode === "single_request" ? { authorizedQuestionId: questionId } : {}),
         }),
         signal: controller.signal,
       })
@@ -216,6 +292,30 @@ export default function ReadingRouteAssistant({
         if (parsed.error) {
           throw new Error(parsed.error)
         }
+        if (parsed.authorization) {
+          if (parsed.authorization.questionId !== questionId) {
+            throw new Error(en.assistant.errorInvalidRequest)
+          }
+          if (authorizationExcerpt === undefined) {
+            authorizationExcerpt = parsed.authorization.excerpt
+            acc = parsed.authorization.excerpt
+            const snapshot = acc
+            setMessages((m) =>
+              m.map((message) =>
+                message.role === "assistant" && message.generationId === generationId
+                  ? {
+                      ...message,
+                      content: snapshot,
+                      kind: "authorization_request",
+                      questionId,
+                      resolution: "pending",
+                    }
+                  : message
+              )
+            )
+          }
+        }
+        if (parsed.seal) turnSeal = parsed.seal
         if (
           parsed.delta &&
           shouldAcceptAssistantDelta({
@@ -281,7 +381,22 @@ export default function ReadingRouteAssistant({
         })
       ) {
         setGenerationPhase("completed")
-        setMessages((m) => markAssistantTerminal(m, generationId, "completed", acc))
+        const seal = turnSeal
+        setMessages((m) => {
+          const done = markAssistantTerminal(m, generationId, "completed", acc)
+          if (!seal) return done
+          return done.map((message) =>
+            message.role === "assistant" && message.generationId === generationId
+              ? {
+                  ...message,
+                  seal,
+                  questionId: seal.questionId,
+                  kind: seal.kind,
+                  resolution: seal.spoilerAuthorizationRequest ? "pending" : message.resolution,
+                }
+              : message
+          )
+        })
       }
     } catch (e) {
       const aborted =
@@ -300,7 +415,15 @@ export default function ReadingRouteAssistant({
       const msg = e instanceof Error ? e.message : en.assistant.errorGeneric
       setGenerationPhase("failed")
       setError(msg)
-      setMessages((m) => markAssistantTerminal(m, generationId, "failed", acc))
+      setMessages((m) => {
+        const failed = markAssistantTerminal(m, generationId, "failed", acc)
+        if (!override) return failed
+        return failed.map((message) =>
+          message.questionId === override.questionId && message.kind === "authorization_request"
+            ? { ...message, resolution: "pending" }
+            : message
+        )
+      })
     } finally {
       if (generationIdRef.current === generationId) {
         sendingRef.current = false
@@ -417,15 +540,28 @@ export default function ReadingRouteAssistant({
                 {copy.assistant.panelTitle}
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={() => closePanel()}
-              className="reader-guide-panel-close"
-              aria-label={copy.assistant.closeAria}
-            >
+            <div className="reader-guide-panel-tools">
+              {spoilerSession === "conversation_spoiler" ? (
+                <button type="button" className="reader-guide-chip" onClick={() => setSpoilerMode("no_spoiler")}>
+                  {copy.assistant.spoilerOff}
+                </button>
+              ) : null}
+              <button type="button" className="reader-guide-chip" onClick={startNewConversation}>
+                {copy.assistant.newConversation}
+              </button>
+              <button
+                type="button"
+                onClick={() => closePanel()}
+                className="reader-guide-panel-close"
+                aria-label={copy.assistant.closeAria}
+              >
               <span aria-hidden="true">×</span>
-            </button>
+              </button>
+            </div>
           </div>
+          {spoilerSession === "conversation_spoiler" ? (
+            <p className="reader-guide-spoiler-banner">{copy.assistant.spoilerOn}</p>
+          ) : null}
 
           <div ref={scrollRef} className="reader-guide-panel-log">
             <div className="reader-guide-panel-log-inner">
@@ -448,9 +584,56 @@ export default function ReadingRouteAssistant({
                     <span className="reader-guide-msg-body">{msg.content}</span>
                   ) : (
                     <>
-                      <div className="reader-guide-msg-body">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
+                      {msg.kind === "spoiler_answer" ? (
+                        <p className="reader-guide-spoiler-badge">{copy.assistant.spoilerBadge}</p>
+                      ) : null}
+                      {msg.content ? (
+                        <div className="reader-guide-msg-body">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      ) : null}
+                      {msg.kind === "authorization_request" ? (
+                        <div className="reader-guide-auth-card">
+                          <p>{copy.assistant.authorizationPrompt}</p>
+                          {msg.resolution === "pending" ? (
+                            <div className="reader-guide-auth-actions">
+                              <button
+                                type="button"
+                                disabled={streaming}
+                                onClick={() =>
+                                  authorize(
+                                    "accepted_single",
+                                    msg.questionId ?? "",
+                                    messages.find((item) => item.role === "user" && item.questionId === msg.questionId)?.content ?? ""
+                                  )
+                                }
+                              >
+                                {copy.assistant.allowOnce}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={streaming}
+                                onClick={() =>
+                                  authorize(
+                                    "accepted_conversation",
+                                    msg.questionId ?? "",
+                                    messages.find((item) => item.role === "user" && item.questionId === msg.questionId)?.content ?? ""
+                                  )
+                                }
+                              >
+                                {copy.assistant.allowConversation}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={streaming}
+                                onClick={() => authorize("declined", msg.questionId ?? "", "")}
+                              >
+                                {copy.assistant.declineSpoilers}
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                       {msg.status === "streaming" && (
                         <span className="reader-guide-stream-caret" aria-hidden />
                       )}
@@ -625,6 +808,66 @@ export default function ReadingRouteAssistant({
           padding: 10px 10px 10px 14px;
           border-bottom: 1px solid rgba(200, 169, 110, 0.45);
           background: linear-gradient(180deg, #2a1a0e 0%, #1a0e08 100%);
+        }
+
+        .reader-guide-panel-tools {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .reader-guide-chip,
+        .reader-guide-auth-actions button {
+          border: 1px solid var(--rs-gold);
+          border-radius: 4px;
+          background: transparent;
+          color: #f3e6c4;
+          cursor: pointer;
+          font: inherit;
+          font-size: 12px;
+          line-height: 1.3;
+          padding: 4px 8px;
+        }
+
+        .reader-guide-chip:disabled,
+        .reader-guide-auth-actions button:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        .reader-guide-spoiler-banner,
+        .reader-guide-spoiler-badge {
+          margin: 0;
+          color: #f3e6c4;
+          font-size: 12px;
+          letter-spacing: 0.04em;
+        }
+
+        .reader-guide-spoiler-banner {
+          padding: 6px 14px;
+          border-bottom: 1px solid rgba(200, 169, 110, 0.35);
+          background: rgba(90, 42, 18, 0.55);
+        }
+
+        .reader-guide-spoiler-badge {
+          margin-bottom: 6px;
+          color: #e7d3a1;
+        }
+
+        .reader-guide-auth-card {
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px solid rgba(200, 169, 110, 0.35);
+        }
+
+        .reader-guide-auth-card p {
+          margin: 0 0 8px;
+        }
+
+        .reader-guide-auth-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
         }
 
         .reader-guide-panel-heading {

@@ -1,20 +1,38 @@
+import { randomUUID } from "node:crypto"
 import { NextRequest } from "next/server"
 import { createGeminiProvider, executeVerifiedGeneration } from "@/runtime"
 import { createOpenRouterProvider } from "@/runtime/providers/openrouter-provider"
 import type { AIModelProvider } from "@/runtime/types"
-import { escapeXmlAttr, escapeXmlTextForPresentation } from "@/lib/scene-assistant-context"
 import { composeAssistantSystemPrompt } from "@/lib/assistant-request-prompt"
-import { messages } from "@/lib/locale"
+import {
+  buildStage1SystemPrompt,
+  buildStage1UserContent,
+  captionExcerpt,
+  decisionEventResponse,
+  planAfterStage1,
+  runStage1Classification,
+} from "@/lib/assistant-stage1"
+import { sealAssistantTextStream } from "@/lib/assistant-visible-stream"
+import {
+  AssistantSealConfigError,
+  historyForModel,
+  kindForCompletedTurn,
+  readAssistantSealKey,
+  signAssistantTurn,
+  type AssistantTurnSeal,
+  type HistoryTurn,
+  type SpoilerMode,
+} from "@/lib/assistant-turn-seal"
+import { en } from "@/lib/locale/en"
+import { readRequestLocale } from "@/lib/locale/read-request-locale"
+import { zhCN } from "@/lib/locale/zh-CN"
+import { escapeXmlAttr, escapeXmlTextForPresentation } from "@/lib/scene-assistant-context"
 import { InvariantViolationError } from "@/lib/production-story-oracle"
 import { assertReadUpToStoryIndexLast, VisibilityInvariantViolation } from "@/lib/visibility-invariant"
-import {
-  retrieveVerifiedAssistantContext,
-  type RetrievedScene,
-} from "@/services/retrieval"
+import { createScriptedAssistantProvider, scriptedAssistantProviderEnabled } from "@/lib/assistant-test-provider"
+import { SceneWorkMismatchError, retrieveVerifiedAssistantContext } from "@/services/retrieval"
 
 export const maxDuration = 30
-
-type ChatTurn = { role: "user" | "assistant"; content: string }
 
 type SceneCtx = {
   tsid: string
@@ -25,6 +43,7 @@ type SceneCtx = {
   location: string
   characters: string[]
   summary: string
+  characterTsids: string[]
 }
 
 type UserProgressBody = {
@@ -35,25 +54,63 @@ type UserProgressBody = {
   readUpToStoryIndexLast: number
 }
 
-/** Narrative fields from match_scenes row only — no scores or internal ids in the model prompt. */
-function sceneBodyFromRetrieved(scene: RetrievedScene): string {
-  const summary = scene.summary
-  if (typeof summary === "string" && summary.trim() !== "") {
-    return escapeXmlTextForPresentation(summary.trim())
-  }
-  return escapeXmlTextForPresentation(messages.assistantPrompt.retrievalIdOnlyFallback)
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === "object"
 }
 
-function buildContextXml(results: RetrievedScene[]): string {
-  if (results.length === 0) {
-    return "<context></context>"
+function parseSpoilerMode(value: unknown): SpoilerMode | null {
+  if (value == null) return "none"
+  if (value === "none" || value === "single_request" || value === "conversation") return value
+  return null
+}
+
+function parseSeal(value: unknown): AssistantTurnSeal | undefined {
+  if (!isRecord(value)) return undefined
+  const mode = value.spoilerMode
+  const kind = value.kind
+  if (
+    typeof value.questionId !== "string" ||
+    typeof value.workTsid !== "string" ||
+    typeof value.sceneTsid !== "string" ||
+    typeof value.contentSha256 !== "string" ||
+    typeof value.signature !== "string" ||
+    (mode !== "none" && mode !== "single_request" && mode !== "conversation") ||
+    (kind !== "answer" &&
+      kind !== "spoiler_answer" &&
+      kind !== "authorization_request" &&
+      kind !== "out_of_scope") ||
+    typeof value.expandedRetrieval !== "boolean" ||
+    typeof value.spoilerDisclosure !== "boolean" ||
+    typeof value.spoilerAuthorizationRequest !== "boolean" ||
+    typeof value.readUpToChapter !== "number" ||
+    typeof value.readUpToOrderIndex !== "number" ||
+    typeof value.readUpToStoryIndexLast !== "number"
+  ) {
+    return undefined
   }
-  const scenes = results.map((scene) => {
+  return {
+    questionId: value.questionId,
+    workTsid: value.workTsid,
+    sceneTsid: value.sceneTsid,
+    kind,
+    spoilerMode: mode,
+    expandedRetrieval: value.expandedRetrieval,
+    spoilerDisclosure: value.spoilerDisclosure,
+    spoilerAuthorizationRequest: value.spoilerAuthorizationRequest,
+    readUpToChapter: value.readUpToChapter,
+    readUpToOrderIndex: value.readUpToOrderIndex,
+    readUpToStoryIndexLast: value.readUpToStoryIndexLast,
+    contentSha256: value.contentSha256,
+    signature: value.signature,
+  }
+}
+
+function buildSummaryXml(summaries: { tsid: string; title: string; summary: string }[]): string {
+  if (summaries.length === 0) return "<context></context>"
+  const scenes = summaries.map((scene) => {
     const id = escapeXmlAttr(scene.tsid)
-    const titleRaw = typeof scene.title === "string" ? scene.title : ""
-    const title = escapeXmlAttr(titleRaw)
-    const body = sceneBodyFromRetrieved(scene)
-    return `  <scene id="${id}" title="${title}">${body}</scene>`
+    const title = escapeXmlAttr(scene.title)
+    return `  <scene id="${id}" title="${title}">${escapeXmlTextForPresentation(scene.summary.trim())}</scene>`
   })
   return `<context>\n${scenes.join("\n")}\n</context>`
 }
@@ -64,76 +121,88 @@ export async function POST(req: NextRequest) {
     return new Response("Missing GEMINI_API_KEY in environment.", { status: 500 })
   }
 
-  let body: {
-    messages?: unknown
-    sceneContext?: unknown
-    userProgress?: unknown
-  }
+  let sealKey: string
   try {
-    body = await req.json()
+    sealKey = readAssistantSealKey()
+  } catch (error) {
+    if (error instanceof AssistantSealConfigError) {
+      return new Response(error.message, { status: 500 })
+    }
+    throw error
+  }
+
+  let body: Record<string, unknown>
+  try {
+    body = (await req.json()) as Record<string, unknown>
   } catch {
     return new Response("Invalid JSON body", { status: 400 })
   }
 
-  const { messages: rawMessages, sceneContext: rawCtx, userProgress: rawProgress } = body
-
+  const rawMessages = body.messages
   if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
     return new Response("Missing messages", { status: 400 })
   }
 
-  const messages: ChatTurn[] = []
-  for (const m of rawMessages) {
-    if (!m || typeof m !== "object") {
-      return new Response("Invalid messages", { status: 400 })
-    }
-    const role = (m as { role?: unknown }).role
-    const content = (m as { content?: unknown }).content
-    if (role !== "user" && role !== "assistant") {
-      return new Response("Invalid message role", { status: 400 })
-    }
-    if (typeof content !== "string") {
-      return new Response("Invalid message content", { status: 400 })
-    }
-    messages.push({ role, content })
+  const history: HistoryTurn[] = []
+  for (const message of rawMessages) {
+    if (!isRecord(message)) return new Response("Invalid messages", { status: 400 })
+    const role = message.role
+    const content = message.content
+    if (role !== "user" && role !== "assistant") return new Response("Invalid message role", { status: 400 })
+    if (typeof content !== "string") return new Response("Invalid message content", { status: 400 })
+    const questionId = typeof message.questionId === "string" ? message.questionId : undefined
+    const seal = message.seal === undefined ? undefined : parseSeal(message.seal)
+    history.push({ role, content, questionId, seal })
   }
 
-  const last = messages[messages.length - 1]
-  if (!last || last.role !== "user") {
-    return new Response("Last message must be from user", { status: 400 })
-  }
+  const last = history[history.length - 1]
+  if (!last || last.role !== "user") return new Response("Last message must be from user", { status: 400 })
   const query = last.content.trim()
-  if (!query) {
-    return new Response("Empty user message", { status: 400 })
+  if (!query) return new Response("Empty user message", { status: 400 })
+
+  const spoilerMode = parseSpoilerMode(body.spoilerMode)
+  if (!spoilerMode) return new Response("Invalid spoilerMode", { status: 400 })
+  const authorizedQuestionId =
+    typeof body.authorizedQuestionId === "string" ? body.authorizedQuestionId : ""
+  if (spoilerMode === "single_request") {
+    if (!last.questionId || authorizedQuestionId !== last.questionId) {
+      return new Response("authorizedQuestionId does not match the question", { status: 400 })
+    }
   }
 
-  if (!rawCtx || typeof rawCtx !== "object") {
-    return new Response("Missing sceneContext", { status: 400 })
-  }
-  const ctx = rawCtx as Record<string, unknown>
-  const sceneTsidFromCtx = typeof ctx.tsid === "string" ? ctx.tsid.trim() : ""
+  const questionId = last.questionId && last.questionId.trim() !== "" ? last.questionId : randomUUID()
+  last.questionId = questionId
+
+  const rawCtx = body.sceneContext
+  if (!isRecord(rawCtx)) return new Response("Missing sceneContext", { status: 400 })
+  const sceneTsidFromCtx = typeof rawCtx.tsid === "string" ? rawCtx.tsid.trim() : ""
   const sceneContext: SceneCtx = {
     tsid: sceneTsidFromCtx,
-    workTitle: typeof ctx.workTitle === "string" ? ctx.workTitle.trim() : "",
-    title: typeof ctx.title === "string" ? ctx.title : "",
-    chapter_number: typeof ctx.chapter_number === "number" ? ctx.chapter_number : NaN,
-    chapter_title: ctx.chapter_title === null ? null : typeof ctx.chapter_title === "string" ? ctx.chapter_title : null,
-    location: typeof ctx.location === "string" ? ctx.location : "",
-    characters: Array.isArray(ctx.characters) ? ctx.characters.filter((c): c is string => typeof c === "string") : [],
-    summary: typeof ctx.summary === "string" ? ctx.summary : "",
+    workTitle: typeof rawCtx.workTitle === "string" ? rawCtx.workTitle.trim() : "",
+    title: typeof rawCtx.title === "string" ? rawCtx.title : "",
+    chapter_number: typeof rawCtx.chapter_number === "number" ? rawCtx.chapter_number : NaN,
+    chapter_title:
+      rawCtx.chapter_title === null ? null : typeof rawCtx.chapter_title === "string" ? rawCtx.chapter_title : null,
+    location: typeof rawCtx.location === "string" ? rawCtx.location : "",
+    characters: Array.isArray(rawCtx.characters)
+      ? rawCtx.characters.filter((item): item is string => typeof item === "string")
+      : [],
+    summary: typeof rawCtx.summary === "string" ? rawCtx.summary : "",
+    characterTsids: Array.isArray(rawCtx.characterTsids)
+      ? rawCtx.characterTsids.filter((item): item is string => typeof item === "string" && !item.startsWith("cue:"))
+      : [],
   }
   if (!sceneContext.tsid || !sceneContext.title || Number.isNaN(sceneContext.chapter_number)) {
     return new Response("Invalid sceneContext", { status: 400 })
   }
 
-  if (!rawProgress || typeof rawProgress !== "object") {
-    return new Response("Missing userProgress", { status: 400 })
-  }
-  const p = rawProgress as Record<string, unknown>
-  const workTsid = typeof p.workTsid === "string" ? p.workTsid.trim() : ""
-  const readUpToChapter = p.readUpToChapter
-  const readUpToOrderIndex = p.readUpToOrderIndex
-  const sceneTsid = typeof p.sceneTsid === "string" ? p.sceneTsid.trim() : ""
-  const readUpToStoryIndexLast = p.readUpToStoryIndexLast
+  const rawProgress = body.userProgress
+  if (!isRecord(rawProgress)) return new Response("Missing userProgress", { status: 400 })
+  const workTsid = typeof rawProgress.workTsid === "string" ? rawProgress.workTsid.trim() : ""
+  const readUpToChapter = rawProgress.readUpToChapter
+  const readUpToOrderIndex = rawProgress.readUpToOrderIndex
+  const sceneTsid = typeof rawProgress.sceneTsid === "string" ? rawProgress.sceneTsid.trim() : ""
+  const readUpToStoryIndexLast = rawProgress.readUpToStoryIndexLast
   if (
     !workTsid ||
     typeof readUpToChapter !== "number" ||
@@ -146,11 +215,10 @@ export async function POST(req: NextRequest) {
   }
   try {
     assertReadUpToStoryIndexLast(readUpToStoryIndexLast)
-  } catch (e) {
-    const msg = e instanceof VisibilityInvariantViolation ? e.message : "Invalid userProgress"
-    return new Response(msg, { status: 400 })
+  } catch (error) {
+    const message = error instanceof VisibilityInvariantViolation ? error.message : "Invalid userProgress"
+    return new Response(message, { status: 400 })
   }
-
   if (sceneContext.tsid !== sceneTsid) {
     return new Response("sceneContext.tsid must match userProgress.sceneTsid", { status: 400 })
   }
@@ -165,53 +233,160 @@ export async function POST(req: NextRequest) {
 
   let verified: Awaited<ReturnType<typeof retrieveVerifiedAssistantContext>>
   try {
-    verified = await retrieveVerifiedAssistantContext(
-      query,
-      userProgress,
-      sceneContext.chapter_number
-    )
-  } catch (e) {
-    if (e instanceof InvariantViolationError) {
-      return new Response(
-        JSON.stringify({ code: e.code, message: e.message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      )
+    verified = await retrieveVerifiedAssistantContext(query, userProgress, sceneContext.chapter_number, {
+      spoilerMode,
+      characterTsids: sceneContext.characterTsids,
+    })
+  } catch (error) {
+    if (error instanceof SceneWorkMismatchError) {
+      return new Response(error.message, { status: 400 })
     }
-    const msg = e instanceof Error ? e.message : "retrieveVerifiedAssistantContext failed"
-    return new Response(msg, { status: 502 })
+    if (error instanceof InvariantViolationError) {
+      return new Response(JSON.stringify({ code: error.code, message: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+    const message = error instanceof Error ? error.message : "retrieveVerifiedAssistantContext failed"
+    return new Response(message, { status: 502 })
   }
 
   console.log(
     `[RAG] requestId=${verified.requestId} CandidateSet: ${verified.observability.candidateSetSize} | Latency: ${Math.round(verified.observability.retrievalLatency)}ms | storyOracleBytes=${verified.storyOracle.byteSize}`
   )
 
-  const contextXml = buildContextXml(verified.results)
-
+  const expanded = spoilerMode !== "none"
+  const locale = await readRequestLocale()
+  const outOfScope = locale === "zh-CN" ? zhCN.assistantPrompt.outOfScope : en.assistantPrompt.outOfScope
   const system = await composeAssistantSystemPrompt(
-    sceneContext,
+    { ...sceneContext, summary: expanded ? verified.promptSummary : "" },
     verified.currentSceneRevealedXml,
     verified.chapterScenesXml,
-    contextXml
+    buildSummaryXml(verified.contextSummaries),
+    {
+      visibility: expanded ? "expanded" : "none",
+      characterCards: verified.characterCards,
+      omissionNote: verified.omissionNote,
+    }
   )
 
-  const provider = createGeminiProvider({ apiKey })
+  const modelMessages = historyForModel({
+    messages: history,
+    spoilerMode,
+    workTsid,
+    sceneTsid,
+    progress: userProgress,
+    sealKey,
+  })
 
-  // ADR-003 Phase 2: wire OpenRouter as deterministic pre-lock fallback.
-  // OPENROUTER_API_KEY is optional; absent key disables fallback silently.
+  const scripted = scriptedAssistantProviderEnabled()
+  const provider = scripted ? createScriptedAssistantProvider() : createGeminiProvider({ apiKey })
   const fallbackProviders: AIModelProvider[] = []
   const openrouterApiKey = process.env.OPENROUTER_API_KEY
-  if (openrouterApiKey) {
-    fallbackProviders.push(createOpenRouterProvider({ apiKey: openrouterApiKey }))
+  if (!scripted && openrouterApiKey) fallbackProviders.push(createOpenRouterProvider({ apiKey: openrouterApiKey }))
+  const fallback = fallbackProviders[0]
+
+  if (!expanded) {
+    if (req.signal.aborted) return new Response(null, { status: 499 })
+    const visible = verified.chapterScenes.flatMap((scene) =>
+      scene.revealedStorySlides.map((slide) => ({
+        text: slide.caption,
+        current: scene.tsid === sceneTsid,
+      }))
+    )
+    const stage1 = await runStage1Classification({
+      primary: provider,
+      fallback,
+      system: buildStage1SystemPrompt(),
+      userContent: buildStage1UserContent({
+        question: query,
+        history: modelMessages.slice(0, -1),
+        captions: visible.map((item) => item.text),
+        workTitle: sceneContext.workTitle,
+        sceneTitle: sceneContext.title,
+      }),
+      abortSignal: req.signal,
+    })
+    if (req.signal.aborted || (stage1.ok === false && stage1.aborted)) {
+      return new Response(null, { status: 499 })
+    }
+    if (!stage1.ok) return new Response(stage1.message, { status: 502 })
+    const plan = planAfterStage1(stage1.decision)
+    if (plan === "authorization") {
+      const excerpt = captionExcerpt(visible, query)
+      const seal = signAssistantTurn(
+        sealKey,
+        {
+          questionId,
+          workTsid,
+          sceneTsid,
+          kind: "authorization_request",
+          spoilerMode: "none",
+          expandedRetrieval: false,
+          spoilerDisclosure: false,
+          spoilerAuthorizationRequest: true,
+          readUpToChapter,
+          readUpToOrderIndex,
+          readUpToStoryIndexLast,
+        },
+        excerpt
+      )
+      return decisionEventResponse({ kind: "authorization", questionId, visibleText: excerpt, seal })
+    }
+    if (plan === "out_of_scope") {
+      const seal = signAssistantTurn(
+        sealKey,
+        {
+          questionId,
+          workTsid,
+          sceneTsid,
+          kind: "out_of_scope",
+          spoilerMode: "none",
+          expandedRetrieval: false,
+          spoilerDisclosure: false,
+          spoilerAuthorizationRequest: false,
+          readUpToChapter,
+          readUpToOrderIndex,
+          readUpToStoryIndexLast,
+        },
+        outOfScope
+      )
+      return decisionEventResponse({ kind: "out_of_scope", questionId, visibleText: outOfScope, seal })
+    }
   }
 
-  return executeVerifiedGeneration({
-    context: {
-      requestId: verified.requestId,
-      system,
-      messages,
-    },
+  if (req.signal.aborted) return new Response(null, { status: 499 })
+
+  const generated = await executeVerifiedGeneration({
+    context: { requestId: verified.requestId, system, messages: modelMessages },
     primary: provider,
     fallbackProviders,
     abortSignal: req.signal,
+  })
+
+  return sealAssistantTextStream(generated, ({ prose }) => {
+    const spoilerDisclosure = expanded
+    return signAssistantTurn(
+      sealKey,
+      {
+        questionId,
+        workTsid,
+        sceneTsid,
+        kind: kindForCompletedTurn({
+          content: prose,
+          outOfScopeSentence: outOfScope,
+          spoilerDisclosure,
+          spoilerAuthorizationRequest: false,
+        }),
+        spoilerMode,
+        expandedRetrieval: expanded,
+        spoilerDisclosure,
+        spoilerAuthorizationRequest: false,
+        readUpToChapter,
+        readUpToOrderIndex,
+        readUpToStoryIndexLast,
+      },
+      prose
+    )
   })
 }

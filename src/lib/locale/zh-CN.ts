@@ -67,6 +67,15 @@ export const zhCN = {
     errorUnavailable: "生成服务暂时不可用。",
     errorInvalidRequest: "生成请求无效。",
     errorFailed: "生成失败。",
+    spoilerOn: "剧透模式已开启",
+    spoilerOff: "关闭剧透",
+    newConversation: "新对话",
+    spoilerBadge: "含剧透",
+    authorizationPrompt:
+      "目前已读内容还不足以完整回答这个问题。我可以查阅本作品后续的故事内容，并结合我掌握的作品背景知识继续解答，但可能会涉及你尚未读到的剧情。是否接受剧透？",
+    allowOnce: "仅本次回答允许剧透",
+    allowConversation: "开启本次对话剧透模式",
+    declineSpoilers: "暂不剧透",
   },
   readerGuide: {
     button: "询问故事向导",
@@ -107,6 +116,7 @@ export const zhCN = {
   },
   assistantPrompt: {
     ...en.assistantPrompt,
-    closedDomainRefusal: "就你目前读到的进度而言，这部分还没有揭晓。",
+    boundarySentence: "要把这件事讲完整，会越过你目前读到的进度。",
+    outOfScope: "我只能顺着这部作品和你正在看的场景来聊。这个问题超出这个范围了。",
   },
 } satisfies LocaleMessages

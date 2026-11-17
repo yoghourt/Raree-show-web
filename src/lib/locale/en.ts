@@ -66,6 +66,15 @@ export const en = {
     errorUnavailable: 'Generation service temporarily unavailable.',
     errorInvalidRequest: 'Invalid generation request.',
     errorFailed: 'Generation failed.',
+    spoilerOn: 'Spoilers are on',
+    spoilerOff: 'Turn spoilers off',
+    newConversation: 'New conversation',
+    spoilerBadge: 'Spoilers',
+    authorizationPrompt:
+      'What you have read so far is not enough for a full answer. I can look through the rest of this work as it is stored here and add what I know about it, which may include parts you have not read. Do you want spoilers?',
+    allowOnce: 'Allow spoilers for this answer',
+    allowConversation: 'Allow spoilers for this conversation',
+    declineSpoilers: 'Not now',
   },
   readerGuide: {
     button: 'Ask the Guide',
@@ -111,9 +120,11 @@ export const en = {
     emptyRevealedStory: '(No revealed story yet)',
     emptyCaption: '(No caption)',
     untitledWork:
-      '(Work title not provided; rely on Raree-injected material only)',
-    closedDomainRefusal:
-      'Based on your progress so far, that information has not been revealed yet.',
+      '(Work title not provided; do not assume a famous work unless the injected text makes it clear.)',
+    boundarySentence:
+      'A complete answer would go beyond the point you have reached.',
+    outOfScope:
+      'I can help with this work and the scene you are reading. That question is outside that range.',
     chapterLine: (chapterNumber: number, chapterTitle?: string | null) =>
       chapterTitle != null && chapterTitle !== ''
         ? `Chapter ${chapterNumber} · ${chapterTitle}`
@@ -125,7 +136,7 @@ export const en = {
     revealedNarrativeIntro:
       'The blocks below are reader-revealed content: (1) current reading route metadata and physically truncated revealed story; (2) same-chapter revealed reading-route context (read-only DB assembly, not a second semantic retrieval pass); (3) semantic retrieval supplements inside `<context>` (current route tsid excluded to avoid whole-route RAG text bypassing story truncation).',
     toneNote:
-      'Tone: calm, solemn, epic in scale — matched to the current work. Answer in at most two sentences.',
+      'Tone: calm, solemn, epic in scale — matched to the current work. Usually one paragraph. Go longer when the reader asks about a process, a comparison, or several people. Do not write a source report.',
     currentRouteHeader: 'Current reading route',
     currentRevealedStoryHeader: 'Current route revealed story (physically truncated)',
     sameChapterHeader: 'Same-chapter revealed reading-route context',
@@ -138,7 +149,7 @@ export const en = {
     currentWorkRaree: (workLine: string) =>
       `**Current work (Raree):** ${workLine}`,
     progressBoundary:
-      'All plot boundaries follow Raree-injected revealed material in this prompt; do not assume the reader is in a specific famous IP unless the work name or injected text clearly indicates it.',
+      'Unread plot stays behind the revealed Raree text below. Do not assume a famous work unless the work name or the injected text makes it clear. Your own knowledge may still explain what is already in view.',
   },
 } as const;
 

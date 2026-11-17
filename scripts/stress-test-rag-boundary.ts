@@ -243,10 +243,14 @@ async function runCase2A(workTsid: string, fixture: SceneFixture): Promise<void>
     current.revealedStorySlides.length === 0,
     `sentinel -1: expected 0 revealed slides, got ${current.revealedStorySlides.length}`
   )
-  assert(
-    rawCaptionTokenBytes(chapterScenes) === 0,
-    "zero authorized caption tokens (placeholders excluded)"
-  )
+  for (const scene of chapterScenes) {
+    if (scene.tsid === fixture.tsid || scene.revealedStorySlides.length === 0) continue
+    const behind =
+      (scene.chapter_number ?? fixture.chapter_number) < fixture.chapter_number ||
+      ((scene.chapter_number ?? fixture.chapter_number) === fixture.chapter_number &&
+        scene.order_index < fixture.order_index)
+    assert(behind, `sentinel -1 included a route that is not behind progress: ${scene.tsid}`)
+  }
 
   const oracle = collectAuthorizedSemanticBytes(chapterScenes)
   assertProductionStoryOracle(chapterScenes, "stress:case2a", "stress-fp")

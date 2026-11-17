@@ -24,12 +24,20 @@ export type AuthorizedSemanticCollection = {
 /**
  * Production story authorization bytes originate exclusively from
  * chapterScenes[].revealedStorySlides[].caption (raw UTF-8, no trim).
- * Scenes are processed in ascending order_index; slides in array order.
+ * Scenes are ordered by chapter_number, order_index, then tsid. Slides stay in array order.
+ * Summary text is not part of this collection.
  */
 export function collectAuthorizedSemanticBytes(
   chapterScenes: ChapterSceneSnippet[]
 ): AuthorizedSemanticCollection {
-  const sorted = [...chapterScenes].sort((a, b) => a.order_index - b.order_index)
+  const sorted = [...chapterScenes].sort((a, b) => {
+    const chapterDelta = (a.chapter_number ?? 0) - (b.chapter_number ?? 0)
+    if (chapterDelta !== 0) return chapterDelta
+    if (a.order_index !== b.order_index) return a.order_index - b.order_index
+    if (a.tsid < b.tsid) return -1
+    if (a.tsid > b.tsid) return 1
+    return 0
+  })
   const chunks: Buffer[] = []
   for (const scene of sorted) {
     for (const slide of scene.revealedStorySlides) {
@@ -145,8 +153,17 @@ export function buildStableRequestFingerprint(params: {
   chapterNumber: number
   readUpToStoryIndexLast: number
   normalizedUserQuery: string
+  workTsid?: string
+  visibilityMode?: string
 }): string {
-  const payload = `${params.sceneTsid}|${params.chapterNumber}|${params.readUpToStoryIndexLast}|${params.normalizedUserQuery}`
+  const payload = [
+    params.workTsid ?? "",
+    params.visibilityMode ?? "none",
+    params.sceneTsid,
+    String(params.chapterNumber),
+    String(params.readUpToStoryIndexLast),
+    params.normalizedUserQuery,
+  ].join("|")
   return createHash("sha256").update(payload, "utf8").digest("hex")
 }
 
