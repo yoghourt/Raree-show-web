@@ -107,6 +107,7 @@ export const zhCN = {
   },
   assistantPrompt: {
     ...en.assistantPrompt,
-    closedDomainRefusal: "就你目前读到的进度而言，这部分还没有揭晓。",
+    boundarySentence: "要把这件事讲完整，会越过你目前读到的进度。",
+    outOfScope: "我只能顺着这部作品和你正在看的场景来聊。这个问题超出这个范围了。",
   },
 } satisfies LocaleMessages

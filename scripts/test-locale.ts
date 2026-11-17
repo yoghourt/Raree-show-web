@@ -235,8 +235,27 @@ const chinesePrompt = buildAssistantSystemPrompt(
   "zh-CN"
 )
 assert.ok(chinesePrompt.includes(en.assistantPrompt.boundaryNote), "chinese prompt keeps english boundary")
-assert.ok(chinesePrompt.includes(zhCN.assistantPrompt.closedDomainRefusal), "chinese refusal")
-assert.ok(!chinesePrompt.includes(en.assistantPrompt.closedDomainRefusal), "english refusal replaced")
+assert.ok(chinesePrompt.includes(zhCN.assistantPrompt.boundarySentence), "chinese boundary sentence")
+assert.ok(chinesePrompt.includes(zhCN.assistantPrompt.outOfScope), "chinese out of scope")
+assert.ok(!chinesePrompt.includes(en.assistantPrompt.boundarySentence), "english boundary sentence replaced")
+assert.ok(!chinesePrompt.includes(en.assistantPrompt.outOfScope), "english out of scope replaced")
+for (const prompt of [englishPrompt, chinesePrompt]) {
+  assert.ok(prompt.includes("Case A"), "case A")
+  assert.ok(prompt.includes("Case B"), "case B")
+  assert.ok(prompt.includes("Case C"), "case C")
+  assert.ok(prompt.includes("Case D"), "case D")
+  assert.ok(prompt.includes("Case E"), "case E")
+  assert.ok(prompt.includes("You may use your own knowledge"), "knowledge supplement")
+  assert.ok(prompt.includes("wins over your memory"), "cms precedence")
+  assert.ok(!prompt.includes("at most two sentences"), "no two-sentence cap")
+  assert.ok(!prompt.includes("reply verbatim"), "no verbatim refusal")
+  assert.ok(!prompt.includes("has not been revealed yet"), "old english refusal gone")
+  assert.ok(!prompt.includes("这部分还没有揭晓"), "old chinese refusal gone")
+  assert.ok(!prompt.includes("RAREE_SPOILER_REQUEST"), "no p1 marker")
+  assert.ok(!prompt.includes("spoiler_authorization_request"), "no p1 json")
+}
+assert.ok(englishPrompt.includes(en.assistantPrompt.boundarySentence), "english boundary sentence")
+assert.ok(englishPrompt.includes(en.assistantPrompt.outOfScope), "english out of scope")
 for (const line of [
   "Write the reader-facing explanation, analysis, and answer in Simplified Chinese.",
   "If the user explicitly asks for another language in this turn, follow that request.",
