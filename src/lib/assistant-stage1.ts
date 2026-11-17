@@ -1,6 +1,5 @@
 import { en } from "@/lib/locale/en"
 import type { AIModelProvider, ProviderRuntimeErrorCode } from "@/runtime/types"
-import { isAbortError } from "@/lib/assistant-generation-lifecycle"
 
 export const STAGE1_DECISIONS = [
   "answer_allowed",
@@ -200,7 +199,7 @@ async function oneCall(
     if (!parsed) return { message: stage1FailureMessage("invalid_request") }
     return { decision: parsed.decision, message: "" }
   } catch (error) {
-    if (args.abortSignal?.aborted || isAbortError(error)) {
+    if (args.abortSignal?.aborted) {
       return { aborted: true, message: en.assistant.errorTimeout }
     }
     return { transport: true, message: stage1FailureMessage(provider.normalizeError(error).code) }

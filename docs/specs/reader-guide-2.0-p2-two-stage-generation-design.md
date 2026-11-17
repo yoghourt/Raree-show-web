@@ -1,14 +1,14 @@
 # Reader Guide 2.0 — P2 两阶段生成设计
 
-**Status:** P2-B implemented; P2-C pending  
+**Status:** P2-B implemented; P2-C acceptance pending  
 **Date:** 2026-11-17  
 **Frozen:** 2026-11-17  
-**Implemented:** 2026-11-17 P2-A and P2-B. P2-C pending.  
+**Implemented:** 2026-11-17 P2-A、P2-B、P2-B.1 提示收紧，以及 P2-C 结构测试。浏览器验收尚未全部完成。  
 **Repository:** raree-show-web  
 **Path:** `docs/specs/reader-guide-2.0-p2-two-stage-generation-design.md`  
-**Does not change:** ADR、P1 验收审计、P0/P1 契约原文。P2-A 与 P2-B 已编码。P2-C 尚未编码。
+**Does not change:** ADR、P1 验收审计、P0/P1 契约原文。不能视为剧透泄漏已修复。
 
-P0/P1 契约仍以 `reader-guide-2.0-spoiler-authorization.md` 为准。本文规定如何补上它没有挡住的交付漏洞，并冻结 2026-11-17 已确认的四项产品决定。P2-A 已让 `none` 请求在 Stage 1 完成之前不发送模型自由叙述。第 6.1 节原文不改。P2-B 已把第 5.2 节写进无剧透 Stage 2 提示。模型仍可能违反该提示，因此不能视为剧透泄漏已修复。
+P0/P1 契约仍以 `reader-guide-2.0-spoiler-authorization.md` 为准。本文规定如何补上它没有挡住的交付漏洞，并冻结 2026-11-17 已确认的四项产品决定。P2-A 已让 `none` 请求在 Stage 1 完成之前不发送模型自由叙述。第 6.1 节原文不改。P2-B 与 P2-B.1 已把无剧透 Stage 2 收紧到当前阅读进度：未揭示的前史和事后格局都不是静态背景。真实模型仍可能写出这类事实，因此不能视为剧透泄漏已修复。
 
 ---
 
