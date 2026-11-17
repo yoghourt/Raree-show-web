@@ -10,10 +10,12 @@ import { zhCN } from "@/lib/locale/zh-CN"
 const ZH_OUTPUT_LANGUAGE = `[Output language]
 Write the reader-facing explanation, analysis, and answer in Simplified Chinese.
 If the user explicitly asks for another language in this turn, follow that request.
-When quoting captions, book passages, or sources, keep the quoted text in its original language.
-You may explain English source text in Simplified Chinese.
-Do not translate or rewrite the injected story XML, and do not change its contents.
-Do not switch the entire answer to English merely because a quotation is in English.`
+The injected story XML and the current-route fields above are evidence. Do not translate or rewrite that XML, and do not change its contents.
+In the reader-facing answer, refer to scenes, people, and places in Simplified Chinese. Do not copy their English titles or names from the evidence.
+Do not use the word "route" in the answer. Name the scene in Simplified Chinese instead of quoting its English title.
+The instruction to cite a reading route title applies only inside the evidence. Do not paste that English title into the answer.
+When a caption sentence itself must be quoted, keep that quoted sentence in its original language and explain it in Simplified Chinese.
+Do not switch the entire answer to English merely because the evidence is in English.`
 
 export type AssistantSceneContext = {
   tsid: string

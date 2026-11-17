@@ -240,10 +240,12 @@ assert.ok(!chinesePrompt.includes(en.assistantPrompt.closedDomainRefusal), "engl
 for (const line of [
   "Write the reader-facing explanation, analysis, and answer in Simplified Chinese.",
   "If the user explicitly asks for another language in this turn, follow that request.",
-  "When quoting captions, book passages, or sources, keep the quoted text in its original language.",
-  "You may explain English source text in Simplified Chinese.",
-  "Do not translate or rewrite the injected story XML, and do not change its contents.",
-  "Do not switch the entire answer to English merely because a quotation is in English.",
+  "Do not translate or rewrite that XML, and do not change its contents.",
+  "Do not copy their English titles or names from the evidence.",
+  "Do not use the word \"route\" in the answer.",
+  "Do not paste that English title into the answer.",
+  "When a caption sentence itself must be quoted, keep that quoted sentence in its original language and explain it in Simplified Chinese.",
+  "Do not switch the entire answer to English merely because the evidence is in English.",
 ]) {
   assert.ok(chinesePrompt.includes(line), line)
 }

@@ -19,6 +19,9 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import type { Character, Location, ReadingRoute } from "@/lib/types"
+import { canonicalSceneAssistantContext } from "@/lib/content-translations/assistant-context"
+import { displayText } from "@/lib/content-translations/display"
+import { emptyDisplayDictionary, type DisplayDictionary } from "@/lib/content-translations/types"
 import { useLocale } from "@/lib/locale/provider"
 import { effectiveReadingFramesFromV2, resolvePresentedCaption } from "@/lib/reading-frames"
 import { readUpToStoryIndexLastFromStep } from "@/lib/reader-step"
@@ -60,6 +63,10 @@ interface ReadingRouteExperienceProps {
   workTitle: string
   /** IMPLEMENT-WMA-001 — same resolve Creator consumes. */
   workMapResolution: WorkMapResolution
+  /** Hash-checked zh-CN strings. Canonical props stay on the route objects. */
+  displayDictionary?: DisplayDictionary
+  /** Effective-frame aligned sourceReviewId. Null means the caption stays English. */
+  frameSourceReviewIds?: Record<string, Array<string | null>>
 }
 
 function tactileOverflowHint() {
@@ -150,13 +157,18 @@ export default function ReadingRouteExperience({
   workId,
   workTitle,
   workMapResolution,
+  displayDictionary = emptyDisplayDictionary(),
+  frameSourceReviewIds = {},
 }: ReadingRouteExperienceProps) {
-  const { messages: locale, registerPageTitle } = useLocale()
+  const { locale: localeId, messages: locale, registerPageTitle } = useLocale()
+  const text = (canonical: string | null | undefined, translated?: string) =>
+    displayText(localeId, canonical, translated)
   // W-01: Visibility-Synchronized Navigation — docs/specs/w-01-visibility-synchronized-navigation.md
   // imageIndex implements Reader Step index within effective frames (SPEC-RDX-001).
   const { visualReadingRoute, imageIndex, dispatch } = useReadingRouteNavigation(currentReadingRoute)
 
-  const displayedTimeline = workTitle.toUpperCase()
+  const displayWorkTitle = text(workTitle, displayDictionary.work[workId]?.title)
+  const displayedTimeline = displayWorkTitle.toUpperCase()
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const imageReelRef = useRef<ImageReelHandle>(null)
@@ -174,7 +186,11 @@ export default function ReadingRouteExperience({
     }
   }, [])
 
-  const titleSubject = visualReadingRoute.title.trim() || workTitle.trim()
+  const displaySceneTitle = text(
+    visualReadingRoute.title,
+    displayDictionary.scene[visualReadingRoute.id]?.title
+  )
+  const titleSubject = displaySceneTitle.trim() || displayWorkTitle.trim()
   useLayoutEffect(() => {
     registerPageTitle({ kind: "reading", subject: titleSubject })
   }, [registerPageTitle, titleSubject])
@@ -242,16 +258,18 @@ export default function ReadingRouteExperience({
   }, [])
 
   const sceneAssistantContext = useMemo(
-    () => ({
-      tsid: visualReadingRoute.tsid,
-      workTitle: workTitle.trim() || locale.readingRoute.unnamedWorkFallback,
-      title: visualReadingRoute.title,
-      chapter_number: visualReadingRoute.chapter_number,
-      chapter_title: visualReadingRoute.chapter_title,
-      location: stepPlace.displayName,
-      characters: presentCharacters.map((p) => p.name),
-      summary: visualReadingRoute.summary,
-    }),
+    () =>
+      canonicalSceneAssistantContext({
+        tsid: visualReadingRoute.tsid,
+        workTitle,
+        title: visualReadingRoute.title,
+        chapter_number: visualReadingRoute.chapter_number,
+        chapter_title: visualReadingRoute.chapter_title,
+        location: stepPlace.displayName,
+        characters: presentCharacters.map((person) => person.name),
+        summary: visualReadingRoute.summary,
+        unnamedWorkFallback: locale.readingRoute.unnamedWorkFallback,
+      }),
     [visualReadingRoute, stepPlace.displayName, presentCharacters, workTitle, locale.readingRoute.unnamedWorkFallback]
   )
 
@@ -413,11 +431,22 @@ export default function ReadingRouteExperience({
           />
           <CaptionDisplay
             key={`${visualReadingRoute.id}-${imageIndex}`}
-            scene={visualReadingRoute}
-            caption={resolvePresentedCaption(
-              visualReadingRoute.story_images_v2,
-              imageIndex
-            )}
+            scene={{
+              ...visualReadingRoute,
+              chapter_title: text(
+                visualReadingRoute.chapter_title,
+                displayDictionary.scene[visualReadingRoute.id]?.chapter_title
+              ) || null,
+            }}
+            caption={(() => {
+              const canonicalCaption = resolvePresentedCaption(
+                visualReadingRoute.story_images_v2,
+                imageIndex
+              )
+              const frameId = frameSourceReviewIds[visualReadingRoute.id]?.[imageIndex] ?? null
+              if (!frameId) return canonicalCaption
+              return text(canonicalCaption, displayDictionary.frame[frameId]?.caption)
+            })()}
             currentImageIndex={imageIndex}
             sceneIndex={routeIndex >= 0 ? routeIndex + 1 : 1}
             totalScenes={allReadingRoutes.length}
@@ -436,8 +465,12 @@ export default function ReadingRouteExperience({
         workTitle={displayedTimeline}
         scene={{
           id: visualReadingRoute.id,
-          title: visualReadingRoute.title,
-          chapter_title: visualReadingRoute.chapter_title,
+          title: displaySceneTitle,
+          chapter_title:
+            text(
+              visualReadingRoute.chapter_title,
+              displayDictionary.scene[visualReadingRoute.id]?.chapter_title
+            ) || null,
         }}
       />
       <ReadingRouteNavButtons
@@ -451,13 +484,21 @@ export default function ReadingRouteExperience({
           <div className="rs-scene-right-rail-rack">
             <CharacterCardRack
               sceneId={`${visualReadingRoute.id}:${imageIndex}`}
-              characters={presentCharacters.map((item) => ({
-                id: item.id,
-                name: item.name,
-                house: item.house,
-                image_url: item.image_url,
-                description: item.description,
-              }))}
+              characters={presentCharacters.map((item) => {
+                const archive = characters.find((character) => character.id === item.id)
+                const canonicalDescription = archive?.description?.trim() ?? ""
+                const translated = displayDictionary.character[item.id]
+                return {
+                  id: item.id,
+                  name: text(item.name, translated?.name),
+                  house: item.house,
+                  houseText: text(item.house, translated?.house),
+                  image_url: item.image_url,
+                  description: canonicalDescription
+                    ? text(canonicalDescription, translated?.description)
+                    : item.description,
+                }
+              })}
             />
           </div>
         </div>
@@ -477,8 +518,18 @@ export default function ReadingRouteExperience({
           mapUrl={publishedMapUrl}
           mapX={stepPlace.mapX}
           mapY={stepPlace.mapY}
-          locationName={stepPlace.isFallback ? undefined : stepPlace.displayName}
-          description={stepPlace.archive?.description}
+          locationName={
+            stepPlace.isFallback
+              ? undefined
+              : stepPlace.archive
+                ? text(stepPlace.archive.name, displayDictionary.location[stepPlace.archive.id]?.name)
+                : stepPlace.displayName
+          }
+          description={
+            stepPlace.archive
+              ? text(stepPlace.archive.description, displayDictionary.location[stepPlace.archive.id]?.description)
+              : undefined
+          }
         />
       ) : !stepPlace.isFallback ? (
         <div className="mini-map-place-label-only" style={{
@@ -492,7 +543,9 @@ export default function ReadingRouteExperience({
           letterSpacing: "0.15em",
           color: "var(--rs-text-dim)",
         }}>
-          {stepPlace.displayName}
+          {stepPlace.archive
+            ? text(stepPlace.archive.name, displayDictionary.location[stepPlace.archive.id]?.name)
+            : stepPlace.displayName}
         </div>
       ) : null}
       <HomeButton />

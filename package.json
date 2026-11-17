@@ -19,6 +19,8 @@
     "verify-step-context-cast": "tsx scripts/verify-step-context-cast.ts",
     "stress-rag-boundary": "tsx scripts/stress-test-rag-boundary.ts",
     "test:production-oracle": "tsx scripts/test-production-story-oracle.ts",
+    "test:content-translations": "tsx scripts/test-content-translations.ts",
+    "test:frame-structure": "tsx scripts/test-frame-structure-db.ts",
     "eval:ragas": "tsx eval/ragas/runner/evaluate-suite.ts",
     "eval:ragas:build-hash": "tsx eval/ragas/dataset/build-expected-hash.ts",
     "eval:ragas:oracle": "EVAL_ORACLE_ONLY=1 tsx eval/ragas/runner/evaluate-suite.ts",
@@ -40,6 +42,7 @@
     "react-markdown": "^10.1.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

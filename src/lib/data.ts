@@ -1,4 +1,5 @@
 import type { Character, Location, ReadingFrame, ReadingRoute, Work } from "./types"
+import { frameSourceReviewIdsForEffectiveFrames } from "@/lib/content-translations/frames"
 import { parseSceneContextsV1 } from "@/lib/scene-context/parse"
 import { supabase } from "./supabase"
 
@@ -125,6 +126,12 @@ type SceneRow = {
   map_focus_y: number | null
   story_images_v2?: unknown
   scene_contexts_v1?: unknown
+  frame_provenance_v1?: unknown
+}
+
+export type WorkSceneBundle = {
+  routes: ReadingRoute[]
+  frameSourceReviewIds: Record<string, Array<string | null>>
 }
 
 function readingFramesFromRow(raw: unknown): ReadingFrame[] | null {
@@ -196,13 +203,18 @@ export async function getSceneById(id: string): Promise<ReadingRoute | undefined
 }
 
 export async function getScenesByWork(workTsid: string): Promise<ReadingRoute[]> {
+  const bundle = await loadScenesByWork(workTsid)
+  return bundle.routes
+}
+
+export async function loadScenesByWork(workTsid: string): Promise<WorkSceneBundle> {
   const { data: work, error: workError } = await supabase
     .from("works")
     .select("id")
     .eq("tsid", workTsid)
     .maybeSingle()
 
-  if (workError || !work) return []
+  if (workError || !work) return { routes: [], frameSourceReviewIds: {} }
 
   const { data, error } = await supabase
     .from("scenes")
@@ -211,8 +223,19 @@ export async function getScenesByWork(workTsid: string): Promise<ReadingRoute[]>
     .order("chapter_number", { ascending: true })
     .order("order_index", { ascending: true })
 
-  if (error) return []
-  return (data as SceneRow[]).map(readingRouteFromRow)
+  if (error) return { routes: [], frameSourceReviewIds: {} }
+  const rows = (data ?? []) as SceneRow[]
+  const frameSourceReviewIds: Record<string, Array<string | null>> = {}
+  for (const row of rows) {
+    frameSourceReviewIds[row.tsid] = frameSourceReviewIdsForEffectiveFrames(
+      row.story_images_v2,
+      row.frame_provenance_v1
+    )
+  }
+  return {
+    routes: rows.map(readingRouteFromRow),
+    frameSourceReviewIds,
+  }
 }
 
 // --- works (Supabase) ---

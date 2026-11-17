@@ -12,10 +12,13 @@
 import type { Metadata } from "next"
 import { headers } from "next/headers"
 import { notFound } from "next/navigation"
+import { buildDisplayDictionary } from "@/lib/content-translations/dictionary"
+import { loadContentTranslations } from "@/lib/content-translations/load"
+import { effectiveReadingFramesFromV2 } from "@/lib/reading-frames"
 import {
   getAllCharacters,
   getAllLocations,
-  getScenesByWork,
+  loadScenesByWork,
   getWorkById,
 } from "@/lib/data"
 import { catalogs } from "@/lib/locale/catalog"
@@ -39,10 +42,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const locale = parseLocale(headerList.get(LOCALE_HEADER))
   const brand = catalogs[locale].meta.title
   const work = await getWorkById(workId)
-  const scenes = work ? await getScenesByWork(workId) : []
-  const scene = scenes.find((item) => item.id === sceneId)
-  const subject = scene?.title?.trim() || work?.title?.trim() || ""
-  return { title: { absolute: readingDocumentTitle(subject, brand) } }
+  const bundle = work ? await loadScenesByWork(workId) : { routes: [], frameSourceReviewIds: {} }
+  const scene = bundle.routes.find((item) => item.id === sceneId)
+  const rows = await loadContentTranslations([
+    work?.id ?? "",
+    scene?.id ?? "",
+  ])
+  const dictionary = buildDisplayDictionary(rows, {
+    works: work ? [work] : [],
+    scenes: scene ? [scene] : [],
+  })
+  const canonicalSubject = scene?.title?.trim() || work?.title?.trim() || ""
+  const translatedSubject =
+    locale === "zh-CN"
+      ? dictionary.scene[scene?.id ?? ""]?.title || dictionary.work[work?.id ?? ""]?.title
+      : undefined
+  return { title: { absolute: readingDocumentTitle(translatedSubject || canonicalSubject, brand) } }
 }
 
 export default async function ScenePage({ params }: Props) {
@@ -50,7 +65,8 @@ export default async function ScenePage({ params }: Props) {
   const work = await getWorkById(workId)
   if (!work) notFound()
 
-  const scenes = await getScenesByWork(workId)
+  const bundle = await loadScenesByWork(workId)
+  const scenes = bundle.routes
   if (scenes.length === 0) notFound()
 
   const currentScene = scenes.find((s) => s.id === sceneId)
@@ -62,6 +78,26 @@ export default async function ScenePage({ params }: Props) {
     loadWorkMapResolutionByWorkTsid(work.tsid),
   ])
 
+  const frameKeys = scenes.flatMap((scene) => {
+    const ids = bundle.frameSourceReviewIds[scene.id] ?? []
+    const frames = effectiveReadingFramesFromV2(scene.story_images_v2)
+    return ids.flatMap((id, index) => (id ? [{ sourceReviewId: id, caption: frames[index]?.caption ?? "" }] : []))
+  })
+  const rows = await loadContentTranslations([
+    work.id,
+    ...scenes.map((scene) => scene.id),
+    ...characters.map((character) => character.id),
+    ...locations.map((location) => location.id),
+    ...frameKeys.map((frame) => frame.sourceReviewId),
+  ])
+  const displayDictionary = buildDisplayDictionary(rows, {
+    works: [work],
+    scenes,
+    frames: frameKeys,
+    characters,
+    locations,
+  })
+
   return (
     <ReadingRouteExperience
       currentReadingRoute={currentScene}
@@ -71,6 +107,8 @@ export default async function ScenePage({ params }: Props) {
       workId={work.id}
       workTitle={work.title}
       workMapResolution={workMapResolution}
+      displayDictionary={displayDictionary}
+      frameSourceReviewIds={bundle.frameSourceReviewIds}
     />
   )
 }
