@@ -89,6 +89,7 @@ export function createOpenRouterProvider(
         system: request.system,
         messages: request.messages,
         ...(request.timeoutMs !== undefined ? { timeout: request.timeoutMs } : {}),
+        ...(request.abortSignal ? { abortSignal: request.abortSignal } : {}),
       })
       return { text }
     },

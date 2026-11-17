@@ -4,6 +4,14 @@ import { createGeminiProvider, executeVerifiedGeneration } from "@/runtime"
 import { createOpenRouterProvider } from "@/runtime/providers/openrouter-provider"
 import type { AIModelProvider } from "@/runtime/types"
 import { composeAssistantSystemPrompt } from "@/lib/assistant-request-prompt"
+import {
+  buildStage1SystemPrompt,
+  buildStage1UserContent,
+  captionExcerpt,
+  decisionEventResponse,
+  planAfterStage1,
+  runStage1Classification,
+} from "@/lib/assistant-stage1"
 import { sealAssistantTextStream } from "@/lib/assistant-visible-stream"
 import {
   AssistantSealConfigError,
@@ -261,11 +269,6 @@ export async function POST(req: NextRequest) {
     }
   )
 
-  const provider = createGeminiProvider({ apiKey })
-  const fallbackProviders: AIModelProvider[] = []
-  const openrouterApiKey = process.env.OPENROUTER_API_KEY
-  if (openrouterApiKey) fallbackProviders.push(createOpenRouterProvider({ apiKey: openrouterApiKey }))
-
   const modelMessages = historyForModel({
     messages: history,
     spoilerMode,
@@ -275,6 +278,83 @@ export async function POST(req: NextRequest) {
     sealKey,
   })
 
+  const provider = createGeminiProvider({ apiKey })
+  const fallbackProviders: AIModelProvider[] = []
+  const openrouterApiKey = process.env.OPENROUTER_API_KEY
+  if (openrouterApiKey) fallbackProviders.push(createOpenRouterProvider({ apiKey: openrouterApiKey }))
+  const fallback = fallbackProviders[0]
+
+  if (!expanded) {
+    if (req.signal.aborted) return new Response(null, { status: 499 })
+    const visible = verified.chapterScenes.flatMap((scene) =>
+      scene.revealedStorySlides.map((slide) => ({
+        text: slide.caption,
+        current: scene.tsid === sceneTsid,
+      }))
+    )
+    const stage1 = await runStage1Classification({
+      primary: provider,
+      fallback,
+      system: buildStage1SystemPrompt(),
+      userContent: buildStage1UserContent({
+        question: query,
+        history: modelMessages.slice(0, -1),
+        captions: visible.map((item) => item.text),
+        workTitle: sceneContext.workTitle,
+        sceneTitle: sceneContext.title,
+      }),
+      abortSignal: req.signal,
+    })
+    if (req.signal.aborted || (stage1.ok === false && stage1.aborted)) {
+      return new Response(null, { status: 499 })
+    }
+    if (!stage1.ok) return new Response(stage1.message, { status: 502 })
+    const plan = planAfterStage1(stage1.decision)
+    if (plan === "authorization") {
+      const excerpt = captionExcerpt(visible, query)
+      const seal = signAssistantTurn(
+        sealKey,
+        {
+          questionId,
+          workTsid,
+          sceneTsid,
+          kind: "authorization_request",
+          spoilerMode: "none",
+          expandedRetrieval: false,
+          spoilerDisclosure: false,
+          spoilerAuthorizationRequest: true,
+          readUpToChapter,
+          readUpToOrderIndex,
+          readUpToStoryIndexLast,
+        },
+        excerpt
+      )
+      return decisionEventResponse({ kind: "authorization", questionId, visibleText: excerpt, seal })
+    }
+    if (plan === "out_of_scope") {
+      const seal = signAssistantTurn(
+        sealKey,
+        {
+          questionId,
+          workTsid,
+          sceneTsid,
+          kind: "out_of_scope",
+          spoilerMode: "none",
+          expandedRetrieval: false,
+          spoilerDisclosure: false,
+          spoilerAuthorizationRequest: false,
+          readUpToChapter,
+          readUpToOrderIndex,
+          readUpToStoryIndexLast,
+        },
+        outOfScope
+      )
+      return decisionEventResponse({ kind: "out_of_scope", questionId, visibleText: outOfScope, seal })
+    }
+  }
+
+  if (req.signal.aborted) return new Response(null, { status: 499 })
+
   const generated = await executeVerifiedGeneration({
     context: { requestId: verified.requestId, system, messages: modelMessages },
     primary: provider,
@@ -282,9 +362,8 @@ export async function POST(req: NextRequest) {
     abortSignal: req.signal,
   })
 
-  return sealAssistantTextStream(generated, ({ prose, spoilerAuthorizationRequest }) => {
+  return sealAssistantTextStream(generated, ({ prose }) => {
     const spoilerDisclosure = expanded
-    const authorization = !expanded && spoilerAuthorizationRequest
     return signAssistantTurn(
       sealKey,
       {
@@ -295,12 +374,12 @@ export async function POST(req: NextRequest) {
           content: prose,
           outOfScopeSentence: outOfScope,
           spoilerDisclosure,
-          spoilerAuthorizationRequest: authorization,
+          spoilerAuthorizationRequest: false,
         }),
         spoilerMode,
         expandedRetrieval: expanded,
         spoilerDisclosure,
-        spoilerAuthorizationRequest: authorization,
+        spoilerAuthorizationRequest: false,
         readUpToChapter,
         readUpToOrderIndex,
         readUpToStoryIndexLast,

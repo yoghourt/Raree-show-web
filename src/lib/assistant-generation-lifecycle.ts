@@ -121,3 +121,11 @@ export function historyTurnsForRequest(messages: AssistantChatMessage[]): {
       seal: message.seal,
     }))
 }
+
+export function assistantRequestMessages<T extends { role: "user" | "assistant"; questionId?: string }>(
+  priorTurns: T[],
+  question: { content: string; questionId: string }
+): Array<T | { role: "user"; content: string; questionId: string }> {
+  const earlier = priorTurns.filter((turn) => turn.questionId !== question.questionId)
+  return [...earlier, { role: "user", content: question.content, questionId: question.questionId }]
+}

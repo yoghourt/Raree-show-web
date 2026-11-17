@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown"
 import {
   abortGenerationController,
   applyAssistantDelta,
+  assistantRequestMessages,
   historyTurnsForRequest,
   isAbortError,
   markAssistantTerminal,
@@ -12,7 +13,7 @@ import {
   type AssistantChatMessage,
   type AssistantGenerationPhase,
 } from "@/lib/assistant-generation-lifecycle"
-import { historyForModel, type AssistantTurnSeal, type SpoilerMode } from "@/lib/assistant-turn-seal"
+import { type AssistantTurnSeal, type SpoilerMode } from "@/lib/assistant-turn-seal"
 import { en } from "@/lib/locale/en"
 import { localizeKnownError } from "@/lib/locale/errors"
 import { useLocale } from "@/lib/locale/provider"
@@ -68,7 +69,12 @@ function GuideMark({ size = 16 }: { size?: number }) {
   )
 }
 
-function parseUiMessageSseEvent(rawEvent: string): { delta?: string; error?: string; seal?: AssistantTurnSeal } {
+function parseUiMessageSseEvent(rawEvent: string): {
+  delta?: string
+  error?: string
+  seal?: AssistantTurnSeal
+  authorization?: { questionId: string; excerpt: string }
+} {
   const dataLines = rawEvent
     .split("\n")
     .filter((line) => line.startsWith("data:"))
@@ -85,9 +91,18 @@ function parseUiMessageSseEvent(rawEvent: string): { delta?: string; error?: str
       delta?: string
       errorText?: string
       seal?: AssistantTurnSeal
+      questionId?: string
+      excerpt?: string
     }
     if (json.type === "error" && typeof json.errorText === "string") {
       return { error: json.errorText }
+    }
+    if (
+      json.type === "assistant-authorization-required" &&
+      typeof json.questionId === "string" &&
+      typeof json.excerpt === "string"
+    ) {
+      return { authorization: { questionId: json.questionId, excerpt: json.excerpt } }
     }
     if (json.type === "assistant-turn-seal" && json.seal) {
       return { seal: json.seal }
@@ -213,16 +228,9 @@ export default function ReadingRouteAssistant({
     const spoilerMode: SpoilerMode =
       override?.mode ?? (spoilerSessionRef.current === "conversation_spoiler" ? "conversation" : "none")
 
-    const priorTurns = historyTurnsForRequest(messages)
-    const alreadyAsked = priorTurns.some((turn) => turn.role === "user" && turn.questionId === questionId)
-    const apiMessages = historyForModel({
-      messages: alreadyAsked
-        ? priorTurns
-        : [...priorTurns, { role: "user" as const, content: question, questionId }],
-      spoilerMode,
-      workTsid: userProgress.workTsid,
-      sceneTsid: userProgress.sceneTsid,
-      progress: userProgress,
+    const apiMessages = assistantRequestMessages(historyTurnsForRequest(messages), {
+      content: question,
+      questionId,
     })
 
     const controller = new AbortController()
@@ -241,6 +249,7 @@ export default function ReadingRouteAssistant({
 
     let acc = ""
     let turnSeal: AssistantTurnSeal | undefined
+    let authorizationExcerpt: string | undefined
     try {
       const res = await fetch("/api/scene-assistant", {
         method: "POST",
@@ -282,6 +291,29 @@ export default function ReadingRouteAssistant({
         const parsed = parseUiMessageSseEvent(event)
         if (parsed.error) {
           throw new Error(parsed.error)
+        }
+        if (parsed.authorization) {
+          if (parsed.authorization.questionId !== questionId) {
+            throw new Error(en.assistant.errorInvalidRequest)
+          }
+          if (authorizationExcerpt === undefined) {
+            authorizationExcerpt = parsed.authorization.excerpt
+            acc = parsed.authorization.excerpt
+            const snapshot = acc
+            setMessages((m) =>
+              m.map((message) =>
+                message.role === "assistant" && message.generationId === generationId
+                  ? {
+                      ...message,
+                      content: snapshot,
+                      kind: "authorization_request",
+                      questionId,
+                      resolution: "pending",
+                    }
+                  : message
+              )
+            )
+          }
         }
         if (parsed.seal) turnSeal = parsed.seal
         if (

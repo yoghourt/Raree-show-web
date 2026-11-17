@@ -35,6 +35,7 @@ export type GenerateTextRequest = {
   system: string
   messages: GenerationMessage[]
   timeoutMs?: number
+  abortSignal?: AbortSignal
 }
 
 export type StreamTextRequest = GenerateTextRequest & {
