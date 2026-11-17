@@ -11,7 +11,7 @@
 
 本文是 Reader Guide 2.0 的实现契约。仓库里没有一份现成的助手产品规格可以承载这次改动。`docs/adr/002-hybrid-rag-retrieval.md` 管的是串行检索和默认可见性，`docs/specs/ADR-002-VISIBILITY-INVARIANT-SPEC.md` 管的是未授权故事片段不得进入模型上下文。把整份产品方案写进这两份文件，会把「默认进度边界」和「用户明确授权后的作品范围」混成同一条规则。因此新增本文，不另写第二份方案。
 
-2026-11-17 审查后，本文冻结为实现契约。P0 已实施。第 16 节已写入 ADR-002 Amendment A。P1 已按第 6–9 节编码：授权卡、两条检索路径、结尾标记、`assistant-turn-seal` 和 HMAC。服务端环境变量 `ASSISTANT_TURN_SEAL_KEY` 必须配置，且各实例使用同一密钥；缺失时 `/api/scene-assistant` 返回配置错误。P2 两阶段生成设计已冻结，见 [reader-guide-2.0-p2-two-stage-generation-design.md](reader-guide-2.0-p2-two-stage-generation-design.md)。状态是 P2-A implemented; P2-B pending。尚未收紧无剧透 Stage 2，不能视为剧透泄漏已修复。该设计不改写本文已冻结的 P0/P1 契约。
+2026-11-17 审查后，本文冻结为实现契约。P0 已实施。第 16 节已写入 ADR-002 Amendment A。P1 已按第 6–9 节编码：授权卡、两条检索路径、结尾标记、`assistant-turn-seal` 和 HMAC。服务端环境变量 `ASSISTANT_TURN_SEAL_KEY` 必须配置，且各实例使用同一密钥；缺失时 `/api/scene-assistant` 返回配置错误。P2 进度见 [reader-guide-2.0-p2-two-stage-generation-design.md](reader-guide-2.0-p2-two-stage-generation-design.md)：`P2-B implemented; P2-C acceptance pending`。无剧透提示已收紧，但仍不是零泄漏。P2-B.2 缓冲审查为 `Deferred. Not implemented.`，不在活跃路线。该进度不改写本文已冻结的 P0/P1 契约。
 
 审查确定的四点：
 

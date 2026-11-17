@@ -29,6 +29,7 @@ import { zhCN } from "@/lib/locale/zh-CN"
 import { escapeXmlAttr, escapeXmlTextForPresentation } from "@/lib/scene-assistant-context"
 import { InvariantViolationError } from "@/lib/production-story-oracle"
 import { assertReadUpToStoryIndexLast, VisibilityInvariantViolation } from "@/lib/visibility-invariant"
+import { createScriptedAssistantProvider, scriptedAssistantProviderEnabled } from "@/lib/assistant-test-provider"
 import { SceneWorkMismatchError, retrieveVerifiedAssistantContext } from "@/services/retrieval"
 
 export const maxDuration = 30
@@ -278,10 +279,11 @@ export async function POST(req: NextRequest) {
     sealKey,
   })
 
-  const provider = createGeminiProvider({ apiKey })
+  const scripted = scriptedAssistantProviderEnabled()
+  const provider = scripted ? createScriptedAssistantProvider() : createGeminiProvider({ apiKey })
   const fallbackProviders: AIModelProvider[] = []
   const openrouterApiKey = process.env.OPENROUTER_API_KEY
-  if (openrouterApiKey) fallbackProviders.push(createOpenRouterProvider({ apiKey: openrouterApiKey }))
+  if (!scripted && openrouterApiKey) fallbackProviders.push(createOpenRouterProvider({ apiKey: openrouterApiKey }))
   const fallback = fallbackProviders[0]
 
   if (!expanded) {

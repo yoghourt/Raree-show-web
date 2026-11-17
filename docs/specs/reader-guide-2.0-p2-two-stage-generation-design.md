@@ -3,12 +3,12 @@
 **Status:** P2-B implemented; P2-C acceptance pending  
 **Date:** 2026-11-17  
 **Frozen:** 2026-11-17  
-**Implemented:** 2026-11-17 P2-A、P2-B、P2-B.1 提示收紧，以及 P2-C 结构测试。浏览器验收尚未全部完成。  
+**Implemented:** 2026-11-17 P2-A、P2-B、P2-B.1 提示收紧，以及 P2-C 结构测试。浏览器验收尚未全部完成。P2-C 验收没有通过。  
 **Repository:** raree-show-web  
 **Path:** `docs/specs/reader-guide-2.0-p2-two-stage-generation-design.md`  
-**Does not change:** ADR、P1 验收审计、P0/P1 契约原文。不能视为剧透泄漏已修复。
+**Does not change:** ADR、P0/P1 契约原文。不能视为剧透泄漏已修复。
 
-P0/P1 契约仍以 `reader-guide-2.0-spoiler-authorization.md` 为准。本文规定如何补上它没有挡住的交付漏洞，并冻结 2026-11-17 已确认的四项产品决定。P2-A 已让 `none` 请求在 Stage 1 完成之前不发送模型自由叙述。第 6.1 节原文不改。P2-B 与 P2-B.1 已把无剧透 Stage 2 收紧到当前阅读进度：未揭示的前史和事后格局都不是静态背景。真实模型仍可能写出这类事实，因此不能视为剧透泄漏已修复。
+P0/P1 契约仍以 `reader-guide-2.0-spoiler-authorization.md` 为准。本文第 1–15 节保留 2026-11-17 已确认的两阶段设计。P2-A 已让 `none` 请求在 Stage 1 完成之前不发送模型自由叙述。第 6.1 节原文不改。P2-B 与 P2-B.1 已收紧无剧透提示。真实模型仍可能写出未揭示事实，因此不能视为剧透泄漏已修复。第 16 节保留 P2-B.2 的设计原文。第 17 节决定暂停实施。活跃路线仍是现有 Stage 1 与流式 Stage 2。P2-C 验收没有通过。
 
 ---
 
@@ -354,3 +354,75 @@ Stage 1 读取本次可见 caption，解析，失败处理，授权事件和精�
 - P1 仍会把标记前的模型散文流式发给浏览器。本文改为授权前只有卡片和 caption 子串。
 - 冻结契约第 6.1 节仍写着模型先写安全散文。实施 P2 时授权前的可见文字以本文第 2 节和第 5.3 节为准，不回改该节原文。
 - 现有授权卡由模型尾标记触发。P2 改为只由 `assistant-authorization-required` 触发。
+
+---
+
+## 16. 修订记录：P2-B.2 缓冲式答案披露审查
+
+**Status:** Deferred. Not implemented. Not on the active roadmap.  
+**Date:** 2026-11-17  
+**Design:** `docs/specs/reader-guide-2.0-answer-disclosure-audit-design.md`  
+**Does not implement:** 应用代码、Prompt、Provider、测试、数据库、HMAC、前端。
+
+第 1–15 节仍然描述已经编码的 P2-A/P2-B：`none` 且 `answer_allowed` 时，Stage 2 可以流式发送正文。该行为挡不住放行之后的残余泄漏。本节保留当时写下的审查方案，不改写第 1–15 节。第 17 节暂停这条方案，它不是待实施任务。
+
+P2-B.2 与 P2-C 是两件事。P2-C 验收没有通过。延期 P2-B.2 不能把 P2-C 标成通过。
+
+无剧透且 `answer_allowed` 时，拟定顺序改为：
+
+```text
+检索一次 → Stage 1 → Stage 2 非流式草稿 → 答案披露审查 → 引用子串校验 → 只交付通过的正文
+```
+
+`authorization_required` 与 `uncertain` 仍只发授权卡。`out_of_scope` 仍是服务端固定句。已验证的 `single_request` 和 `conversation` 仍走现有流式 Stage 2，不进入这层审查。检索、SQL 可见性、帧规则、caption budget 和 Story Oracle 的边界不变。
+
+审查不可用、草稿超时或引用校验失败时，不得把 Stage 2 原始草稿发给用户。用户可见正文只有审查后的最终文本，或一条不含草稿的固定说明。草稿和审查 JSON 不签名、不进入历史。只有最终正常交付的回答签一次。
+
+以上是保留的设计原文。按第 17 节，这些步骤不进入实施。
+
+---
+
+## 17. 产品决定：暂停 P2-B.2，保持用户授权下的最佳努力无剧透
+
+**Status:** Accepted decision. P2-B.2 Deferred. Not implemented.  
+**Date:** 2026-11-17  
+**Does not change:** 第 1–15 节，应用代码，Prompt，检索，授权，HMAC，前端。
+
+读者决定是否授权剧透。系统遵守 `none`、`single_request` 和 `conversation`。这不是零泄漏承诺。
+
+已实现并保持运行的流程：
+
+- 默认 `spoilerMode=none`。检索停在当前阅读进度。
+- Stage 1 做问题级判定。`authorization_required` 和 `uncertain` 只发授权卡。`out_of_scope` 用服务端固定句。
+- `answer_allowed` 用现有无剧透提示流式生成。优先回答已揭示 caption，可以补充有限静态背景，不主动补未揭示前史、人物关系和后续剧情。上下文不足时承认不足。
+- 单次授权和会话授权保留。关闭剧透后的下一请求回到 `none`。questionId、HMAC、检索和历史过滤不变。
+
+延期、不实施：
+
+- 第二次 LLM 答案审查。
+- 主张拆分和逐条披露审核。
+- Caption 引用与语义支持审查链。
+- 草稿缓冲后再审核。
+- 审核失败后的自动重写。
+- 审查超时、审查供应商和额外状态机。
+- 新的答案审核模块和为此增加的 Provider 调用。
+
+不增加第二次或第三次模型调用，不把流式回答改成整稿缓冲，不做无关的延迟优化。
+
+真实模型失败继续保留，不改写成静态背景，也不为了通过测试删掉：
+
+- 南华老仙授书：未揭示前史。
+- 张宝、张梁：未揭示人物关系。
+- 太平道撼动汉室统治：事后视角评价。
+- 群雄并起序幕：未揭示后续格局。
+
+以后的回归仍记录问题、阅读进度、Stage 1 判定、Stage 2 回答，以及是否出现未揭示故事事实。Prompt 只降低泄漏概率。
+
+进度：
+
+| 项 | 状态 |
+|---|---|
+| P2-A 授权前闸门 | 已实现 |
+| P2-B / P2-B.1 无剧透提示 | 已实现。不是零泄漏 |
+| P2-C 结构测试与主要浏览器路径 | 已做。整体验收未通过 |
+| P2-B.2 缓冲审查 | Deferred. Not implemented. 不在活跃路线 |
