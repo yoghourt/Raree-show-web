@@ -189,6 +189,8 @@ metadataPreFiltering (SQL) → match_scenes (vector rerank)
 
 Implementation: [`src/services/retrieval.ts`](../src/services/retrieval.ts).
 
+The deployed gate is the default progress ceiling. [ADR-002 Amendment A](adr/002-hybrid-rag-retrieval.md) accepts an explicit `single_request` / `conversation` exception and a default-path caption read over the same SQL candidate set. That amendment is not implemented yet. Sections 7–10 describe the deployed pipeline.
+
 ---
 
 ## 9. Two-Layer Visibility Boundary
