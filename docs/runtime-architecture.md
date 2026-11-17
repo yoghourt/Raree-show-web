@@ -189,7 +189,7 @@ metadataPreFiltering (SQL) → match_scenes (vector rerank)
 
 Implementation: [`src/services/retrieval.ts`](../src/services/retrieval.ts).
 
-The deployed gate is the default progress ceiling. [ADR-002 Amendment A](adr/002-hybrid-rag-retrieval.md) accepts an explicit `single_request` / `conversation` exception and a default-path caption read over the same SQL candidate set. That amendment is not implemented yet. Sections 7–10 describe the deployed pipeline.
+[ADR-002 Amendment A](adr/002-hybrid-rag-retrieval.md) is implemented on `POST /api/scene-assistant`. `spoilerMode: "none"` still uses the progress SQL gate, then reads that same candidate set's revealed captions. A validated `single_request` or `conversation` widens the candidate set to the current work's ingested routes. Empty `match_scenes` results do not drop those captions. Successful turns are sealed with `ASSISTANT_TURN_SEAL_KEY`; the process must have that variable or the route returns a configuration error. The key is server-only and must be the same on every instance.
 
 ---
 

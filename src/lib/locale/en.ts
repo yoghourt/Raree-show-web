@@ -66,6 +66,15 @@ export const en = {
     errorUnavailable: 'Generation service temporarily unavailable.',
     errorInvalidRequest: 'Invalid generation request.',
     errorFailed: 'Generation failed.',
+    spoilerOn: 'Spoilers are on',
+    spoilerOff: 'Turn spoilers off',
+    newConversation: 'New conversation',
+    spoilerBadge: 'Spoilers',
+    authorizationPrompt:
+      'What you have read so far is not enough for a full answer. I can look through the rest of this work as it is stored here and add what I know about it, which may include parts you have not read. Do you want spoilers?',
+    allowOnce: 'Allow spoilers for this answer',
+    allowConversation: 'Allow spoilers for this conversation',
+    declineSpoilers: 'Not now',
   },
   readerGuide: {
     button: 'Ask the Guide',

@@ -505,7 +505,12 @@ export default function ReadingRouteExperience({
         <div className="rs-scene-right-rail-assistant">
           <ReadingRouteAssistant
             key={visualReadingRoute.tsid}
-            sceneContext={sceneAssistantContext}
+            sceneContext={{
+              ...sceneAssistantContext,
+              characterTsids: presentCharacters
+                .map((person) => person.id)
+                .filter((id) => !id.startsWith("cue:")),
+            }}
             userProgress={sceneAssistantUserProgress}
             guideCueVisible={guideCueVisible}
             onDismissGuideCue={dismissGuideCue}

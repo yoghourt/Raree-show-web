@@ -29,10 +29,13 @@ import {
   normalizeQueryForFingerprint,
   verifyProductionStoryOracle,
 } from "@/lib/production-story-oracle"
+import { effectiveReadingFramesFromV2 } from "@/lib/reading-frames"
 import {
-  effectiveReadingFramesFromV2,
-  sliceRevealedReadingFrames,
-} from "@/lib/reading-frames"
+  applyFrameRules,
+  budgetAuthorizedRoutes,
+  type CaptionRoute,
+} from "@/lib/assistant-caption-budget"
+import { visibilityCeiling, type SpoilerMode } from "@/lib/assistant-turn-seal"
 import { assertReadUpToStoryIndexLast } from "@/lib/visibility-invariant"
 
 /** Gemini embedding dimension locked with pgvector / backfill (ADR-001). */
@@ -100,6 +103,10 @@ export type VerifiedAssistantContext = {
   storyOracle: { byteSize: number; sha256: string }
   currentSceneRevealedXml: string
   chapterScenesXml: string
+  contextSummaries: { tsid: string; title: string; summary: string }[]
+  promptSummary: string
+  characterCards: AssistantCharacterCard[]
+  omissionNote: string | null
   observability: RetrieveScenesResult["observability"]
 }
 
@@ -178,11 +185,35 @@ async function mergeScenesTableSummaries(
 /**
  * Same-chapter revealed-scene context: physically truncated `story_images_v2` captions only (ADR-002 doc).
  */
+export class SceneWorkMismatchError extends Error {
+  constructor() {
+    super("sceneTsid does not belong to workTsid")
+    this.name = "SceneWorkMismatchError"
+  }
+}
+
+export type AssistantCharacterCard = {
+  tsid: string
+  name: string
+  description: string
+}
+
 export type ChapterSceneSnippet = {
   tsid: string
   title: string
+  chapter_number?: number
   order_index: number
   revealedStorySlides: { caption: string }[]
+}
+
+function snippetsFromRoutes(routes: CaptionRoute[]): ChapterSceneSnippet[] {
+  return routes.map((route) => ({
+    tsid: route.tsid,
+    title: route.title,
+    chapter_number: route.chapter_number,
+    order_index: route.order_index,
+    revealedStorySlides: route.captions.map((caption) => ({ caption })),
+  }))
 }
 
 export async function fetchChapterScenesWithinProgress(
@@ -190,57 +221,18 @@ export async function fetchChapterScenesWithinProgress(
   chapterNumber: number
 ): Promise<ChapterSceneSnippet[]> {
   assertReadUpToStoryIndexLast(userProgress.readUpToStoryIndexLast)
-
-  if (chapterNumber !== userProgress.readUpToChapter) {
-    return []
-  }
+  if (chapterNumber !== userProgress.readUpToChapter) return []
 
   const supabase = getRetrievalSupabase()
   const workId = await resolveWorkId(supabase, userProgress.workTsid)
   if (!workId) {
     throw new Error(`fetchChapterScenesWithinProgress: unknown workTsid ${userProgress.workTsid}`)
   }
-
-  const { data, error } = await supabase
-    .from("scenes")
-    .select("tsid, title, order_index, story_images_v2")
-    .eq("work_id", workId)
-    .eq("chapter_number", chapterNumber)
-    .lte("order_index", userProgress.readUpToOrderIndex)
-    .order("order_index", { ascending: true })
-
-  if (error) throw error
-
-  const out: ChapterSceneSnippet[] = []
-  const ordTarget = userProgress.readUpToOrderIndex
-  const sceneTsid = userProgress.sceneTsid.trim()
-  const rawLast = userProgress.readUpToStoryIndexLast
-
-  for (const row of data ?? []) {
-    if (!row || typeof row.tsid !== "string") continue
-    const orderIdx = typeof row.order_index === "number" ? row.order_index : 0
-    const slides = effectiveReadingFramesFromV2(row.story_images_v2)
-    let revealedRaw: typeof slides
-
-    if (orderIdx < ordTarget) {
-      revealedRaw = slides
-    } else if (row.tsid === sceneTsid) {
-      const maxLast = slides.length > 0 ? slides.length - 1 : -1
-      const clampedLast = Math.min(Math.max(rawLast, -1), maxLast)
-      revealedRaw = sliceRevealedReadingFrames(slides, clampedLast)
-    } else {
-      // `lte` query tip row that is not the declared current scene — do not inject captions.
-      revealedRaw = []
-    }
-
-    out.push({
-      tsid: row.tsid,
-      title: typeof row.title === "string" ? row.title : "",
-      order_index: orderIdx,
-      revealedStorySlides: revealedRaw.map((s) => ({ caption: s.caption })),
-    })
-  }
-  return out
+  await assertSceneBelongsToWork(supabase, workId, userProgress.sceneTsid)
+  const candidateSet = await metadataPreFiltering(supabase, workId, userProgress, "progress")
+  const loaded = await loadCaptionRoutes(supabase, workId, candidateSet)
+  const framed = applyFrameRules(loaded, userProgress, "progress")
+  return snippetsFromRoutes(framed)
 }
 
 async function embedQuery(query: string): Promise<number[]> {
@@ -346,20 +338,18 @@ async function resolveWorkId(
 async function metadataPreFiltering(
   supabase: SupabaseClient,
   workId: string,
-  userProgress: ProgressConfig
+  userProgress: ProgressConfig,
+  ceiling: "progress" | "work" = "progress"
 ): Promise<string[]> {
-  const ch = userProgress.readUpToChapter
-  const ord = userProgress.readUpToOrderIndex
+  let query = supabase.from("scenes").select("tsid").eq("work_id", workId)
+  if (ceiling === "progress") {
+    const ch = userProgress.readUpToChapter
+    const ord = userProgress.readUpToOrderIndex
+    const orFilter = `chapter_number.lt.${ch},and(chapter_number.eq.${ch},order_index.lte.${ord})`
+    query = query.or(orFilter)
+  }
 
-  // Lexicographic bound on SceneRow columns (chapter_number / order_index — not chapter_id).
-  const orFilter = `chapter_number.lt.${ch},and(chapter_number.eq.${ch},order_index.lte.${ord})`
-
-  const { data: rows, error: scenesError } = await supabase
-    .from("scenes")
-    .select("tsid")
-    .eq("work_id", workId)
-    .or(orFilter)
-
+  const { data: rows, error: scenesError } = await query
   if (scenesError) throw scenesError
 
   const candidateSet: string[] = []
@@ -369,6 +359,76 @@ async function metadataPreFiltering(
     }
   }
   return candidateSet
+}
+
+async function assertSceneBelongsToWork(
+  supabase: SupabaseClient,
+  workId: string,
+  sceneTsid: string
+): Promise<void> {
+  const { data, error } = await supabase
+    .from("scenes")
+    .select("work_id")
+    .eq("tsid", sceneTsid)
+    .maybeSingle()
+  if (error) throw error
+  if (!data || data.work_id !== workId) throw new SceneWorkMismatchError()
+}
+
+async function loadCaptionRoutes(
+  supabase: SupabaseClient,
+  workId: string,
+  tsids: string[]
+): Promise<CaptionRoute[]> {
+  const rows: CaptionRoute[] = []
+  for (let index = 0; index < tsids.length; index += 100) {
+    const slice = tsids.slice(index, index + 100)
+    if (slice.length === 0) continue
+    const { data, error } = await supabase
+      .from("scenes")
+      .select("tsid, title, chapter_number, order_index, story_images_v2, summary")
+      .eq("work_id", workId)
+      .in("tsid", slice)
+    if (error) throw error
+    for (const row of data ?? []) {
+      if (!row || typeof row.tsid !== "string") continue
+      const frames = effectiveReadingFramesFromV2(row.story_images_v2)
+      rows.push({
+        tsid: row.tsid,
+        title: typeof row.title === "string" ? row.title : "",
+        chapter_number: typeof row.chapter_number === "number" ? row.chapter_number : 0,
+        order_index: typeof row.order_index === "number" ? row.order_index : 0,
+        captions: frames.map((frame) => frame.caption),
+        summary: typeof row.summary === "string" ? row.summary : "",
+      })
+    }
+  }
+  return rows
+}
+
+async function loadCharacterCards(
+  supabase: SupabaseClient,
+  workId: string,
+  tsids: string[]
+): Promise<AssistantCharacterCard[]> {
+  if (tsids.length === 0) return []
+  const { data, error } = await supabase
+    .from("characters")
+    .select("tsid, name, description, work_id")
+    .in("tsid", tsids)
+  if (error) throw error
+  const cards: AssistantCharacterCard[] = []
+  for (const row of data ?? []) {
+    if (!row || row.work_id !== workId || typeof row.tsid !== "string") continue
+    const description = typeof row.description === "string" ? row.description.trim() : ""
+    if (!description) continue
+    cards.push({
+      tsid: row.tsid,
+      name: typeof row.name === "string" ? row.name : row.tsid,
+      description,
+    })
+  }
+  return cards
 }
 
 /**
@@ -414,7 +474,8 @@ function assertRerankResultsWithinCandidateSet(
 
 async function retrieveScenesUncached(
   query: string,
-  userProgress: ProgressConfig
+  userProgress: ProgressConfig,
+  candidateSetOverride?: string[]
 ): Promise<RetrieveScenesUncachedResult> {
   const t0 = performance.now()
   const supabase = getRetrievalSupabase()
@@ -425,7 +486,8 @@ async function retrieveScenesUncached(
   }
 
   // --- metadataPreFiltering: SQL mandatory gate → candidateSet ---
-  const candidateSet = await metadataPreFiltering(supabase, workId, userProgress)
+  const candidateSet =
+    candidateSetOverride ?? (await metadataPreFiltering(supabase, workId, userProgress, "progress"))
   const candidateSetSize = candidateSet.length
 
   // --- downstream semantic reranking: single RPC over candidateSet (ADR-002) ---
@@ -487,41 +549,62 @@ export async function retrieveScenes(
 export async function retrieveVerifiedAssistantContext(
   query: string,
   userProgress: ProgressConfig,
-  chapterNumber: number
+  chapterNumber: number,
+  options?: { spoilerMode?: SpoilerMode; characterTsids?: string[] }
 ): Promise<VerifiedAssistantContext> {
+  const spoilerMode = options?.spoilerMode ?? "none"
+  const ceiling = visibilityCeiling(spoilerMode)
   const normalizedUserQuery = normalizeQueryForFingerprint(query)
   const stableFingerprint = buildStableRequestFingerprint({
     sceneTsid: userProgress.sceneTsid,
     chapterNumber,
     readUpToStoryIndexLast: userProgress.readUpToStoryIndexLast,
     normalizedUserQuery,
+    workTsid: userProgress.workTsid,
+    visibilityMode: spoilerMode,
   })
   const requestId = `${stableFingerprint}:${randomUUID()}`
+  const supabase = getRetrievalSupabase()
+  const workId = await resolveWorkId(supabase, userProgress.workTsid)
+  if (!workId) {
+    throw new Error(`retrieveScenes: unknown workTsid ${userProgress.workTsid}`)
+  }
+  await assertSceneBelongsToWork(supabase, workId, userProgress.sceneTsid)
+  const candidateSet = await metadataPreFiltering(supabase, workId, userProgress, ceiling)
 
-  const [retrievalOut, chapterScenes] = await Promise.all([
-    retrieveScenesUncached(query, userProgress),
-    fetchChapterScenesWithinProgress(userProgress, chapterNumber),
+  const [retrievalOut, loaded, characterCards] = await Promise.all([
+    retrieveScenesUncached(query, userProgress, candidateSet),
+    loadCaptionRoutes(supabase, workId, candidateSet),
+    ceiling === "work"
+      ? loadCharacterCards(supabase, workId, options?.characterTsids ?? [])
+      : Promise.resolve([] as AssistantCharacterCard[]),
   ])
 
-  const results = retrievalOut.results.filter(
-    (r) => r.tsid !== userProgress.sceneTsid
-  )
+  const results = retrievalOut.results.filter((row) => row.tsid !== userProgress.sceneTsid)
   assertRerankResultsWithinCandidateSet(results, retrievalOut.candidateTsids)
 
+  const framed = applyFrameRules(loaded, userProgress, ceiling)
+  const cardChars = characterCards.reduce((sum, card) => sum + card.name.length + card.description.length, 0)
+  const budgeted = budgetAuthorizedRoutes({
+    routes: framed,
+    currentTsid: userProgress.sceneTsid,
+    rankedTsids: results.map((row) => row.tsid),
+    ceiling,
+    characterCardChars: cardChars,
+  })
+  const chapterScenes = snippetsFromRoutes(budgeted.routes)
   const collected = collectAuthorizedSemanticBytes(chapterScenes)
-
   const storyOracle = verifyProductionStoryOracle({
     authorizedChunks: collected.chunks,
     authorizedSemanticBytes: collected.authorizedSemanticBytes,
     requestId,
     stableFingerprint,
   })
-
-  const currentSnippet = chapterScenes.find((s) => s.tsid === userProgress.sceneTsid)
-  const currentSceneRevealedXml = buildCurrentSceneRevealedXml(
-    currentSnippet?.revealedStorySlides ?? []
-  )
+  const currentSnippet = chapterScenes.find((scene) => scene.tsid === userProgress.sceneTsid)
+  const currentSceneRevealedXml = buildCurrentSceneRevealedXml(currentSnippet?.revealedStorySlides ?? [])
   const chapterScenesXml = buildChapterScenesXml(chapterScenes)
+  const omissionNote =
+    budgeted.omittedRouteCount > 0 ? "Some earlier revealed scenes were omitted for length." : null
 
   return {
     requestId,
@@ -531,6 +614,10 @@ export async function retrieveVerifiedAssistantContext(
     storyOracle,
     currentSceneRevealedXml,
     chapterScenesXml,
+    contextSummaries: budgeted.summaries,
+    promptSummary: budgeted.currentSummary,
+    characterCards: budgeted.characterCardsIncluded ? characterCards : [],
+    omissionNote,
     observability: retrievalOut.observability,
   }
 }

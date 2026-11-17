@@ -17,6 +17,10 @@ export type AssistantChatMessage = {
   content: string
   generationId?: number
   status?: AssistantMessageStatus
+  questionId?: string
+  kind?: import("@/lib/assistant-turn-seal").AssistantMessageKind
+  resolution?: "pending" | "accepted_single" | "accepted_conversation" | "declined"
+  seal?: import("@/lib/assistant-turn-seal").AssistantTurnSeal
 }
 
 export const GENERATION_ABORT_REASON = "cancelled"
@@ -104,8 +108,16 @@ export function markAssistantTerminal(
 export function historyTurnsForRequest(messages: AssistantChatMessage[]): {
   role: "user" | "assistant"
   content: string
+  questionId?: string
+  seal?: AssistantChatMessage["seal"]
 }[] {
   return messages
-    .filter((m) => !(m.role === "assistant" && m.status === "streaming"))
-    .map(({ role, content }) => ({ role, content }))
+    .filter((message) => !(message.role === "assistant" && message.status === "streaming"))
+    .filter((message) => message.role === "user" || message.status === "completed")
+    .map((message) => ({
+      role: message.role,
+      content: message.content,
+      questionId: message.questionId,
+      seal: message.seal,
+    }))
 }
